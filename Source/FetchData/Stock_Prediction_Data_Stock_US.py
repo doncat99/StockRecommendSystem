@@ -194,18 +194,16 @@ def updateSingleStockData(dir, share_dir, symbol, from_date, till_date, force_ch
     return startTime, message
 
 
-def getStocksList(share_dir, percent):
-    filename = share_dir + str(percent) + '%_StockList.csv'
+def getStocksList(share_dir):
+    filename = share_dir + 'StockList.csv'
 
     if os.path.exists(filename):
-        listData = pd.read_csv(filename)
-        return listData['Code'].values.tolist()
+        return pd.read_csv(filename)
+        #return listData['Code'].values.tolist()
 
     df = pd.DataFrame()
     for exchange in ["NASDAQ", "NYSE"]:
-        
         url = "http://www.nasdaq.com/screening/companies-by-industry.aspx?exchange=%s&render=download" % exchange
-        print(url)
         repeat_times = 3 # repeat downloading in case of http error
         for _ in range(repeat_times): 
             try:
@@ -225,7 +223,7 @@ def getStocksList(share_dir, percent):
     return listData#listData['Code'].values.tolist()
 
 
-def updateStockData_US(dir, symbols, from_date, till_date, percent = 1, force_check = False):
+def updateStockData_US(dir, symbols, from_date, till_date, force_check = False):
     if os.path.exists(dir) == False: 
         os.makedirs(dir)
 
@@ -233,7 +231,7 @@ def updateStockData_US(dir, symbols, from_date, till_date, percent = 1, force_ch
     if os.path.exists(share_dir) == False: 
         os.makedirs(share_dir)
 
-    stocklist = getStocksList(share_dir, percent)['Symbol'].values.tolist()
+    stocklist = getStocksList(share_dir)['Symbol'].values.tolist()
 
     for symbol in symbols:
         if symbol not in stocklist:
@@ -290,4 +288,4 @@ if __name__ == "__main__":
     dir = Config.get('Paths', 'STOCK_US')
 
     now = datetime.datetime.now().strftime("%Y-%m-%d")
-    updateStockData_US(dir, [], "1990-01-01", now, 100, True)
+    updateStockData_US(dir, [], "1990-01-01", now, True)
