@@ -1,7 +1,7 @@
 import sys
 sys.path.append('../../Utility/')
 
-import os, pandas, time, datetime, requests, warnings, configparser
+import os, io, pandas, time, datetime, requests, warnings, configparser
 import pandas as pd
 import numpy as np
 #import pandas_datareader.data as pandasReader
@@ -201,40 +201,28 @@ def getStocksList(share_dir, percent):
         listData = pd.read_csv(filename)
         return listData['Code'].values.tolist()
 
-    capStat, output = np.array([]), []
+    df = pd.DataFrame()
     for exchange in ["NASDAQ", "NYSE"]:
-        url = "http://www.nasdaq.com/screening/companies-by-industry.aspx?exchange="
+        
+        url = "http://www.nasdaq.com/screening/companies-by-industry.aspx?exchange=%s&render=download" % exchange
+        print(url)
         repeat_times = 3 # repeat downloading in case of http error
         for _ in range(repeat_times): 
             try:
-                print ("Downloading stocks list from " + exchange + "...")
-                urlString = url + exchange + '&render=download'
-                response = requests.get(urlString, timeout=15)
-                content = response.text.split('\n')
-                
-                for num, line in enumerate(content):
-                    line = line.strip().strip('"').split('","')
-                    if num == 0 or len(line) != 9: continue # filter unmatched format
-                    ticker, name, lastSale, MarketCap, IPOyear, sector, \
-                    industry = line[0: 4] + line[5: 8]
-                    capStat = np.append(capStat, float(MarketCap))
-                    output.append([ticker, name.replace(',', '').replace('.', ''), exchange, MarketCap])
+                urlData = requests.get(url, timeout=15).content
+                if df.empty:
+                    df = pd.read_csv(io.StringIO(urlData.decode('utf-8')))
+                else:
+                    df = pd.concat([df, pd.read_csv(io.StringIO(urlData.decode('utf-8')))])                    
                 break
             except Exception as e:
                 print ("exception in getStocks:" + exchange, str(e))
                 continue
-    
-    code = []
-    for data in output:
-        marketCap = float(data[3])
-        if marketCap < 100000000 or marketCap <= np.percentile(capStat, 100 - percent): continue
-        
-        data[0] = data[0].strip()
-        code.append(data[0])
 
-    listData = pd.DataFrame(code, columns = ['Code'])
+    df = df[(df['MarketCap'] > 100000000)]    
+    listData = df[['Symbol', 'MarketCap', 'Sector', 'Industry']]
     listData.to_csv(filename)
-    return listData['Code'].values.tolist()
+    return listData#listData['Code'].values.tolist()
 
 
 def updateStockData_US(dir, symbols, from_date, till_date, percent = 1, force_check = False):
@@ -245,7 +233,7 @@ def updateStockData_US(dir, symbols, from_date, till_date, percent = 1, force_ch
     if os.path.exists(share_dir) == False: 
         os.makedirs(share_dir)
 
-    stocklist = getStocksList(share_dir, percent)
+    stocklist = getStocksList(share_dir, percent)['Symbol'].values.tolist()
 
     for symbol in symbols:
         if symbol not in stocklist:
