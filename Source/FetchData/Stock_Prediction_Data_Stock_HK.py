@@ -150,10 +150,21 @@ def updateSingleStockData(dir, symbol, from_date, till_date, force_check):
     return startTime, message
 
 
-def getStocksList(share_dir):
+def getStocksList():
     # https://www.quandl.com/api/v3/databases/HKEX/codes?api_key=X1xf_1YJLkT9mdxDj13v
     # down the zip file above and unzip to the _share folder
     # rename the stock code name from "HKEX/XXXX" to "XXXX"
+    Config = configparser.ConfigParser()
+    Config.read("../../config.ini")
+    dir = Config.get('Paths', 'STOCK_HK')
+    
+    if os.path.exists(dir) == False: 
+        os.makedirs(dir)
+
+    share_dir = dir + Config.get('Paths', 'STOCK_SHARE_FOLDER')
+    if os.path.exists(share_dir) == False: 
+        os.makedirs(share_dir)
+
     filename = share_dir + 'HKEX-datasets-codes.csv'
 
     if os.path.exists(filename):
@@ -162,16 +173,16 @@ def getStocksList(share_dir):
         return listData['Code'].values.tolist()
     return []
 
-def updateStockData_HK(dir, symbols, from_date, till_date, force_check = False):
+def updateStockData_HK(symbols, from_date, till_date, force_check = False):        
+    Config = configparser.ConfigParser()
+    Config.read("../../config.ini")
+    dir = Config.get('Paths', 'STOCK_HK')
+    quandl.ApiConfig.api_key = Config.get('Quandl', 'KEY')
+
     if os.path.exists(dir) == False: 
         os.makedirs(dir)
 
-    share_dir = dir + '_share/'
-
-    if os.path.exists(share_dir) == False: 
-        os.makedirs(share_dir)
-
-    stocklist = getStocksList(share_dir)
+    stocklist = getStocksList()
 
     for symbol in symbols:
         if symbol not in stocklist:
@@ -183,27 +194,26 @@ def updateStockData_HK(dir, symbols, from_date, till_date, force_check = False):
     log_update = []
     
     # debug only
-    # for symbol in symbols:
-    #     startTime, message = updateSingleStockData(dir, symbol, force_check)
-    #     outMessage = '%-*s fetched in:  %.4s seconds' % (6, symbol, (time.time() - startTime))
-    #     pbar.set_description(outMessage)
-    #     pbar.update(1)
+    for symbol in symbols:
+        startTime, message = updateSingleStockData(dir, symbol, from_date, till_date, force_check)
+        outMessage = '%-*s fetched in:  %.4s seconds' % (6, symbol, (time.time() - startTime))
+        pbar.set_description(outMessage)
+        pbar.update(1)
             
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-        # Start the load operations and mark each future with its URL
-        future_to_stock = {executor.submit(updateSingleStockData, dir, symbol, from_date, till_date, force_check): symbol for symbol in symbols}
-        for future in concurrent.futures.as_completed(future_to_stock):
-            stock = future_to_stock[future]
-            try:
-                startTime, message = future.result()
-            except Exception as exc:
-                log_errors.append('%r generated an exception: %s' % (stock, exc))
-            else:
-                if len(message) > 0: log_update.append(message)
-            outMessage = '%-*s fetched in:  %.4s seconds' % (6, stock, (time.time() - startTime))
-            pbar.set_description(outMessage)
-            pbar.update(1)
+    # with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+    #     # Start the load operations and mark each future with its URL
+    #     future_to_stock = {executor.submit(updateSingleStockData, dir, symbol, from_date, till_date, force_check): symbol for symbol in symbols}
+    #     for future in concurrent.futures.as_completed(future_to_stock):
+    #         stock = future_to_stock[future]
+    #         try:
+    #             startTime, message = future.result()
+    #         except Exception as exc:
+    #             log_errors.append('%r generated an exception: %s' % (stock, exc))
+    #         else:
+    #             if len(message) > 0: log_update.append(message)
+    #         outMessage = '%-*s fetched in:  %.4s seconds' % (6, stock, (time.time() - startTime))
+    #         pbar.set_description(outMessage)
+    #         pbar.update(1)
     
     pbar.close()
     if len(log_errors) > 0:
@@ -215,14 +225,9 @@ if __name__ == "__main__":
     pd.set_option('precision', 3)
     pd.set_option('display.width',1000)
     warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
-    
-    Config = configparser.ConfigParser()
-    Config.read("../../config.ini")
-    dir = Config.get('Paths', 'STOCK_HK')
-    quandl.ApiConfig.api_key = Config.get('Quandl', 'KEY')
 
     now = datetime.datetime.now().strftime("%Y-%m-%d")
-    updateStockData_HK(dir, [], "1990-01-01", "2017-06-06", True)
+    updateStockData_HK([], "1990-01-01", now, True)
 
 
  

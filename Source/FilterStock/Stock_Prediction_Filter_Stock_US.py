@@ -135,16 +135,12 @@ def processing_stock_data(dir, ticker, day_selection, week_selection, month_sele
     return startTime
 
 
-def get_all_stocks_data(dir):
-    if os.path.exists(dir) == False: 
-        os.makedirs(dir)
+def get_all_stocks_data():
+    Config = configparser.ConfigParser()
+    Config.read("../../config.ini")
+    dir = Config.get('Paths', 'STOCK_US')
 
-    share_dir = dir + '_share/'
-
-    if os.path.exists(share_dir) == False: 
-        os.makedirs(share_dir)
-
-    stocklist = getStocksList(share_dir)['Symbol'].values.tolist()
+    stocklist = getStocksList()['Symbol'].values.tolist()
 
     day_selection = []
     week_selection = []
@@ -180,15 +176,11 @@ if __name__ == "__main__":
     pd.set_option('display.width',1000)
     warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
 
-    Config = configparser.ConfigParser()
-    Config.read("../../config.ini")
-    dir = Config.get('Paths', 'STOCK_US')
-
     now = datetime.datetime.now().strftime("%Y-%m-%d")
-    #updateStockData_US(dir, [], "1990-01-01", now, True)
+    #updateStockData_US([], "1990-01-01", now, True)
     
     print("Processing data...")
-    day_selection, week_selection, month_selection = get_all_stocks_data(dir)
+    day_selection, week_selection, month_selection = get_all_stocks_data()
     day_week_selection = list(set(day_selection) & set(week_selection))
     week_month_selection = list(set(week_selection) & set(month_selection))
     day_month_selection = list(set(day_selection) & set(month_selection))

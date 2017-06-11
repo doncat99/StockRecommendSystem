@@ -194,7 +194,18 @@ def updateSingleStockData(dir, share_dir, symbol, from_date, till_date, force_ch
     return startTime, message
 
 
-def getStocksList(share_dir):
+def getStocksList():
+    Config = configparser.ConfigParser()
+    Config.read("../../config.ini")
+    dir = Config.get('Paths', 'STOCK_US')
+    
+    if os.path.exists(dir) == False: 
+        os.makedirs(dir)
+
+    share_dir = dir + Config.get('Paths', 'STOCK_SHARE_FOLDER')
+    if os.path.exists(share_dir) == False: 
+        os.makedirs(share_dir)
+
     filename = share_dir + 'StockList.csv'
 
     if os.path.exists(filename):
@@ -223,15 +234,20 @@ def getStocksList(share_dir):
     return listData#listData['Code'].values.tolist()
 
 
-def updateStockData_US(dir, symbols, from_date, till_date, force_check = False):
+def updateStockData_US(symbols, from_date, till_date, force_check = False):
+    Config = configparser.ConfigParser()
+    Config.read("../../config.ini")
+    dir = Config.get('Paths', 'STOCK_US')
+    
     if os.path.exists(dir) == False: 
         os.makedirs(dir)
 
-    share_dir = dir + '_share/'
+    share_dir = dir + Config.get('Paths', 'STOCK_SHARE_FOLDER')
     if os.path.exists(share_dir) == False: 
         os.makedirs(share_dir)
 
-    stocklist = getStocksList(share_dir)['Symbol'].values.tolist()
+
+    stocklist = getStocksList()['Symbol'].values.tolist()
 
     for symbol in symbols:
         if symbol not in stocklist:
@@ -283,9 +299,5 @@ if __name__ == "__main__":
     pd.set_option('display.width',1000)
     warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
 
-    Config = configparser.ConfigParser()
-    Config.read("../../config.ini")
-    dir = Config.get('Paths', 'STOCK_US')
-
     now = datetime.datetime.now().strftime("%Y-%m-%d")
-    updateStockData_US(dir, [], "1990-01-01", now, True)
+    updateStockData_US([], "1990-01-01", now, True)

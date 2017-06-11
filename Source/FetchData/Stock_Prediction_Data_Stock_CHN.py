@@ -179,7 +179,18 @@ def updateSingleStockData(dir, stock, force_check):
     return startTime, message
 
 
-def getStocksList(share_dir):
+def getStocksList():
+    Config = configparser.ConfigParser()
+    Config.read("../../config.ini")
+    dir = Config.get('Paths', 'STOCK_CHN')
+    
+    if os.path.exists(dir) == False: 
+        os.makedirs(dir)
+
+    share_dir = dir + Config.get('Paths', 'STOCK_SHARE_FOLDER')
+    if os.path.exists(share_dir) == False: 
+        os.makedirs(share_dir)
+
     filename = share_dir + 'StockList_China.csv'
 
     if os.path.exists(filename):
@@ -190,20 +201,16 @@ def getStocksList(share_dir):
     listData.to_csv(filename)
     return listData
 
-def updateStockList(dir):
-    share_dir = dir + '_share/'
 
-    if os.path.exists(share_dir) == False: 
-        os.makedirs(share_dir)
-
-    return getStocksList(share_dir)
-
-def updateStockData_CHN(dir, force_check = False):
+def updateStockData_CHN(force_check = False):
+    Config = configparser.ConfigParser()
+    Config.read("../../config.ini")
+    dir = Config.get('Paths', 'STOCK_CHN')
 
     if os.path.exists(dir) == False: 
         os.makedirs(dir)
 
-    stocklist = updateStockList(dir)
+    stocklist = getStocksList()
 
     pbar = tqdm(total=len(stocklist))
     log_errors = []
@@ -244,8 +251,4 @@ if __name__ == "__main__":
     pd.set_option('display.width',1000)
     warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
 
-    Config = configparser.ConfigParser()
-    Config.read("../../config.ini")
-    dir = Config.get('Paths', 'STOCK_CHN')
-
-    updateStockData_CHN(dir, True)
+    updateStockData_CHN(True)
