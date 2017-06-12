@@ -214,6 +214,7 @@ def getStocksList():
 
     df = pd.DataFrame()
     for exchange in ["NASDAQ", "NYSE"]:
+        print("fetching " + exchange + " stocklist...")
         url = "http://www.nasdaq.com/screening/companies-by-industry.aspx?exchange=%s&render=download" % exchange
         repeat_times = 3 # repeat downloading in case of http error
         for _ in range(repeat_times): 
@@ -229,7 +230,7 @@ def getStocksList():
                 continue
 
     df = df[(df['MarketCap'] > 100000000)]    
-    listData = df[['Symbol', 'MarketCap', 'Sector', 'Industry']]
+    listData = df[['Symbol', 'Name', 'MarketCap', 'Sector', 'Industry']]
     listData.to_csv(filename)
     return listData#listData['Code'].values.tolist()
 
