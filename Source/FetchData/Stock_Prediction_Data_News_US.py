@@ -54,17 +54,12 @@ def updateNewsArticle(er, dir, stock, from_date, till_date, count):
     
     filename = dir + stock + '.csv'
 
-    requireDownload = False
-
     try:
         df = pd.read_csv(filename)
     except:
-        requireDownload = True
+        df = pd.DataFrame()
 
     if df.empty:
-        requireDownload = True
-
-    if requireDownload:
         df = getSingleStockNewsArticle(er, stock, from_date, till_date, count)
         df.set_index(['date'], inplace=True)
         df.sort_index(ascending=True, inplace=True)
@@ -116,7 +111,7 @@ if __name__ == "__main__":
     er = EventRegistry(apiKey = Config.get('EventRegistry', 'KEY'))
     now = datetime.datetime.now().strftime("%Y-%m-%d")
 
-    updateNewsArticle(er, dir, 'NTES', "2017-06-01", now, 200)
+    updateNewsArticle(er, dir, 'MEETME', "2017-06-01", now, 200)
 
     # for symbol in stocklist:
     #     updateNewsArticle(er, dir, symbol, "2017-05-01", now, 200)
