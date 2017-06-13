@@ -5,7 +5,7 @@ import os, time, datetime, warnings, configparser
 import pandas as pd
 from pandas.tseries.offsets import CustomBusinessMonthBegin
 from pandas.tseries.holiday import USFederalHolidayCalendar
-from Stock_Prediction_Data_Stock_US import updateStockData_US, getStocksList
+from Fetch_Data_Stock_US_Daily import updateStockData_US, getStocksList
 import concurrent.futures
 
 def convert_week_based_data(df):
@@ -177,7 +177,7 @@ if __name__ == "__main__":
     warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
 
     now = datetime.datetime.now().strftime("%Y-%m-%d")
-    #updateStockData_US([], "1990-01-01", now, True)
+    updateStockData_US([], "1990-01-01", now, True)
     
     print("Processing data...")
     day_selection, week_selection, month_selection = get_all_stocks_data()

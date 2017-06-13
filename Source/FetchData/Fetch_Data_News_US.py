@@ -3,7 +3,7 @@ import os, configparser
 import pandas as pd
 from eventregistry import *
 from googletrans import Translator
-from Stock_Prediction_Data_Stock_US import getStocksList
+from Fetch_Data_Stock_US_Daily import getStocksList
 
 def getSingleStockNewsArticle(er, stock, from_date, till_date, count):
     start = from_date.split('-')
