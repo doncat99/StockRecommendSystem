@@ -1,4 +1,4 @@
-# StockRecommandSystem
+# StockRecommendSystem
 
 Test on Python 3.5.2
 
