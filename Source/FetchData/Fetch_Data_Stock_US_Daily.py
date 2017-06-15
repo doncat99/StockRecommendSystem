@@ -1,5 +1,5 @@
 import sys
-sys.path.append('../../Utility/')
+sys.path.append('../Utility/')
 
 import os, io, pandas, time, datetime, requests, warnings, configparser
 import pandas as pd
