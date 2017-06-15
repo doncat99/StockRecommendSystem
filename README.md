@@ -5,11 +5,11 @@
 Test on Python 3.5.2
 
 ## Data Fetching:
-1. Cover Stock and News Fetching
-2. Stock:（NSDQ, NYSE）-> US, (HKSE) -> HK, (SSE，SZSE) -> CHN
-3. Short: US stock market short stock info. (Require Multi Ip Support)
-4. Earning: US stock market earning info.
-5. News: EventRegistry
+Cover Stock and News Fetching
+1. Stock:（NSDQ, NYSE）-> US, (HKSE) -> HK, (SSE，SZSE) -> CHN
+2. Earning: US stock market earning info.
+3. Short: US stock market short squeeze info. (Require Multi IP Routing Support)
+4. News: EventRegistry
 
 ## Reinforment Learning:
 The mainly implementation is directly clone from: [Link](https://github.com/shenyichen105/Deep-Reinforcement-Learning-in-Stock-Trading)
