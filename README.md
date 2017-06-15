@@ -15,7 +15,6 @@ The approach currently use one feature of the data, which is "close price" as in
 It's supposed there shall be many available combinations we can play and test with.  
 
 ---------------------------------------
-          PRINT SCREEN
 init cash:  100000  
 Columns: [AMD, NVDA, SPY, ^VIX]  
 Index: []  
