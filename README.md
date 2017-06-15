@@ -1,18 +1,23 @@
 # StockRecommendSystem
 
+
+## Requirement
 Test on Python 3.5.2
 
 ## Data Fetching:
 1. Cover Stock and News Fetching
 2. Stock:（NSDQ, NYSE）-> US, (HKSE) -> HK, (SSE，SZSE) -> CHN
-3. Short: US. market short stock info. (Require Multi Ip Support)
-4. News: EventRegistry
+3. Short: US stock market short stock info. (Require Multi Ip Support)
+4. Earning: US stock market earning info.
+5. News: EventRegistry
 
 ## Reinforment Learning:
 The mainly implementation is directly clone from: [Link](https://github.com/shenyichen105/Deep-Reinforcement-Learning-in-Stock-Trading)
 
-The approach currently use one feature of the data, which is "close price" as input.  
-It's supposed there shall be many available combinations we can play and test with.  
+More in mind:
+1. The approach use only "Adj Close" price as input, it's supposed more features combinations shall be joined to the party.
+2. The Trading Strategy is a little mediocre and limited, better rewrite it.
+3. At most only two tickers are allowed in the trading system, rewrite it.
 
 
 init cash:  100000  
