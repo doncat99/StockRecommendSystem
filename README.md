@@ -20,9 +20,9 @@ More in mind:
 3. At most only two tickers are allowed in the trading system, rewrite it.
 
 
-init cash:  100000  
-Columns: [AMD, NVDA, SPY, ^VIX]  
-Index: []  
+> init cash:  100000  
+> Columns: [AMD, NVDA, SPY, ^VIX]  
+> Index: []  
 Runner: Taking action 2016-03-16 00:00:00 buy  
 Runner: Taking action 2016-03-17 00:00:00 buy  
 Runner: Taking action 2016-03-18 00:00:00 hold  
