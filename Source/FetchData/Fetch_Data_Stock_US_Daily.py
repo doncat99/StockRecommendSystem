@@ -230,7 +230,11 @@ def getStocksList():
                 continue
 
     df = df[(df['MarketCap'] > 100000000)]    
-    listData = df[['Symbol', 'Name', 'MarketCap', 'Sector', 'Industry']]
+    listData = df[['Symbol', 'Name', 'MarketCap', 'Sector', 'Industry']].copy()
+    
+    listData.loc[len(listData)] = ['SPY', 'SPDR S&P 500 ETF Trust', 0.0, '', '']
+    listData.loc[len(listData)] = ['^VIX', 'VOLATILITY S&P 500', 0.0, '', '']
+
     listData.to_csv(filename)
     return listData#listData['Code'].values.tolist()
 

@@ -59,7 +59,7 @@ def judge_rule(ticker, dataset, str):
     #if (ma30 - ma20) > ma20 / 100 : fit_count += 0.5
     #if (ma60 - ma30) > ma30 / 100 : fit_count += 0.5
 
-    if fit_count == 4 and d < 40:
+    if fit_count == 4 and d < 50:
         return True
 
     # if fit_count >= 3 and d > 0 and d < 40 and j - d > 0 and j - d < 10:
