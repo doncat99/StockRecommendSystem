@@ -9,12 +9,12 @@ Test on Python 3.5.2
 4. News: EventRegistry
 
 ## Reinforment Learning:
-The mainly implementation is directly clone from:
-https://github.com/shenyichen105/Deep-Reinforcement-Learning-in-Stock-Trading
+The mainly implementation is directly clone from: [Link](https://github.com/shenyichen105/Deep-Reinforcement-Learning-in-Stock-Trading)
 
 The approach currently use one feature of the data, which is "close price" as input.
 It's supposed there shall be many available combinations we can play and test with.
 
+'''
 init cash:  100000
 Columns: [AMD, NVDA, SPY, ^VIX]
 Index: []
@@ -35,6 +35,6 @@ Runner: Taking action 2017-06-13 00:00:00 buy
 Runner: Taking action 2017-06-14 00:00:00 buy
 
 Final outcome: 121500.348294
-
+'''
 
 More AI approach will be arranged and upload ASAP
