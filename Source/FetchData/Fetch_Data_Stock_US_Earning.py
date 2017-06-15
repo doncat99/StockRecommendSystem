@@ -1,5 +1,7 @@
 import os, time, datetime, requests, warnings, configparser
 import pandas as pd
+from pandas.tseries.holiday import USFederalHolidayCalendar
+from pandas.tseries.offsets import CustomBusinessDay
 from bs4 import BeautifulSoup
 import concurrent.futures
 from tqdm import tqdm
@@ -93,6 +95,21 @@ def convertEarningsToDataFrame(responseText):
 
     return df
 
+def updateEarningByDate(dir, date):
+    startTime = time.time()
+    date = date.strftime("%Y-%m-%d")
+    filename = dir + date + ".csv"
+
+    if os.path.exists(filename): return startTime
+
+    text, message = getStockEarningByDate(date)
+    if len(message) > 0: return startTime
+
+    df = convertEarningsToDataFrame(text)
+    df.to_csv(filename)
+    return startTime
+
+
 def updateEarnings_US(duedays):
     Config = configparser.ConfigParser()
     Config.read("../../config.ini")
@@ -103,23 +120,27 @@ def updateEarnings_US(duedays):
 
     pbar = tqdm(total=len(duedays))
 
-    for date in duedays:
-        date = date.strftime("%Y-%m-%d")
-        startTime = time.time()
-        filename = dir + date + ".csv"
-
-        if os.path.exists(filename): continue
-
-        text, message = getStockEarningByDate(date)
-        if len(message) > 0: continue
-
-        df = convertEarningsToDataFrame(text)
-        if df.empty: continue
-        df.to_csv(filename)
-
-        outMessage = '%-*s fetched in:  %.4s seconds' % (20, date, (time.time() - startTime))
-        pbar.set_description(outMessage)
-        pbar.update(1)
+    # for date in duedays:
+    #     startTime = updateEarningByDate(dir, date)
+    #     outMessage = '%-*s fetched in:  %.4s seconds' % (12, date, (time.time() - startTime))
+    #     pbar.set_description(outMessage)
+    #     pbar.update(1)
+        
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+        # Start the load operations and mark each future with its URL
+        future_to_stock = {executor.submit(updateEarningByDate, dir, date): date for date in duedays}
+        for future in concurrent.futures.as_completed(future_to_stock):
+            date = future_to_stock[future]
+            try:
+                startTime = future.result()
+            except Exception as exc:
+                startTime = time.time()
+                log_errors.append('%r generated an exception: %s' % (stock, exc))
+                len_errors = len(log_errors)
+                if len_errors % 5 == 0: print(log_errors[(len_errors-5):]) 
+            outMessage = '%-*s fetched in:  %.4s seconds' % (12, date, (time.time() - startTime))
+            pbar.set_description(outMessage)
+            pbar.update(1)
 
 
 if __name__ == "__main__":
@@ -127,8 +148,10 @@ if __name__ == "__main__":
     pd.set_option('display.width',1000)
     warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
 
-    date_start = datetime.datetime(2012, 1, 3)
+    date_start = "2012-01-03"
     now = datetime.datetime.now().strftime("%Y-%m-%d")
-    duedays = pd.date_range(date_start, now)
+    us_bd = CustomBusinessDay(calendar=USFederalHolidayCalendar())
+    duedays = pd.DatetimeIndex(start=date_start, end=now, freq=us_bd)
+
     updateEarnings_US(duedays)
 
