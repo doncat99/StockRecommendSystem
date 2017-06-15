@@ -22,6 +22,10 @@ All these python modules can be easily installed through Anaconda, a python pack
 conda install theano lasagne numpy statsmodels pandas
 ```
 
+It's most likely that theano and lasagne are required to upgrade to the newest version.
+pip install --upgrade https://github.com/Theano/Theano/archive/master.zip
+pip install --upgrade https://github.com/Lasagne/Lasagne/archive/master.zip
+
 It's highly recommended to run the code on a GPU server as it's very time-consuming to run on CPU machine.
 
 ## Declaration

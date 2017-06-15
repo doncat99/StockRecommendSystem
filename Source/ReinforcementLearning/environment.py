@@ -28,8 +28,11 @@ def get_data(symbols, dates_range, update):
         else:
             if 'Close' in data:
                 df[symbol] = data['Close']
+    
+    df = df[df.index.isin(dates_range)].fillna(0).sort_index()
 
-    return df[df.index.isin(dates_range)].sort_index()
+    #print("NaN Columns:", df[df.isnull().any(axis=1)])
+    return df
 
 class Simulator(object):
 
@@ -42,6 +45,7 @@ class Simulator(object):
 
         # initialize cash holdings
         init_cash = 100000
+        print("init cash: ", init_cash)
 
         #for visualization
         self.data_out = []
@@ -251,7 +255,7 @@ class Simulator(object):
             if verbose: print(self.portfolio)
             reward = self.port_val - old_port_val
         #self.port_val = self.port_value_for_output()
-        print("port value", self.port_val)
+        if verbose: print("port value", self.port_val)
         #self.data_out.append(self.date.isoformat()[0:10] + ',' + str(self.prices.ix[self.date, self.stock_A]) + ',' + str(self.prices.ix[self.date, self.stock_B]) + ',' + action + ',' + str(abs_return_A) + ',' +  str(pct_return_A) + ',' + str(abs_return_B) + ',' + str(pct_return_B) + ',' + str((self.prices.ix[self.date, self.stock_A] - self.prices.ix[self.date, self.stock_B])) + ',' + str(self.prices_interest_rate[self.date]) + ',' + str(self.prices_SPY[self.date]) + ',' + str(self.prices_VIX[self.date]) + ',' + str(self.port_val))
         if verbose: print(self.data_out)
         state = self.get_state(self.date)
@@ -271,19 +275,18 @@ class Simulator(object):
         number of shares hold
         """
         if date not in self.dates_range:
-            if verbose: print('Date was out of bounds.')
-            if verbose: print(date)
+            print(date, ' Date was out of bounds.')
             exit
 
         # a vector of features
-        if (date == self.prices.index[-1]):
-            file_name = "data_for_vis_%s.csv" % dt.datetime.now().strftime("%H-%M-%S")
-            print("saving to", file_name)
-            file = open(file_name, 'w');
-            for line in self.data_out:
-                file.write(line);
-                file.write('\n')
-            file.close()
+        # if (date == self.prices.index[-1]):
+        #     file_name = "data_for_vis_%s.csv" % dt.datetime.now().strftime("%H-%M-%S")
+        #     print("saving to", file_name)
+        #     file = open(file_name, 'w');
+        #     for line in self.data_out:
+        #         file.write(line);
+        #         file.write('\n')
+        #     file.close()
         return [self.prices.ix[date, self.stock_A]/self.prices.ix[0, self.stock_A] - self.prices.ix[date, self.stock_B]/self.prices.ix[0, self.stock_B],
             1, #self.prices_interest_rate[date]/self.prices_interest_rate[0] - 1,
             self.prices_SPY[date]/self.prices_SPY[0] - 1,

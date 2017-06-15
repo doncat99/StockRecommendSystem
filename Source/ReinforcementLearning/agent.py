@@ -4,6 +4,8 @@ import theano.tensor as T
 import lasagne
 import sys
 
+verbose = False
+
 class RNN(object):
     def __init__(self, seq_len, n_feature):
         self.Input = lasagne.layers.InputLayer(shape=(None, seq_len, n_feature))
@@ -137,11 +139,8 @@ class PolicyGradientAgent(object):
         return self.action
 
     def query(self, new_state, reward):
-
-
         # update critics's experience repaly
         self.critic_agent.update_history(self.states, self.rewards)
-
 
         self.choices.append(self.action)
         self.rewards.append(reward)
@@ -149,30 +148,33 @@ class PolicyGradientAgent(object):
         #     reward *= 0.95
         #     self.rewards[i] += reward
 
-
         if len(self.choices) % self.update_cycle == 0 and len(self.choices) >= self.batch_size * 1.25:
             #update actor, choose random sample
             random_sample = np.random.choice(np.arange(max(0,len(self.rewards) - self.size_of_replay - 1), len(self.rewards) - 1), self.batch_size)
-            print("updating actor")
+            if verbose: print("updating actor")
             self.update(random_sample)
             #update critic
-            print("updating crititc")
+            if verbose: print("updating crititc")
             self.critic_agent.update_critic(random_sample)
 
         if len(self.choices) % self.update_target_cycle == 0 and len(self.choices) >= self.batch_size * 1.25:
             #update target network
-            print("updating target")
+            if verbose: print("updating target")
             self.critic_agent.update_target()
 
 
-        print("new state", new_state)
+        if verbose: print("new state", new_state)
         self.states.append(new_state)
+        
         probs = self.model.predict(self.states[-self.lookback_size:])
 
-        print("probabilities", probs)
+        if verbose: print("probabilities", probs)
         if np.isnan(probs[0]):
-            sys.exit()
-        self.action = np.random.choice(3, p=probs)
+            print(self.states[-self.lookback_size:])
+            self.action = "gameover"
+            return self.action
+        else:
+            self.action = np.random.choice(3, p=probs)
 
         # update critics's experience repaly
         self.critic_agent.update_history(self.states, self.rewards)
@@ -233,7 +235,7 @@ class model(object):
 
     def buildnetwork(self):
         model = Sequential()
-        model.add(lstm(20, dropout=0.2,input_shape = (self.seq_len, self.n_feature)))
+        model.add(lstm(20, dropout_W=0.2,input_shape = (self.seq_len, self.n_feature)))
         model.add(Dense(1, activation=None))
         model.compile(loss='mean_squared_error', optimizer=Adagrad(lr=0.002,clipvalue=10), metrics=['mean_squared_error'])
 
