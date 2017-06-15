@@ -12,7 +12,7 @@ Cover Stock and News Fetching
 4. News: EventRegistry
 
 ## Reinforment Learning:
-The mainly implementation is directly clone from: [Link](https://github.com/shenyichen105/Deep-Reinforcement-Learning-in-Stock-Trading)
+This sector is directly clone from: [Link](https://github.com/shenyichen105/Deep-Reinforcement-Learning-in-Stock-Trading)
 
 More in mind:
 1. The approach use only "Adj Close" price as input, it's supposed more features combinations shall be joined to the party.
