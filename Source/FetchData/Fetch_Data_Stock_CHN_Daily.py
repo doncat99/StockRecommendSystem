@@ -187,7 +187,7 @@ def getStocksList():
     if os.path.exists(dir) == False: 
         os.makedirs(dir)
 
-    share_dir = dir + Config.get('Paths', 'STOCK_SHARE_FOLDER')
+    share_dir = dir + Config.get('Paths', 'STOCK_SHARE')
     if os.path.exists(share_dir) == False: 
         os.makedirs(share_dir)
 

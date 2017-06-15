@@ -1,7 +1,7 @@
 import sys
 sys.path.append('../Utility/')
 
-import os, io, pandas, time, datetime, requests, warnings, configparser
+import os, io, time, datetime, requests, warnings, configparser
 import pandas as pd
 import numpy as np
 #import pandas_datareader.data as pandasReader
@@ -202,7 +202,7 @@ def getStocksList():
     if os.path.exists(dir) == False: 
         os.makedirs(dir)
 
-    share_dir = dir + Config.get('Paths', 'STOCK_SHARE_FOLDER')
+    share_dir = dir + Config.get('Paths', 'STOCK_SHARE')
     if os.path.exists(share_dir) == False: 
         os.makedirs(share_dir)
 
@@ -247,7 +247,7 @@ def updateStockData_US(symbols, from_date, till_date, force_check = False):
     if os.path.exists(dir) == False: 
         os.makedirs(dir)
 
-    share_dir = dir + Config.get('Paths', 'STOCK_SHARE_FOLDER')
+    share_dir = dir + Config.get('Paths', 'STOCK_SHARE')
     if os.path.exists(share_dir) == False: 
         os.makedirs(share_dir)
 
