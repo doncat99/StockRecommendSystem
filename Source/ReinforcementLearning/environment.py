@@ -322,9 +322,7 @@ class Simulator(object):
 
     def has_more(self):
         if ((self.dateIdx < len(self.prices.index)) == False):
-            print('\n\n\n*****')
-            print(self.baseline())
-            print('*****\n\n\n')
+            print("\nFinal outcome: ", self.baseline())
         return self.dateIdx < len(self.prices.index)
 
     def baseline(self):
