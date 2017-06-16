@@ -32,8 +32,6 @@ def get_all_stocks_data(dates_range):
 
     symbols = getStocksList()['Symbol'].values.tolist()
 
-    print("dup", set([x for x in symbols if symbols.count(x) > 1]))
-
     stockData = []
     stockList = []
     print("get stock data...")
