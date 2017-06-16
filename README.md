@@ -42,8 +42,8 @@ testing output:
 > Index: []  
 > Runner: Taking action 2016-03-16 00:00:00 buy  
 > Runner: Taking action 2016-03-17 00:00:00 buy  
-> Runner: Taking action 2016-03-18 00:00:00 hold   
-> ...... 
+> Runner: Taking action 2016-03-18 00:00:00 hold  
+> ......  
 > Runner: Taking action 2017-06-12 00:00:00 buy  
 > Runner: Taking action 2017-06-13 00:00:00 buy  
 > Runner: Taking action 2017-06-14 00:00:00 buy  
