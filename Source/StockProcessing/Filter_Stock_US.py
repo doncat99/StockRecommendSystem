@@ -3,10 +3,12 @@ sys.path.append('../FetchData/')
 
 import os, time, datetime, warnings, configparser
 import pandas as pd
+import concurrent.futures
+
 from pandas.tseries.offsets import CustomBusinessMonthBegin
 from pandas.tseries.holiday import USFederalHolidayCalendar
 from Fetch_Data_Stock_US_Daily import updateStockData_US, getStocksList
-import concurrent.futures
+
 
 def convert_week_based_data(df):
     weekly_data = df.resample('W').agg({
