@@ -105,3 +105,6 @@ ENV/
 
 # fetch data
 Data/
+
+# Result output
+Result/

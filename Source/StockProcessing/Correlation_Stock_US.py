@@ -26,7 +26,14 @@ def get_single_stock_data(ticker, dates_range, stock_folder):
 def get_all_stocks_data(dates_range):
     Config = configparser.ConfigParser()
     Config.read("../../config.ini")
-    dir = Config.get('Paths', 'STOCK_US')
+    dir_stock = Config.get('Paths', 'STOCK_US')
+    dir_result = Config.get('Paths', 'RESULT_COORELATION')
+
+    if os.path.exists(dir_stock) == False: 
+        os.makedirs(dir_stock)
+
+    if os.path.exists(dir_result) == False: 
+        os.makedirs(dir_result)
 
     startTime = time.time()
 
@@ -37,7 +44,7 @@ def get_all_stocks_data(dates_range):
     print("get stock data...")
     #count = 10
     for symbol in symbols:
-        df = get_single_stock_data(symbol, dates_range, dir)
+        df = get_single_stock_data(symbol, dates_range, dir_stock)
         if df.empty: continue
         stockData.append(df['Return'])
         stockList.append(symbol)
@@ -65,6 +72,10 @@ def get_all_stocks_data(dates_range):
     df_us_company_pairs.columns = ['Company1', 'Company2']
     df_us_company_pairs.loc[:, 'Correlation'] = pd.Series(pairwise_correlations).T
     df_us_company_pairs = df_us_company_pairs.sort_values(['Correlation'], ascending=[False])
+
+    filename = dir_result + "us_company_coorelation.csv"
+    df_us_company_pairs.to_csv(filename)
+    
     print(df_us_company_pairs.head(30))
 
     print('total processing in:  %.4s seconds' % ((time.time() - startTime)))

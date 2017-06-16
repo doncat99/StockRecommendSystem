@@ -1,7 +1,7 @@
 # StockRecommendSystem
 
 
-## Requirement
+## Requirement:
 Test on Python 3.5.2
 
 ## Data Fetching:
@@ -10,6 +10,38 @@ Cover Stock and News Fetching
 2. Earning: US stock market earning info.
 3. Short: US stock market short squeeze info. (Require Multi IP Routing Support)
 4. News: EventRegistry
+
+## Stock Processing:
+Correlation
+
+>        Company1 Company2  Correlation  
+>            QQQ     TQQQ        0.999
+>            IBB      BIB        0.999
+>           INSE     XBKS        0.999
+>            JAG      JPT        0.999
+>           ACWX     VXUS        0.995
+>           IXUS     ACWX        0.993
+>           VONE      SPY        0.992
+>           IXUS     VXUS        0.991
+>           VTWO     VTWV        0.988
+>            NTB      FBK        0.988
+>           GOOG    GOOGL        0.987
+>          LBRDA    LBRDK        0.984
+>          LBTYA    LBTYK        0.984
+>            BHP      BBL        0.983
+>             UN       UL        0.981
+>            CCL      CUK        0.980
+>          DISCA    DISCK        0.978
+>            BIB      BBH        0.976
+>            IBB      BBH        0.976
+>            FYX     PRFZ        0.976
+>            TLT     VGLT        0.974
+>           IFGL     VNQI        0.974
+>            VIA     VIAB        0.972
+>            AIA     AAXJ        0.972
+>           DGRW      SPY        0.972
+
+For the whole correlation list, run it and check "Result" folder for it.
 
 ## Reinforment Learning:
 This sector is directly clone from: [Link](https://github.com/shenyichen105/Deep-Reinforcement-Learning-in-Stock-Trading)
