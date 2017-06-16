@@ -229,7 +229,10 @@ def getStocksList():
                 print ("exception in getStocks:" + exchange, str(e))
                 continue
 
-    df = df[(df['MarketCap'] > 100000000)]    
+    df = df[(df['MarketCap'] > 100000000)]
+    df = df.drop_duplicates(subset=['Symbol'], keep=False)
+    df.sort_index(ascending=True, inplace=True)
+
     listData = df[['Symbol', 'Name', 'MarketCap', 'Sector', 'Industry']].copy()
     
     listData.loc[len(listData)] = ['SPY', 'SPDR S&P 500 ETF Trust', 0.0, '', '']
