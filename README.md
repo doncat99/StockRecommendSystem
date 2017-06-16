@@ -13,7 +13,6 @@ Cover Stock and News Fetching
 
 ## Stock Processing:
 Correlation
-
 >        Company1 Company2  Correlation  
 >            QQQ     TQQQ        0.999
 >            IBB      BIB        0.999
@@ -26,20 +25,6 @@ Correlation
 >           VTWO     VTWV        0.988
 >            NTB      FBK        0.988
 >           GOOG    GOOGL        0.987
->          LBRDA    LBRDK        0.984
->          LBTYA    LBTYK        0.984
->            BHP      BBL        0.983
->             UN       UL        0.981
->            CCL      CUK        0.980
->          DISCA    DISCK        0.978
->            BIB      BBH        0.976
->            IBB      BBH        0.976
->            FYX     PRFZ        0.976
->            TLT     VGLT        0.974
->           IFGL     VNQI        0.974
->            VIA     VIAB        0.972
->            AIA     AAXJ        0.972
->           DGRW      SPY        0.972
 
 For the whole correlation list, run it and check "Result" folder for it.
 
@@ -57,16 +42,8 @@ testing output:
 > Index: []  
 > Runner: Taking action 2016-03-16 00:00:00 buy  
 > Runner: Taking action 2016-03-17 00:00:00 buy  
-> Runner: Taking action 2016-03-18 00:00:00 hold  
-> Runner: Taking action 2016-03-21 00:00:00 hold  
-> Runner: Taking action 2016-03-22 00:00:00 sell  
-> Runner: Taking action 2016-03-23 00:00:00 buy  
-> Runner: Taking action 2016-03-24 00:00:00 hold  
-> ......  
-> Runner: Taking action 2017-06-06 00:00:00 buy  
-> Runner: Taking action 2017-06-07 00:00:00 buy  
-> Runner: Taking action 2017-06-08 00:00:00 buy  
-> Runner: Taking action 2017-06-09 00:00:00 hold  
+> Runner: Taking action 2016-03-18 00:00:00 hold   
+> ...... 
 > Runner: Taking action 2017-06-12 00:00:00 buy  
 > Runner: Taking action 2017-06-13 00:00:00 buy  
 > Runner: Taking action 2017-06-14 00:00:00 buy  
