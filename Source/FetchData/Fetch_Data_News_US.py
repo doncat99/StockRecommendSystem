@@ -87,7 +87,7 @@ def updateNewsArticle(er, dir, stock, from_date, till_date, count):
         modified = True
 
     if modified:
-        df = df.drop_duplicates(subset=['uri'], keep=False)
+        df = df.drop_duplicates(subset=['uri'], keep='first')
         df.set_index(['date'], inplace=True)
         df.sort_index(ascending=True, inplace=True)
         print("modified", df)

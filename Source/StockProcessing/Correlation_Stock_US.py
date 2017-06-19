@@ -71,7 +71,7 @@ def get_all_stocks_data(dates_range):
     df_us_company_pairs = pd.DataFrame(list(us_company_pairs))
     df_us_company_pairs.columns = ['Company1', 'Company2']
     df_us_company_pairs.loc[:, 'Correlation'] = pd.Series(pairwise_correlations).T
-    df_us_company_pairs = df_us_company_pairs.sort_values(['Correlation'], ascending=[False])
+    df_us_company_pairs = df_us_company_pairs.sort_values(['Correlation'], ascending=[False])#.reset_index(drop=True)
 
     filename = dir_result + "us_company_coorelation.csv"
     df_us_company_pairs.to_csv(filename)

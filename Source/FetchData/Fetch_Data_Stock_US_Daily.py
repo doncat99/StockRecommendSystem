@@ -230,7 +230,7 @@ def getStocksList():
                 continue
 
     df = df[(df['MarketCap'] > 100000000)]
-    df = df.drop_duplicates(subset=['Symbol'], keep=False)
+    df = df.drop_duplicates(subset=['Symbol'], keep='first')
     df.sort_index(ascending=True, inplace=True)
 
     listData = df[['Symbol', 'Name', 'MarketCap', 'Sector', 'Industry']].copy()
