@@ -160,8 +160,10 @@ def updateStockTwitterData(symbols, from_date, till_date):
     access_token_key = Config.get('Twitter', 'TOKEN_KEY')
     access_token_secret = Config.get('Twitter', 'TOKEN_SECRET')
 
-    proxies = {'http' : "http://127.0.0.1:1087",
-               'https': "https://127.0.0.1:1087"}
+    http = Config.get('Proxy', 'HTTP')
+    https = Config.get('Proxy', 'HTTPS')
+
+    proxies = {'http': http, 'https': https}
 
     stocklist = getStocksList()['Symbol'].values.tolist()
     

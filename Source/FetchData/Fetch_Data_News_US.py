@@ -107,7 +107,6 @@ if __name__ == "__main__":
     stocklist = ['AMD', 'WDC', 'SINA', 'WB', 'CTRP', 'NTES', 'ATVI', 'FB', 'GLUU', 'NVDA', 'NFLX', 'GPRO',
                  'MRVL', 'SMCI', 'JD', 'INTC', 'AMZN', 'BIDU', 'BGNE', 'QIWI', 'XNET', 'MOMO', 'YY']
 
-
     er = EventRegistry(apiKey = Config.get('EventRegistry', 'KEY'))
     now = datetime.datetime.now().strftime("%Y-%m-%d")
 
