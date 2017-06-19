@@ -1,8 +1,10 @@
 # StockRecommendSystem
 
 
-## Requirement:
-Test on Python 3.5.2
+## Main Requirement:
+Python 3.5.2
+TensorFlow 1.0
+nltk
 
 ## Data Fetching:
 Cover Stock and News Fetching
@@ -10,6 +12,8 @@ Cover Stock and News Fetching
 2. Earning: US stock market earning info.
 3. Short: US stock market short squeeze info. (Require Multi IP Routing Support)
 4. News: EventRegistry
+5. Media: Twitter Data 
+
 
 ## Stock Processing:
 Correlation
