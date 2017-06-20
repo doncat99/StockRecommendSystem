@@ -23,17 +23,22 @@ def get_single_stock_data(ticker, dates_range, stock_folder):
     
 
 
-def get_all_stocks_data(dates_range):
+def get_all_stocks_correlation(dates_range):
     Config = configparser.ConfigParser()
     Config.read("../../config.ini")
     dir_stock = Config.get('Paths', 'STOCK_US')
     dir_result = Config.get('Paths', 'RESULT_COORELATION')
+
+    filename = dir_result + "us_company_coorelation.csv"
 
     if os.path.exists(dir_stock) == False: 
         os.makedirs(dir_stock)
 
     if os.path.exists(dir_result) == False: 
         os.makedirs(dir_result)
+
+    if os.path.exists(filename): 
+        return pd.read_csv(filename, index_col=0)
 
     startTime = time.time()
 
@@ -73,29 +78,14 @@ def get_all_stocks_data(dates_range):
     df_us_company_pairs.loc[:, 'Correlation'] = pd.Series(pairwise_correlations).T
     df_us_company_pairs = df_us_company_pairs.sort_values(['Correlation'], ascending=[False])#.reset_index(drop=True)
 
-    filename = dir_result + "us_company_coorelation.csv"
-    df_us_company_pairs.to_csv(filename)
     
-    print(df_us_company_pairs.head(30))
+    df_us_company_pairs.to_csv(filename, index=False)
+    
+    #print(df_us_company_pairs.head(30))
 
     print('total processing in:  %.4s seconds' % ((time.time() - startTime)))
 
-    # startTime = time.time()
-    # with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-    #     # Start the load operations and mark each future with its URL
-    #     future_to_stock = {executor.submit(processing_stock_data, dir, stock, week_selection, month_selection): stock for stock in stocklist}
-    #     for future in concurrent.futures.as_completed(future_to_stock):
-    #         stock = future_to_stock[future]
-    #         try:
-    #             subStartTime = future.result()
-    #         except Exception as exc:
-    #             print('%r generated an exception: %s' % (stock, exc))
-    #         else:
-    #             outMessage = '%-*s processing in:  %.4s seconds' % (6, stock, (time.time() - subStartTime))
-    #             print(outMessage)
-    # print('total processing in:  %.4s seconds' % ((time.time() - startTime)))
-
-    return
+    return df_us_company_pairs
 
 
 if __name__ == "__main__":
@@ -109,5 +99,9 @@ if __name__ == "__main__":
     end_date = "2017-06-10"
     
     print("Processing data...")
-    get_all_stocks_data(pd.date_range(start_date, end_date))
+    df = get_all_stocks_correlation(pd.date_range(start_date, end_date))
+
+    df_amd = df[df['Company1'] == 'AMD'].reset_index(drop=True)
+    print(df_amd.head(30))
+
  

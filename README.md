@@ -4,7 +4,14 @@
 ## Main Requirement:
 Python 3.5.2
 TensorFlow 1.0
+mongodb 
+arctic (git+https://github.com/manahl/arctic.git)
 nltk
+
+## Install
+brew install mongodb --with-openssl
+brew services start mongodb
+mongod --dbpath ./Data/DB
 
 ## Data Fetching:
 Cover Stock and News Fetching
@@ -13,7 +20,6 @@ Cover Stock and News Fetching
 3. Short: US stock market short squeeze info. (Require Multi IP Routing Support)
 4. News: EventRegistry
 5. Media: Twitter Data 
-
 
 ## Stock Processing:
 Correlation
