@@ -1,3 +1,6 @@
+import sys
+sys.path.append('DataBase/')
+
 import os, time, datetime, requests, warnings, configparser
 import pandas as pd
 import numpy as np
@@ -5,20 +8,43 @@ import tushare as ts
 import concurrent.futures
 from tqdm import tqdm
 
-def getSingleStock(symbol):    
-    repeat_times = 3
+from DB_API import queryStock, storeStock, queryStockList, storeStockList, queryStockPublishDay, storePublishDay
+
+def getStocksList(root_path):
+    try:
+        df = queryStockList(root_path, "STOCK_CHN")
+        df.index = df.index.astype(str).str.zfill(6)
+    except Exception as e:
+        df = pd.DataFrame()
+
+    if df.empty == False: return df
+    
+    stock_info = ts.get_stock_basics()
+    listData = pd.DataFrame(stock_info)
+    #listData.index.name = 'Symbol'
+    #listData.index = listData.index.astype(str).str.zfill(6) #[str(symbol).zfill(6) for symbol in listData.index] #listData.index.astype(str).str.zfill(6)
+    #print(listData.index)
+    #listData['Symbol'] = listData['Symbol'].str.strip()
+    storeStockList(root_path, "STOCK_CHN", listData)
+    df = queryStockList(root_path, "STOCK_CHN")
+    df.index = df.index.astype(str).str.zfill(6)
+    return df
+
+def getSingleStock(symbol):
+    repeat_times = 1
     message = ""
+    df = pd.DataFrame()
+
     for _ in range(repeat_times): 
         try:
             data = ts.get_hist_data(symbol)
+            data = data.rename(columns = {'date':'Date'})
             data.sort_index(ascending=True, inplace=True)
             return data, ""
         except Exception as e:
             message = symbol + " fetch exception: " + str(e)
             continue   
-        else:
-            time.sleep(0.1)
-    return '', message
+    return df, message
 
 def getSingleStockByTime(symbol, from_date, till_date):
     start = from_date.split('-')
@@ -27,43 +53,20 @@ def getSingleStockByTime(symbol, from_date, till_date):
     end = till_date.split('-')
     end_y, end_m, end_d = end[0], end[1], end[2] # until now
     
-    repeat_times = 3
+    repeat_times = 1
     message = ""
+    df = pd.DataFrame()
+
     for _ in range(repeat_times): 
         try:
             data = ts.get_hist_data(symbol, from_date, till_date)
+            data = data.rename(columns = {'date':'Date'})
             data.sort_index(ascending=True, inplace=True)
             return data, ""
         except Exception as e:
             message = symbol + " fetch exception: " + str(e)
             continue   
-        else:
-            time.sleep(0.1)
-    return '', message
-
-def getStockPublishDay(dir, symbol):
-    filename = dir + 'StockPublishDay.csv'
-    if os.path.exists(filename):
-        df = pd.read_csv(filename)
-        publishDay = df[df['Code'] == symbol]
-        if len(publishDay) == 1:
-            return publishDay['date'].values[0]
-    return ''
-
-
-def saveStockPublishDay(dir, symbol, date):
-    filename = dir + 'StockPublishDay.csv'
-    if os.path.exists(filename):
-        df = pd.read_csv(filename, index_col=["index"])
-        publishDate = df[df['Code'] == symbol]
-        if publishDate.empty:
-            df.loc[len(df)] = [symbol, date]
-    else: 
-        df = pd.DataFrame(columns = ['Code', 'date'])
-        df.index.name = 'index'
-        df.loc[len(df)] = [symbol, date]
-    df.to_csv(filename)
-
+    return df, message
 
 def judgeOpenDaysInRange(from_date, to_date):
     holidays=["2017-01-01", "2017-01-02",
@@ -81,74 +84,38 @@ def judgeOpenDaysInRange(from_date, to_date):
     opendays = df[df['Holiday'] == False]
     return opendays
 
-
-# def judgeNeedPreDownload(dir, symbol, from_date, to_date):
-#     dateList = judgeOpenDaysInRange(from_date, to_date)
-#     if len(dateList) > 0:
-#         publishDay = pandas.Timestamp(getStockPublishDay(dir, symbol))
-#         lastDay = pandas.Timestamp(dateList['Date'].index[-1])
-#         if pandas.isnull(publishDay) or lastDay > publishDay: 
-#             return True
-#     return False
-
-
 def judgeNeedPostDownload(from_date, to_date):
     today = datetime.datetime.now()
     start_date = pd.Timestamp(from_date)
     end_date = pd.Timestamp(to_date)
 
-    if start_date > today:
-        return False
-    
-    if end_date > today:
-        to_date = today.strftime("%Y-%m-%d")
-
+    if start_date > today: return False    
+    if end_date > today: to_date = today.strftime("%Y-%m-%d")
     dateList = judgeOpenDaysInRange(from_date, to_date)
-    if len(dateList) > 0:
-        return True
+    if len(dateList) > 0: return True
     return False
 
 
-def updateSingleStockData(dir, stock, force_check):
+def updateSingleStockData(root_path, symbol, force_check):
     startTime = time.time()
-    symbol = str(stock[0]).zfill(6)
     message = ""
 
-    if len(symbol) == 0:
-        return startTime, message
+    if len(symbol) == 0: return startTime, message
 
     till_date = (datetime.datetime.now()).strftime("%Y-%m-%d")
     end_date  = pd.Timestamp(till_date)
-
-    filename = dir + symbol + '.csv'
     
-    try:
-        stockData = pd.read_csv(filename, index_col=["date"])
-    except Exception as e:
-        #print(symbol, " read csv exception, ", e)
-        if str(e) == 'Index Date invalid':
-            stockData = pd.read_csv(filename,index_col=0)
-            stockData.index.name = 'date'
-            stockData.sort_index(ascending=True, inplace=True)
-            stockData.to_csv(filename)
-        else:
-            stockData, message = getSingleStock(symbol)
-            if len(stockData) > 0: 
-                stockData['lastUpdate'] = till_date
-                stockData.sort_index(ascending=True, inplace=True)
-                stockData.to_csv(filename)
-                message = symbol + " database updated"
-            return startTime, message
+    stockData, lastUpdateTime = queryStock(root_path, symbol, "STOCK_CHN")
+
+    if stockData.empty:
+        stockData, message = getSingleStock(symbol)
+        if stockData.empty == False:
+            storeStock(root_path, "STOCK_CHN", symbol, stockData)
+        return startTime, message
 
     modified = False
     first_date = pd.Timestamp(stockData.index[0])
     last_date  = pd.Timestamp(stockData.index[-1])
-
-    if 'lastUpdate' in stockData:
-        lastUpdateTime = pd.Timestamp(stockData['lastUpdate'].iloc[0])
-    else:
-        lastUpdateTime = pd.Timestamp('1970-01-01')
-
     updateOnce = end_date > lastUpdateTime
      
     if end_date > last_date and (updateOnce or force_check):
@@ -158,85 +125,54 @@ def updateSingleStockData(dir, stock, force_check):
             moreStockData, tempMessage = getSingleStockByTime(symbol, to_date, till_date)
             message = message + tempMessage
             if len(moreStockData) > 0:
+                if isinstance(moreStockData.index, pd.DatetimeIndex):
+                    moreStockData.index = moreStockData.index.strftime("%Y-%m-%d")
                 modified = True
                 stockData = pd.concat([stockData, moreStockData])
                 stockData.index.name = 'date'
         
     if modified:
-        stockData['lastUpdate'] = till_date
         stockData = stockData[~stockData.index.duplicated(keep='first')]
-        stockData.sort_index(ascending=True, inplace=True)
-        stockData.to_csv(filename)
+        storeStock(root_path, "STOCK_CHN", symbol, stockData)
     elif updateOnce:
-        stockData['lastUpdate'] = till_date
         stockData = stockData[~stockData.index.duplicated(keep='first')]
-        stockData.sort_index(ascending=True, inplace=True)
-        stockData.to_csv(filename)
+        storeStock(root_path, "STOCK_CHN", symbol, stockData)
         message = message + ", nothing updated"
     else:
         message = ""
 
     return startTime, message
 
+def updateStockData_CHN(root_path, force_check = False):
 
-def getStocksList():
-    Config = configparser.ConfigParser()
-    Config.read("../../config.ini")
-    dir = Config.get('Paths', 'STOCK_CHN')
-    
-    if os.path.exists(dir) == False: 
-        os.makedirs(dir)
+    symbols = getStocksList(root_path).index.values.tolist()
 
-    share_dir = dir + Config.get('Paths', 'STOCK_SHARE')
-    if os.path.exists(share_dir) == False: 
-        os.makedirs(share_dir)
-
-    filename = share_dir + 'StockList_China.csv'
-
-    if os.path.exists(filename):
-        return pd.read_csv(filename) 
-
-    stock_info = ts.get_stock_basics()
-    listData = pd.DataFrame(stock_info)
-    listData.to_csv(filename)
-    return listData
-
-
-def updateStockData_CHN(force_check = False):
-    Config = configparser.ConfigParser()
-    Config.read("../../config.ini")
-    dir = Config.get('Paths', 'STOCK_CHN')
-
-    if os.path.exists(dir) == False: 
-        os.makedirs(dir)
-
-    stocklist = getStocksList()
-
-    pbar = tqdm(total=len(stocklist))
+    pbar = tqdm(total=len(symbols))
     log_errors = []
     log_update = []
 
     # debug only
-    for index, stock in stocklist.iterrows():
-        startTime, message = updateSingleStockData(dir, stock, force_check)
-        outMessage = '%-*s fetched in:  %.4s seconds' % (6, str(stock[0]).zfill(6), (time.time() - startTime))
-        pbar.set_description(outMessage)
-        pbar.update(1)
+    # for symbol in symbols:
+    #     startTime, message = updateSingleStockData(root_path, symbol, force_check)
+    #     outMessage = '%-*s fetched in:  %.4s seconds' % (6, symbol, (time.time() - startTime))
+    #     pbar.set_description(outMessage)
+    #     pbar.update(1)
 
-    # with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-    #     # Start the load operations and mark each future with its URL
-    #     future_to_stock = {executor.submit(updateSingleStockData, dir, stock, force_check): stock for index, stock in stocklist.iterrows()}
-    #     for future in concurrent.futures.as_completed(future_to_stock):
-    #         stock = future_to_stock[future]
-    #         try:
-    #             startTime, message = future.result()
-    #         except Exception as exc:
-    #             log_errors.append('%r generated an exception: %s' % (str(stock[0]).zfill(6), exc))
-    #         else:
-    #             if len(message) > 0: log_update.append(message)
-    #         outMessage = '%-*s fetched in:  %.4s seconds' % (6, str(stock[0]).zfill(6), (time.time() - startTime))
-    #         pbar.set_description(outMessage)
-    #         pbar.update(1)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+        # Start the load operations and mark each future with its URL
+        future_to_stock = {executor.submit(updateSingleStockData, root_path, symbol, force_check): symbol for symbol in symbols}
+        for future in concurrent.futures.as_completed(future_to_stock):
+            stock = future_to_stock[future]
+            try:
+                startTime, message = future.result()
+            except Exception as exc:
+                startTime = time.time()
+                log_errors.append('%r generated an exception: %s' % (stock, exc))
+            else:
+                if len(message) > 0: log_update.append(message)
+            outMessage = '%-*s fetched in:  %.4s seconds' % (6, stock, (time.time() - startTime))
+            pbar.set_description(outMessage)
+            pbar.update(1)
 
     pbar.close()
     if len(log_errors) > 0:
@@ -244,7 +180,7 @@ def updateStockData_CHN(force_check = False):
     # if len(log_update) > 0:
     #     print(log_update)
 
-    return stocklist
+    return symbols
 
 if __name__ == "__main__":
     pd.set_option('precision', 3)

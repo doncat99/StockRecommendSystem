@@ -8,7 +8,7 @@ def queryStockList(root_path, database):
     global global_config
     global global_store
 
-    symbol_exception = ['AXON', 'CTT', 'ARL']
+    #symbol_exception = ['AXON', 'CTT', 'ARL']
 
     if global_config is None:
         global_config = configparser.ConfigParser()
@@ -32,16 +32,17 @@ def queryStockList(root_path, database):
         try:
             item = library.read(stockListKey)
             stockList = item.data
-            stockList = stockList[~stockList.Symbol.isin(symbol_exception)]
+            #stockList = stockList[~stockList.Symbol.isin(symbol_exception)]
             return stockList
         except Exception as e:
             return stockList
 
     if storeType == 2:
         share_dir = root_path + "/" + global_config.get('Paths', database) + global_config.get('Paths', 'STOCK_SHARE')
+        print(share_dir)
         filename = share_dir + 'StockList.csv'
         stockList = pd.read_csv(filename, index_col=0)
-        stockList = stockList[~stockList.Symbol.isin(symbol_exception)]
+        #stockList = stockList[~stockList.Symbol.isin(symbol_exception)]
         return stockList
 
     return stockList
@@ -74,7 +75,10 @@ def storeStockList(root_path, database, df):
 
     if storeType == 2:
         share_dir = root_path + "/" + global_config.get('Paths', database) + global_config.get('Paths', 'STOCK_SHARE')
+        if os.path.exists(share_dir) == False:
+            os.makedirs(share_dir)
         filename = share_dir + 'StockList.csv'
+        print(df)
         df.to_csv(filename)
 
 

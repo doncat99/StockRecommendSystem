@@ -59,7 +59,7 @@ def getSingleStock(symbol, from_date, till_date):
         try:
             data = yf.download(symbol, from_date, till_date, progress=False)
             data.sort_index()
-            return data, message
+            return data, ""
         except Exception as e:
             message = symbol + " fetch exception: " + str(e)
             continue   
@@ -165,12 +165,9 @@ def updateSingleStockData(root_path, symbol, from_date, till_date, force_check):
                 stockData.index.name = 'Date'
 
     if modified:
-        print("data modified: ", symbol)
         stockData = stockData[~stockData.index.duplicated(keep='first')]
         storeStock(root_path, "STOCK_US", symbol, stockData)
-        message = message + ", database updated"
     elif updateOnce:
-        print("data modified upda: ", symbol)
         stockData = stockData[~stockData.index.duplicated(keep='first')]
         storeStock(root_path, "STOCK_US", symbol, stockData)
         message = message + ", nothing updated"
