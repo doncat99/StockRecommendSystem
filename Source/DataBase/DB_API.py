@@ -39,7 +39,6 @@ def queryStockList(root_path, database):
 
     if storeType == 2:
         share_dir = root_path + "/" + global_config.get('Paths', database) + global_config.get('Paths', 'STOCK_SHARE')
-        print(share_dir)
         filename = share_dir + 'StockList.csv'
         stockList = pd.read_csv(filename, index_col=0)
         #stockList = stockList[~stockList.Symbol.isin(symbol_exception)]
@@ -78,7 +77,6 @@ def storeStockList(root_path, database, df):
         if os.path.exists(share_dir) == False:
             os.makedirs(share_dir)
         filename = share_dir + 'StockList.csv'
-        print(df)
         df.to_csv(filename)
 
 
@@ -170,7 +168,7 @@ def storePublishDay(root_path, database, symbol, date):
         df.to_csv(filename)
     
 
-def queryStock(root_path, symbol, database):
+def queryStock(root_path, database, symbol):
     global global_config
     global global_store
 
@@ -212,6 +210,7 @@ def queryStock(root_path, symbol, database):
 
     return stockData, pd.Timestamp('1970-01-01')
 
+
 def storeStock(root_path, database, symbol, stockData):
     global global_config
     global global_store
@@ -225,7 +224,7 @@ def storeStock(root_path, database, symbol, stockData):
     stockData.index.name = 'Date'
     
     if 'Date' in stockData:
-        stockData.set_index('Date') 
+        stockData.set_index('Date')  
 
     stockData.index = stockData.index.astype(str)
     stockData.sort_index(ascending=True, inplace=True)
@@ -250,7 +249,75 @@ def storeStock(root_path, database, symbol, stockData):
         stockData['lastUpdate'] = now_date
         stockData.to_csv(filename)
 
+
+def queryNews(root_path, database, symbol):
+    global global_config
+    global global_store
+
+    if global_config is None:
+        global_config = configparser.ConfigParser()
+        global_config.read(root_path + "/" + "config.ini")
+    storeType = int(global_config.get('Setting', 'StoreType'))
+    stockNews = pd.DataFrame()
+
+    stockListKey = "StockList"
+
+    if storeType == 1:
+        if global_store is None:
+            from arctic import Arctic
+            global_store = Arctic('localhost')
+
+        try:
+            library = global_store[database]
+        except:
+            global_store.initialize_library(database)
+            library = global_store[database]
+
+        try:
+            item = library.read(symbol)
+            return item.data
+        except Exception as e:
+            return stockNews
+
+    if storeType == 2:
+        dir = root_path + "/" + global_config.get('Paths', database)
+        filename = dir + symbol + '.csv'
+        stockNews = pd.read_csv(filename)
+        return stockNews
+
+    return stockNews
+
+
+def storeNews(root_path, database, symbol, df):
+    global global_config
+    global global_store
+
+    if global_config is None:
+        global_config = configparser.ConfigParser()
+        global_config.read(root_path + "/" + "config.ini")
+
+    now_date = datetime.datetime.now().strftime("%Y-%m-%d")
+    storeType = int(global_config.get('Setting', 'StoreType'))
     
+    df = df.drop_duplicates(subset=['Uri'], keep='first')
+    df.set_index(['Date'], inplace=True)
+    df.sort_index(ascending=True, inplace=True)
+    
+    if storeType == 1:
+        if global_store is None:
+            from arctic import Arctic
+            global_store = Arctic('localhost')
 
+        try:
+            library = global_store[database]
+        except:
+            global_store.initialize_library(database)
+            library = global_store[database]
 
+        #library.delete(symbol)
+        library.write(symbol, df)
 
+    if storeType == 2:
+        csv_dir = root_path + "/" + global_config.get('Paths', database)
+        filename = csv_dir + symbol + '.csv'
+        df.to_csv(filename)

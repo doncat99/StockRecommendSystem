@@ -1,11 +1,27 @@
-#install eventregistry using "pip install eventregistry" - see https://github.com/gregorleban/EventRegistry
-import os, configparser
+#install eventregistry using "pip install eventregistry" - see https://github.com/gregorleban/EventRegistry    
+import sys, os, time, configparser
 import pandas as pd
 from eventregistry import *
 from googletrans import Translator
+
+cur_path = os.path.dirname(os.path.abspath(__file__))
+for _ in range(2):
+    root_path = cur_path[0:cur_path.rfind('/', 0, len(cur_path))]
+    cur_path = root_path
+sys.path.append(root_path + "/" + 'Source/DataBase/')
+from DB_API import queryNews, storeNews
 from Fetch_Data_Stock_US_Daily import getStocksList
 
-def getSingleStockNewsArticle(er, stock, from_date, till_date, count):
+global_eventRegistry = None
+
+def getSingleStockNewsArticle(root_path, stock, from_date, till_date, count):
+    global global_eventRegistry
+
+    if global_eventRegistry is None:
+        config = configparser.ConfigParser()
+        config.read(root_path + "/" + "config.ini")
+        global_eventRegistry = EventRegistry(apiKey = config.get('EventRegistry', 'KEY'))
+
     start = from_date.split('-')
     start_y, start_m, start_d = int(start[0]), int(start[1]), int(start[2]) # starting date
 
@@ -20,9 +36,9 @@ def getSingleStockNewsArticle(er, stock, from_date, till_date, count):
         articleInfo = ArticleInfoFlags(
             bodyLen = -1, duplicateList = True, concepts = True, 
             categories = True, location = True, image = True))))
-    res = er.execQuery(q)
+    res = global_eventRegistry.execQuery(q)
 
-    df = pd.DataFrame(columns=['date', 'title', 'source', 'body', 'uri'])
+    df = pd.DataFrame(columns=['Date', 'Title', 'Source', 'Body', 'Uri'])
 
     if 'info' in res:
         print(stock, res["info"])
@@ -47,51 +63,44 @@ def getSingleStockNewsArticle(er, stock, from_date, till_date, count):
     return df
     
     
+def updateNewsArticle(root_path, symbol, from_date, till_date, count):
+    startTime = time.time()
+    message = ""
 
-def updateNewsArticle(er, dir, stock, from_date, till_date, count):
-    if os.path.exists(dir) == False: 
-        os.makedirs(dir)
-    
-    filename = dir + stock + '.csv'
+    if len(symbol) == 0: return startTime, message
 
     try:
-        df = pd.read_csv(filename)
+        df = queryNews(root_path, "NEWS_US", symbol)
     except:
         df = pd.DataFrame()
 
     if df.empty:
-        df = getSingleStockNewsArticle(er, stock, from_date, till_date, count)
-        df.set_index(['date'], inplace=True)
-        df.sort_index(ascending=True, inplace=True)
-        df.to_csv(filename)
+        df = getSingleStockNewsArticle(root_path, symbol, from_date, till_date, count)
+        storeNews(root_path, "NEWS_US", symbol, df)
         return 
         
-    first_date = pd.Timestamp(df['date'].iloc[0]).tz_localize(None)
-    last_date  = pd.Timestamp(df['date'].iloc[-1]).tz_localize(None)
+    first_date = pd.Timestamp(df['Date'].iloc[0]).tz_localize(None)
+    last_date  = pd.Timestamp(df['Date'].iloc[-1]).tz_localize(None)
 
     modified = False
 
     # require pre download
     if first_date > pd.Timestamp(from_date):
-        pre_df = getSingleStockNewsArticle(er, stock, from_date, first_date.strftime("%Y-%m-%d"), count)
-        print("pre_df", from_date, first_date.strftime("%Y-%m-%d"))
-        print(pre_df)
+        pre_df = getSingleStockNewsArticle(root_path, symbol, from_date, first_date.strftime("%Y-%m-%d"), count)
+        #print("pre_df", from_date, first_date.strftime("%Y-%m-%d"))
+        #print(pre_df)
         df = pd.concat([pre_df, df])
         modified = True
     
     if last_date < pd.Timestamp(till_date):
-        post_df = getSingleStockNewsArticle(er, stock, last_date.strftime("%Y-%m-%d"), till_date, count)
-        print("post_df", last_date.strftime("%Y-%m-%d"), till_date)
-        print(post_df)
+        post_df = getSingleStockNewsArticle(root_path, symbol, last_date.strftime("%Y-%m-%d"), till_date, count)
+        #print("post_df", last_date.strftime("%Y-%m-%d"), till_date)
+        #print(post_df)
         df = pd.concat([df, post_df])
         modified = True
 
     if modified:
-        df = df.drop_duplicates(subset=['uri'], keep='first')
-        df.set_index(['date'], inplace=True)
-        df.sort_index(ascending=True, inplace=True)
-        print("modified", df)
-        df.to_csv(filename)
+        storeNews(root_path, "NEWS_US", symbol, df)
 
     
 if __name__ == "__main__":
@@ -99,19 +108,27 @@ if __name__ == "__main__":
     pd.set_option('display.width',1000)
     warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
 
-    Config = configparser.ConfigParser()
-    Config.read("../../config.ini")
-    dir = Config.get('Paths', 'NEWS_US')
-
     #stocklist = getStocksList()
     stocklist = ['AMD', 'WDC', 'SINA', 'WB', 'CTRP', 'NTES', 'ATVI', 'FB', 'GLUU', 'NVDA', 'NFLX', 'GPRO',
                  'MRVL', 'SMCI', 'JD', 'INTC', 'AMZN', 'BIDU', 'BGNE', 'QIWI', 'XNET', 'MOMO', 'YY']
 
-    er = EventRegistry(apiKey = Config.get('EventRegistry', 'KEY'))
     now = datetime.datetime.now().strftime("%Y-%m-%d")
 
-    updateNewsArticle(er, dir, 'MEETME', "2017-06-01", now, 200)
+    from Start_DB_Server import StartServer, ShutdownServer
+    
+    # start database server (async)
+    thread = StartServer(root_path)
+    
+    # wait for db start, the standard procedure should listen to 
+    # the completed event of function "StartServer"
+    time.sleep(3)
+    
+    updateNewsArticle(root_path, 'MEETME', "2017-06-01", now, 200)
 
     # for symbol in stocklist:
-    #     updateNewsArticle(er, dir, symbol, "2017-05-01", now, 200)
+    #     updateNewsArticle(root_path, symbol, "2017-05-01", now, 200)
+
+    # stop database server (sync)
+    time.sleep(3)
+    ShutdownServer()
     

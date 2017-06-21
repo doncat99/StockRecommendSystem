@@ -1,13 +1,15 @@
-import sys
-sys.path.append('DataBase/')
-
-import os, time, datetime, requests, warnings, configparser
+import sys, os, time, datetime, requests, warnings, configparser
 import pandas as pd
 import numpy as np
 import tushare as ts
 import concurrent.futures
 from tqdm import tqdm
 
+cur_path = os.path.dirname(os.path.abspath(__file__))
+for _ in range(2):
+    root_path = cur_path[0:cur_path.rfind('/', 0, len(cur_path))]
+    cur_path = root_path
+sys.path.append(root_path + "/" + 'Source/DataBase/')
 from DB_API import queryStock, storeStock, queryStockList, storeStockList, queryStockPublishDay, storePublishDay
 
 def getStocksList(root_path):
@@ -105,7 +107,7 @@ def updateSingleStockData(root_path, symbol, force_check):
     till_date = (datetime.datetime.now()).strftime("%Y-%m-%d")
     end_date  = pd.Timestamp(till_date)
     
-    stockData, lastUpdateTime = queryStock(root_path, symbol, "STOCK_CHN")
+    stockData, lastUpdateTime = queryStock(root_path, "STOCK_CHN", symbol)
 
     if stockData.empty:
         stockData, message = getSingleStock(symbol)
@@ -187,4 +189,18 @@ if __name__ == "__main__":
     pd.set_option('display.width',1000)
     warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
 
-    updateStockData_CHN(True)
+    from Start_DB_Server import StartServer, ShutdownServer
+    
+    # start database server (async)
+    thread = StartServer(root_path)
+    
+    # wait for db start, the standard procedure should listen to 
+    # the completed event of function "StartServer"
+    time.sleep(3)
+    
+    updateStockData_CHN(root_path, True)
+
+    # stop database server (sync)
+    time.sleep(3)
+    ShutdownServer()
+    

@@ -15,7 +15,6 @@ if __name__ == "__main__":
     root_path = cur_path[0:cur_path.rfind('/', 0, len(cur_path))]
 
     # start database server (async)
-    
     thread = StartServer(root_path)
     
     # wait for db start, the standard procedure should listen to 

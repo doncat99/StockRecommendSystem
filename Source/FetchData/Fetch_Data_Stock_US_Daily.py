@@ -1,15 +1,18 @@
-import sys
-sys.path.append('Utility/')
-sys.path.append('DataBase/')
-import os, io, time, datetime, requests, warnings, configparser
+import sys, os, io, time, datetime, requests, warnings, configparser
 import pandas as pd
 import numpy as np
-import fix_yahoo_finance as yf
 from pandas.tseries.holiday import USFederalHolidayCalendar
 import concurrent.futures
 from tqdm import tqdm
 
+cur_path = os.path.dirname(os.path.abspath(__file__))
+for _ in range(2):
+    root_path = cur_path[0:cur_path.rfind('/', 0, len(cur_path))]
+    cur_path = root_path
+sys.path.append(root_path + "/" + 'Source/DataBase/')
+sys.path.append(root_path + "/" + 'Source/Utility/')
 from DB_API import queryStock, storeStock, queryStockList, storeStockList, queryStockPublishDay, storePublishDay
+import fix_yahoo_finance as yf
 
 def getStocksList(root_path):
     try:
@@ -113,7 +116,7 @@ def updateSingleStockData(root_path, symbol, from_date, till_date, force_check):
     if end_date == now_date: 
         end_date = end_date - datetime.timedelta(days=1)
      
-    stockData, lastUpdateTime = queryStock(root_path, symbol, "STOCK_US")
+    stockData, lastUpdateTime = queryStock(root_path, "STOCK_US", symbol)
 
     if stockData.empty:
         stockData, message = getSingleStock(symbol, from_date, till_date)
@@ -221,4 +224,19 @@ if __name__ == "__main__":
     warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
 
     now = datetime.datetime.now().strftime("%Y-%m-%d")
-    updateStockData_US("1990-01-01", now, True)
+    from Start_DB_Server import StartServer, ShutdownServer
+    
+    # start database server (async)
+    thread = StartServer(root_path)
+    
+    # wait for db start, the standard procedure should listen to 
+    # the completed event of function "StartServer"
+    time.sleep(3)
+    
+    updateStockData_US(root_path, "1990-01-01", now, True)
+
+    # stop database server (sync)
+    time.sleep(3)
+    ShutdownServer()
+
+    
