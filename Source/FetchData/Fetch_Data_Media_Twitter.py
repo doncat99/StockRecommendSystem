@@ -1,15 +1,19 @@
-import sys
-sys.path.append('../Utility/python-twitter')
-
-import os, time, datetime, pickle, re, configparser, pytz
+import sys, os, time, datetime, warnings, pickle, re, configparser, pytz
 import pandas as pd
 from collections import Counter
 from nltk.sentiment.vader import nltk
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 import concurrent.futures
 from tqdm import tqdm
-import twitter
 
+cur_path = os.path.dirname(os.path.abspath(__file__))
+for _ in range(2):
+    root_path = cur_path[0:cur_path.rfind('/', 0, len(cur_path))]
+    cur_path = root_path
+sys.path.append(root_path + "/" + 'Source/Utility/python-twitter/')
+sys.path.append(root_path + "/" + 'Source/DataBase/')
+import twitter
+from DB_API import queryTweets, storeTweets
 from Fetch_Data_Stock_US_Daily import getStocksList
   
 def getSentiments(df):
@@ -78,14 +82,26 @@ def getWordCount(df, symbol, stocklist):
         if len(top5) == 5: break
     return top5
 
-    #print(counts)
+gloabl_api = None
+def getSingleStockTwitter(api, symbol, from_date, till_date):
+    global gloabl_api
 
-def getSingleStockTwitter(api, dir, symbol, from_date, till_date):
+    if gloabl_api is None:
+        config = configparser.ConfigParser()
+        config.read(root_path + "/" + "config.ini")
+        api_key = config.get('Twitter', 'KEY')
+        api_secret = config.get('Twitter', 'SECRET')
+        access_token_key = config.get('Twitter', 'TOKEN_KEY')
+        access_token_secret = config.get('Twitter', 'TOKEN_SECRET')
+        http = config.get('Proxy', 'HTTP')
+        https = config.get('Proxy', 'HTTPS')
+        proxies = {'http': http, 'https': https}
+        gloabl_api = twitter.Api(api_key, api_secret, access_token_key, access_token_secret, timeout = 15, proxies=proxies)
+
     col = ['Date', 'ID', 'Text']
-    filename = dir + symbol + ".csv"
-    if os.path.exists(filename):
-        df = pd.read_csv(filename, usecols=col)
-    else:
+    try:
+        df = queryTweets(root_path, "TWITTER", symbol)
+    except:
         df = pd.DataFrame(columns=col)
     
     symbol = "$"+symbol
@@ -94,7 +110,7 @@ def getSingleStockTwitter(api, dir, symbol, from_date, till_date):
     yesterday = now - datetime.timedelta(days=1)
     yesterday = str(yesterday.year) + "-" + str(yesterday.month) + "-" + str(yesterday.day)
 
-    totalTweets = api.GetSearch(symbol + " stock", count=200, result_type="recent", lang='en', since=from_date, until=till_date)
+    totalTweets = gloabl_api.GetSearch(symbol + " stock", count=200, result_type="recent", lang='en', since=from_date, until=till_date)
     # print(idList)
     # print("idlist", len(idList))
 
@@ -135,49 +151,28 @@ def getSingleStockTwitter(api, dir, symbol, from_date, till_date):
             print("text", tweet.text)
             print("error", e)
 
-    df = df.drop_duplicates(keep='last')
-    df = df.sort_values(['Date'], ascending=[False]).reset_index(drop=True)
-    df.to_csv(filename)
+    storeTweets(root_path, "TWITTER", symbol, df)
     return df
 
 
-def updateSingleStockTwitterData(api, dir, symbol, from_date, till_date):
+def updateSingleStockTwitterData(root_path, symbol, from_date, till_date):
     startTime = time.time()
-    df = getSingleStockTwitter(api, dir, symbol, from_date, till_date)
+    df = getSingleStockTwitter(root_path, symbol, from_date, till_date)
     return startTime, df
 
 
-def updateStockTwitterData(symbols, from_date, till_date):
-    Config = configparser.ConfigParser()
-    Config.read("../../config.ini")
-    dir = Config.get('Paths', 'TWITTER')
-
-    if os.path.exists(dir) == False: 
-        os.makedirs(dir)
-
-    api_key = Config.get('Twitter', 'KEY')
-    api_secret = Config.get('Twitter', 'SECRET')
-    access_token_key = Config.get('Twitter', 'TOKEN_KEY')
-    access_token_secret = Config.get('Twitter', 'TOKEN_SECRET')
-
-    http = Config.get('Proxy', 'HTTP')
-    https = Config.get('Proxy', 'HTTPS')
-
-    proxies = {'http': http, 'https': https}
-
-    stocklist = getStocksList()['Symbol'].values.tolist()
-    
-    api = twitter.Api(api_key, api_secret, access_token_key, access_token_secret, timeout = 15, proxies=proxies)
+def updateStockTwitterData(root_path, symbols, from_date, till_date):
+    stocklist = getStocksList(root_path)['Symbol'].values.tolist()
     
     for symbol in symbols:
-        startTime, df = updateSingleStockTwitterData(api, dir, symbol, from_date, till_date)
+        startTime, df = updateSingleStockTwitterData(root_path, symbol, from_date, till_date)
         top5 = getWordCount(df, symbol, stocklist)
         print("hot correlation:", top5)
         getSentiments(df)
 
     # with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
     #     # Start the load operations and mark each future with its URL
-    #     future_to_stock = {executor.submit(updateSingleStockTwitterData, api, dir, symbol, from_date, till_date): symbol for symbol in symbols}
+    #     future_to_stock = {executor.submit(updateSingleStockTwitterData, root_path, symbol, from_date, till_date): symbol for symbol in symbols}
     #     for future in concurrent.futures.as_completed(future_to_stock):
     #         stock = future_to_stock[future]
     #         try:
@@ -192,24 +187,23 @@ def updateStockTwitterData(symbols, from_date, till_date):
 
 if __name__ == "__main__":
     #nltk.download()
-    #pd.set_option('precision', 3)
-    #pd.set_option('display.width',1000)
-    #warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
+    pd.set_option('precision', 3)
+    pd.set_option('display.width',1000)
+    warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
     
     now = datetime.datetime.now().strftime("%Y-%m-%d")
-    updateStockTwitterData(["NVDA"], "1990-01-01", now)
 
+    from Start_DB_Server import StartServer, ShutdownServer
+    
+    # start database server (async)
+    thread = StartServer(root_path)
+    
+    # wait for db start, the standard procedure should listen to 
+    # the completed event of function "StartServer"
+    time.sleep(3)
+    
+    updateStockTwitterData(root_path, ["NVDA"], "1990-01-01", now)
 
-    # date = datetime.datetime.strptime('Thu Apr 23 13:38:19 +0000 2009', '%a %b %d %H:%M:%S +0000 %Y').replace(tzinfo=pytz.UTC)
-    # print("Date", date)
-    # df.loc[len(df)] = [date]
-    # print(df)
-    # stockName = input("Please enter the ticker name for the desired stock (Example: For Nvidia type NVDA): ") 
-    # totalTweets = getStockTweets(stockName)
-    # # for tweet in totalTweets:
-    # #     print(tweet)
-    # #     break
-    # # return
-    # if len(totalTweets) == 0: return
-    # getWordCount(totalTweets)
-    # 
+    # stop database server (sync)
+    time.sleep(3)
+    ShutdownServer()

@@ -1,4 +1,4 @@
-import os, time, datetime, requests, warnings, configparser
+import sys, os, time, datetime, requests, warnings, configparser
 import pandas as pd
 from pandas.tseries.holiday import USFederalHolidayCalendar
 from pandas.tseries.offsets import CustomBusinessDay
@@ -6,7 +6,12 @@ from bs4 import BeautifulSoup
 import concurrent.futures
 from tqdm import tqdm
 
-URL_EARNING = 'http://www.nasdaq.com/earnings/earnings-calendar.aspx?date='
+cur_path = os.path.dirname(os.path.abspath(__file__))
+for _ in range(2):
+    root_path = cur_path[0:cur_path.rfind('/', 0, len(cur_path))]
+    cur_path = root_path
+sys.path.append(root_path + "/" + 'Source/DataBase/')
+from DB_API import queryEarnings, storeEarnings
 
 def getStockEarningByDate(date):
     repeat_times = 1
@@ -14,6 +19,7 @@ def getStockEarningByDate(date):
     
     for _ in range(repeat_times): 
         try:
+            URL_EARNING = 'http://www.nasdaq.com/earnings/earnings-calendar.aspx?date='
             resp = requests.get(URL_EARNING + date, timeout=15)
             return resp.text, message
         except Exception as e:
@@ -95,52 +101,50 @@ def convertEarningsToDataFrame(responseText):
 
     return df
 
-def updateEarningByDate(dir, date):
+def updateEarningByDate(root_path, date):
     startTime = time.time()
     date = date.strftime("%Y-%m-%d")
-    filename = dir + date + ".csv"
-
-    if os.path.exists(filename): return startTime
-
-    text, message = getStockEarningByDate(date)
-    if len(message) > 0: return startTime
+    try:
+        df = queryEarnings(root_path, "EARNING_US", date)
+        if df.empty == False: return startTime
+    except:
+        df = pd.DataFrame()
+    
+    if df.empty:
+        text, message = getStockEarningByDate(date)
+        if len(message) > 0: return startTime
 
     df = convertEarningsToDataFrame(text)
-    df.to_csv(filename)
+    storeEarnings(root_path, "EARNING_US", date, df)
     return startTime
 
 
 def updateEarnings_US(duedays):
-    Config = configparser.ConfigParser()
-    Config.read("../../config.ini")
-    dir = Config.get('Paths', 'EARNING_US')
-    
-    if os.path.exists(dir) == False: 
-        os.makedirs(dir)
 
     pbar = tqdm(total=len(duedays))
 
-    # for date in duedays:
-    #     startTime = updateEarningByDate(dir, date)
-    #     outMessage = '%-*s fetched in:  %.4s seconds' % (12, date, (time.time() - startTime))
-    #     pbar.set_description(outMessage)
-    #     pbar.update(1)
+    for date in duedays:
         
-    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-        # Start the load operations and mark each future with its URL
-        future_to_stock = {executor.submit(updateEarningByDate, dir, date): date for date in duedays}
-        for future in concurrent.futures.as_completed(future_to_stock):
-            date = future_to_stock[future]
-            try:
-                startTime = future.result()
-            except Exception as exc:
-                startTime = time.time()
-                log_errors.append('%r generated an exception: %s' % (stock, exc))
-                len_errors = len(log_errors)
-                if len_errors % 5 == 0: print(log_errors[(len_errors-5):]) 
-            outMessage = '%-*s fetched in:  %.4s seconds' % (12, date, (time.time() - startTime))
-            pbar.set_description(outMessage)
-            pbar.update(1)
+        startTime = updateEarningByDate(root_path, date)
+        outMessage = '%-*s fetched in:  %.4s seconds' % (12, date, (time.time() - startTime))
+        pbar.set_description(outMessage)
+        pbar.update(1)
+        
+    # with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+    #     # Start the load operations and mark each future with its URL
+    #     future_to_stock = {executor.submit(updateEarningByDate, root_path, date): date for date in duedays}
+    #     for future in concurrent.futures.as_completed(future_to_stock):
+    #         date = future_to_stock[future]
+    #         try:
+    #             startTime = future.result()
+    #         except Exception as exc:
+    #             startTime = time.time()
+    #             log_errors.append('%r generated an exception: %s' % (stock, exc))
+    #             len_errors = len(log_errors)
+    #             if len_errors % 5 == 0: print(log_errors[(len_errors-5):]) 
+    #         outMessage = '%-*s fetched in:  %.4s seconds' % (12, date, (time.time() - startTime))
+    #         pbar.set_description(outMessage)
+    #         pbar.update(1)
 
 
 if __name__ == "__main__":
@@ -153,5 +157,20 @@ if __name__ == "__main__":
     us_bd = CustomBusinessDay(calendar=USFederalHolidayCalendar())
     duedays = pd.DatetimeIndex(start=date_start, end=now, freq=us_bd)
 
+    from Start_DB_Server import StartServer, ShutdownServer
+    
+    # start database server (async)
+    thread = StartServer(root_path)
+    
+    # wait for db start, the standard procedure should listen to 
+    # the completed event of function "StartServer"
+    time.sleep(3)
+    
     updateEarnings_US(duedays)
+
+    # stop database server (sync)
+    time.sleep(3)
+    ShutdownServer()
+
+    
 

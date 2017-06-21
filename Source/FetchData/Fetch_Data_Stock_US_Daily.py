@@ -1,4 +1,4 @@
-import sys, os, io, time, datetime, requests, warnings, configparser
+import sys, os, io, time, datetime, requests, warnings
 import pandas as pd
 import numpy as np
 from pandas.tseries.holiday import USFederalHolidayCalendar
