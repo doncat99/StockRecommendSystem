@@ -157,20 +157,26 @@ if __name__ == "__main__":
     us_bd = CustomBusinessDay(calendar=USFederalHolidayCalendar())
     duedays = pd.DatetimeIndex(start=date_start, end=now, freq=us_bd)
 
-    from Start_DB_Server import StartServer, ShutdownServer
-    
-    # start database server (async)
-    thread = StartServer(root_path)
-    
-    # wait for db start, the standard procedure should listen to 
-    # the completed event of function "StartServer"
-    time.sleep(3)
+    config = configparser.ConfigParser()
+    config.read(root_path + "/" + "config.ini")
+    storeType = int(config.get('Setting', 'StoreType'))
+
+    if storeType == 1:
+        from Start_DB_Server import StartServer, ShutdownServer
+        # start database server (async)
+        thread = StartServer(root_path)
+        
+        # wait for db start, the standard procedure should listen to 
+        # the completed event of function "StartServer"
+        time.sleep(3)
     
     updateEarnings_US(duedays)
 
-    # stop database server (sync)
-    time.sleep(3)
-    ShutdownServer()
+    if storeType == 1:
+        # stop database server (sync)
+        time.sleep(3)
+        ShutdownServer()
+
 
     
 

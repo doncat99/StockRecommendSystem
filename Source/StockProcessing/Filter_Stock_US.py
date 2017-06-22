@@ -186,15 +186,21 @@ if __name__ == "__main__":
     warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
 
     now = datetime.datetime.now().strftime("%Y-%m-%d")
-    
-    from Start_DB_Server import StartServer, ShutdownServer
 
-    thread = StartServer(root_path)
+    config = configparser.ConfigParser()
+    config.read(root_path + "/" + "config.ini")
+    storeType = int(config.get('Setting', 'StoreType'))
+
+    if storeType == 1:
+        from Start_DB_Server import StartServer, ShutdownServer
+        # start database server (async)
+        thread = StartServer(root_path)
+        
+        # wait for db start, the standard procedure should listen to 
+        # the completed event of function "StartServer"
+        time.sleep(3)
     
-    # wait for db start, the standard procedure should listen to 
-    # the completed event of function "StartServer"
-    time.sleep(3)
-    
+    print("updating data...")
     #updateStockData_US(root_path, "1990-01-01", now)
     
     print("Processing data...")
@@ -214,6 +220,8 @@ if __name__ == "__main__":
     print("week_selection", len(week_selection), week_selection)
     print("month_selection", len(month_selection), month_selection)
 
-    # stop database server (sync)
-    time.sleep(3)
-    ShutdownServer()
+    if storeType == 1:
+        # stop database server (sync)
+        time.sleep(3)
+        ShutdownServer()
+

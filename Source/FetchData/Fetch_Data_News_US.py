@@ -114,21 +114,25 @@ if __name__ == "__main__":
 
     now = datetime.datetime.now().strftime("%Y-%m-%d")
 
-    from Start_DB_Server import StartServer, ShutdownServer
-    
-    # start database server (async)
-    thread = StartServer(root_path)
-    
-    # wait for db start, the standard procedure should listen to 
-    # the completed event of function "StartServer"
-    time.sleep(3)
+    config = configparser.ConfigParser()
+    config.read(root_path + "/" + "config.ini")
+    storeType = int(config.get('Setting', 'StoreType'))
+
+    if storeType == 1:
+        from Start_DB_Server import StartServer, ShutdownServer
+        # start database server (async)
+        thread = StartServer(root_path)
+        
+        # wait for db start, the standard procedure should listen to 
+        # the completed event of function "StartServer"
+        time.sleep(3)
     
     updateNewsArticle(root_path, 'MEETME', "2017-06-01", now, 200)
 
-    # for symbol in stocklist:
-    #     updateNewsArticle(root_path, symbol, "2017-05-01", now, 200)
-
-    # stop database server (sync)
-    time.sleep(3)
-    ShutdownServer()
+    if storeType == 1:
+        # stop database server (sync)
+        time.sleep(3)
+        ShutdownServer()
+    
+ 
     
