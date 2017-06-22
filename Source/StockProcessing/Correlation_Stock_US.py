@@ -1,55 +1,53 @@
-import sys
-sys.path.append('../FetchData/')
-
-import os, time, datetime, warnings, configparser
+import sys, os, time, datetime, warnings, configparser
 import pandas as pd
 import concurrent.futures
 from itertools import combinations
 from tqdm import tqdm
 
+cur_path = os.path.dirname(os.path.abspath(__file__))
+for _ in range(2):
+    root_path = cur_path[0:cur_path.rfind('/', 0, len(cur_path))]
+    cur_path = root_path
+sys.path.append(root_path + "/" + 'Source/FetchData/')
+sys.path.append(root_path + "/" + 'Source/DataBase/')
+
 from Fetch_Data_Stock_US_Daily import updateStockData_US, getStocksList
+from DB_API import queryStock, queryCoorelation, storeCoorelation
 
 
-def get_single_stock_data(ticker, dates_range, stock_folder):
-    filename = stock_folder + ticker + '.csv'
-    if os.path.exists(filename) == False: 
-        return pd.DataFrame()
-
-    df = pd.read_csv(filename, index_col=["Date"], parse_dates=['Date'], usecols=['Date', 'Adj Close'])
+def get_single_stock_data(root_path, symbol, dates_range):
+    
+    df, lastUpdateTime = queryStock(root_path, "STOCK_US", symbol)
+    if df.empty: return pd.DataFrame()
+    
+    df.index = pd.to_datetime(df.index)
+    #df = pd.read_csv(filename, index_col=["Date"], parse_dates=['Date'], usecols=['Date', 'Adj Close'])
     df = df[df.index.isin(dates_range)].sort_index()
     df.loc[:, 'Close_Shift_1'] = df.loc[:, 'Adj Close'].shift(1)
+    
     df.loc[:, 'Return'] = df.loc[:, 'Adj Close']/df.loc[:, 'Close_Shift_1'] - 1
     return df
     
 
 
-def get_all_stocks_correlation(dates_range):
-    Config = configparser.ConfigParser()
-    Config.read("../../config.ini")
-    dir_stock = Config.get('Paths', 'STOCK_US')
-    dir_result = Config.get('Paths', 'RESULT_COORELATION')
-
-    filename = dir_result + "us_company_coorelation.csv"
-
-    if os.path.exists(dir_stock) == False: 
-        os.makedirs(dir_stock)
-
-    if os.path.exists(dir_result) == False: 
-        os.makedirs(dir_result)
-
-    if os.path.exists(filename): 
-        return pd.read_csv(filename, index_col=0)
-
+def get_all_stocks_correlation(root_path, dates_range):
     startTime = time.time()
 
-    symbols = getStocksList()['Symbol'].values.tolist()
+    try:
+        df = queryCoorelation(root_path, "RESULT_COORELATION")
+    except:
+        df = pd.DataFrame()
+
+    if df.empty == False: return df
+
+    symbols = getStocksList(root_path)['Symbol'].values.tolist()
 
     stockData = []
     stockList = []
     print("get stock data...")
     #count = 10
     for symbol in symbols:
-        df = get_single_stock_data(symbol, dates_range, dir_stock)
+        df = get_single_stock_data(root_path, symbol, dates_range)
         if df.empty: continue
         stockData.append(df['Return'])
         stockList.append(symbol)
@@ -76,10 +74,9 @@ def get_all_stocks_correlation(dates_range):
     df_us_company_pairs = pd.DataFrame(list(us_company_pairs))
     df_us_company_pairs.columns = ['Company1', 'Company2']
     df_us_company_pairs.loc[:, 'Correlation'] = pd.Series(pairwise_correlations).T
-    df_us_company_pairs = df_us_company_pairs.sort_values(['Correlation'], ascending=[False])#.reset_index(drop=True)
+    df_us_company_pairs = df_us_company_pairs.sort_values(['Correlation'], ascending=[False]).reset_index(drop=True)#.reset_index(drop=True)
 
-    
-    df_us_company_pairs.to_csv(filename, index=False)
+    storeCoorelation(root_path, "RESULT_COORELATION", df_us_company_pairs)
     
     #print(df_us_company_pairs.head(30))
 
@@ -98,10 +95,29 @@ if __name__ == "__main__":
     start_date = "2016-01-03"
     end_date = "2017-06-10"
     
-    print("Processing data...")
-    df = get_all_stocks_correlation(pd.date_range(start_date, end_date))
+    config = configparser.ConfigParser()
+    config.read(root_path + "/" + "config.ini")
+    storeType = int(config.get('Setting', 'StoreType'))
+
+    if storeType == 1:
+        from Start_DB_Server import StartServer, ShutdownServer
+        # start database server (async)
+        thread = StartServer(root_path)
+        
+        # wait for db start, the standard procedure should listen to 
+        # the completed event of function "StartServer"
+        time.sleep(3)
+    
+    df = get_all_stocks_correlation(root_path, pd.date_range(start_date, end_date))
 
     df_amd = df[df['Company1'] == 'AMD'].reset_index(drop=True)
     print(df_amd.head(30))
+
+    if storeType == 1:
+        # stop database server (sync)
+        time.sleep(3)
+        ShutdownServer()
+    print("Processing data...")
+    
 
  

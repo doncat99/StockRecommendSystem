@@ -468,3 +468,74 @@ def storeTweets(root_path, database, symbol, df):
             os.makedirs(csv_dir)
         filename = csv_dir + date + '.csv'
         df.to_csv(filename)
+
+
+def queryCoorelation(root_path, database):
+    global global_config
+    global global_store
+
+    if global_config is None:
+        global_config = configparser.ConfigParser()
+        global_config.read(root_path + "/" + "config.ini")
+    storeType = int(global_config.get('Setting', 'StoreType'))
+    stockCoorelation = pd.DataFrame()
+
+    if storeType == 1:
+        if global_store is None:
+            from arctic import Arctic
+            global_store = Arctic('localhost')
+
+        try:
+            library = global_store[database]
+        except:
+            global_store.initialize_library(database)
+            library = global_store[database]
+
+        Key = "us_company_coorelation"
+        try:
+            item = library.read(Key)
+            return item.data
+        except Exception as e:
+            return stockCoorelation
+
+    if storeType == 2:
+        dir = root_path + "/" + global_config.get('Paths', database)
+        filename = dir + Key + ".csv"
+        stockCoorelation = pd.read_csv(filename, index_col=0)
+        return stockCoorelation
+
+    return stockCoorelation
+
+
+def storeCoorelation(root_path, database, df):
+    global global_config
+    global global_store
+
+    if global_config is None:
+        global_config = configparser.ConfigParser()
+        global_config.read(root_path + "/" + "config.ini")
+
+    now_date = datetime.datetime.now().strftime("%Y-%m-%d")
+    storeType = int(global_config.get('Setting', 'StoreType'))
+
+    if storeType == 1:
+        if global_store is None:
+            from arctic import Arctic
+            global_store = Arctic('localhost')
+
+        try:
+            library = global_store[database]
+        except:
+            global_store.initialize_library(database)
+            library = global_store[database]
+
+        Key = "us_company_coorelation"
+        #library.delete(symbol)
+        library.write(Key, df)
+
+    if storeType == 2:
+        csv_dir = root_path + "/" + global_config.get('Paths', database)
+        if os.path.exists(csv_dir) == False:
+            os.makedirs(csv_dir)
+        filename = csv_dir + Key + '.csv'
+        df.to_csv(filename)
