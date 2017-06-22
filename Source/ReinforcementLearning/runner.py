@@ -1,4 +1,4 @@
-import sys, os, configparser
+import sys, os, time, configparser
 from environment import Simulator
 from agent import PolicyGradientAgent, CriticsAgent
 import datetime as dt
