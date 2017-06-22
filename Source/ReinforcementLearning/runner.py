@@ -1,7 +1,14 @@
+import sys, os, configparser
 from environment import Simulator
 from agent import PolicyGradientAgent, CriticsAgent
 import datetime as dt
 import numpy as np
+
+cur_path = os.path.dirname(os.path.abspath(__file__))
+for _ in range(2):
+    root_path = cur_path[0:cur_path.rfind('/', 0, len(cur_path))]
+    cur_path = root_path
+sys.path.append(root_path + "/" + 'Source/DataBase/')
 
 def random_run():
     actions = ["buy", "sell", "hold"]
@@ -44,4 +51,23 @@ def rf_run():
             break
 
 if __name__ == '__main__':
+    config = configparser.ConfigParser()
+    config.read(root_path + "/" + "config.ini")
+    storeType = int(config.get('Setting', 'StoreType'))
+
+    if storeType == 1:
+        from Start_DB_Server import StartServer, ShutdownServer
+        # start database server (async)
+        thread = StartServer(root_path)
+        
+        # wait for db start, the standard procedure should listen to 
+        # the completed event of function "StartServer"
+        time.sleep(3)
+    
     rf_run()
+
+    if storeType == 1:
+        # stop database server (sync)
+        time.sleep(3)
+        ShutdownServer()
+    

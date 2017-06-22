@@ -1,27 +1,29 @@
-import configparser
+import sys, os
 import numpy as np
 import pandas as pd
 import datetime as dt
-import csv
+
+cur_path = os.path.dirname(os.path.abspath(__file__))
+for _ in range(2):
+    root_path = cur_path[0:cur_path.rfind('/', 0, len(cur_path))]
+    cur_path = root_path
+sys.path.append(root_path + "/" + 'Source/DataBase/')
+from DB_API import queryStock
 
 verbose = False
 '''
 # a simulator for wrapping the learner into a time frame of data features
 '''
 def get_data(symbols, dates_range, update):
-    Config = configparser.ConfigParser()
-    Config.read("../../config.ini")
-    dir = Config.get('Paths', 'STOCK_US')
-
     df = pd.DataFrame()
 
     symbols.append('SPY')
     symbols.append('^VIX')
 
     for symbol in symbols:
-        filename = dir + symbol + '.csv'
+        data, lastUpdateTime = queryStock(root_path, "STOCK_US", symbol)
+        data.index = pd.to_datetime(data.index)
 
-        data = pd.read_csv(filename, index_col=["Date"], parse_dates=['Date'])
         if df.empty:
             if 'Close' in data:
                 df[symbol] = data['Close']
