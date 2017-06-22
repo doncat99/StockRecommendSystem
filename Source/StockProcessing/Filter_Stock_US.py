@@ -1,14 +1,19 @@
-import sys
-sys.path.append('../FetchData/')
-
-import os, time, datetime, warnings, configparser
+import sys, os, time, datetime, warnings, configparser
 import pandas as pd
 import concurrent.futures
 
 from pandas.tseries.offsets import CustomBusinessMonthBegin
 from pandas.tseries.holiday import USFederalHolidayCalendar
-from Fetch_Data_Stock_US_Daily import updateStockData_US, getStocksList
 
+cur_path = os.path.dirname(os.path.abspath(__file__))
+for _ in range(2):
+    root_path = cur_path[0:cur_path.rfind('/', 0, len(cur_path))]
+    cur_path = root_path
+sys.path.append(root_path + "/" + 'Source/FetchData/')
+sys.path.append(root_path + "/" + 'Source/DataBase/')
+
+from Fetch_Data_Stock_US_Daily import updateStockData_US, getStocksList
+from DB_API import queryStock
 
 def convert_week_based_data(df):
     weekly_data = df.resample('W').agg({
@@ -70,32 +75,38 @@ def judge_rule(ticker, dataset, str):
 
     return False
 
-def get_single_stock_data(ticker, stock_folder):
+def get_single_stock_data(root_path, symbol):
     '''
     All data is from quandl wiki dataset
     Feature set: [Open  High    Low  Close    Volume  Ex-Dividend  Split Ratio Adj. Open  Adj. High  Adj. Low
     Adj. Close  Adj. Volume]
     '''
-    file_name = stock_folder + ticker + '.csv'
-    COLUMNS = ['Date', 'Open', 'High', 'Low', 'Close', 'Volume']
-    RENAME_COLUMNS = ['date', 'open', 'high', 'low', 'close', 'volume']
+    # file_name = stock_folder + ticker + '.csv'
+    # COLUMNS = ['Date', 'Open', 'High', 'Low', 'Close', 'Volume']
+    # RENAME_COLUMNS = ['date', 'open', 'high', 'low', 'close', 'volume']
 
-    if os.path.exists(file_name) == False: 
-        print("get stock: " + ticker + " failed")
-        return pd.DataFrame()
+    # if os.path.exists(file_name) == False: 
+    #     print("get stock: " + ticker + " failed")
+    #     return pd.DataFrame()
 
-    df = pd.read_csv(
-        file_name,
-        #names=COLUMNS,
-        skipinitialspace=True,
-        engine='python',
-        index_col=['Date'],
-        #usecols=COLUMNS,
-        parse_dates=['Date'],
-        #skiprows=1,
-        memory_map=True,
-        #chunksize=300,
-    ).sort_index()
+    # df = pd.read_csv(
+    #     file_name,
+    #     #names=COLUMNS,
+    #     skipinitialspace=True,
+    #     engine='python',
+    #     index_col=['Date'],
+    #     #usecols=COLUMNS,
+    #     parse_dates=['Date'],
+    #     #skiprows=1,
+    #     memory_map=True,
+    #     #chunksize=300,
+    # ).sort_index()
+    df, lastUpdateTime = queryStock(root_path, "STOCK_US", symbol)
+    df.index = pd.to_datetime(df.index)
+
+    if df.empty: 
+        print("empty df", symbol)
+        return df
 
     if 'Adj Close' in df:
         close = 'Adj Close'
@@ -105,7 +116,7 @@ def get_single_stock_data(ticker, stock_folder):
 
     return df
 
-def inner_processing_stock_data(ticker, input_data, day_selection, week_selection, month_selection):
+def inner_processing_stock_data(symbol, input_data, day_selection, week_selection, month_selection):
     # start_date = pd.Timestamp(paras.start_date)
     # end_date   = pd.Timestamp(paras.end_date)
     # input_data = input_data.loc[(input_data.index >= start_date) & (input_data.index <= end_date)]
@@ -117,32 +128,28 @@ def inner_processing_stock_data(ticker, input_data, day_selection, week_selectio
     #week_dataset = StockDataFrame.retype(week_data)
     #month_dataset = StockDataFrame.retype(month_data)
 
-    if judge_rule(ticker, day_data, "day based"):
-        day_selection.append(ticker)
+    if judge_rule(symbol, day_data, "day based"):
+        day_selection.append(symbol)
 
-    if judge_rule(ticker, week_data, "week based"):
-        week_selection.append(ticker)
+    if judge_rule(symbol, week_data, "week based"):
+        week_selection.append(symbol)
 
-    if judge_rule(ticker, month_data, "month based"):
-        month_selection.append(ticker)
+    if judge_rule(symbol, month_data, "month based"):
+        month_selection.append(symbol)
 
-def processing_stock_data(dir, ticker, day_selection, week_selection, month_selection):
+def processing_stock_data(root_path, symbol, day_selection, week_selection, month_selection):
     startTime = time.time()
-    data = get_single_stock_data(ticker, dir)
+    data = get_single_stock_data(root_path, symbol)
     if data.empty: return startTime
     if len(data) < 100: return startTime
     
-    inner_processing_stock_data(ticker, data, day_selection, week_selection, month_selection)
+    inner_processing_stock_data(symbol, data, day_selection, week_selection, month_selection)
 
     return startTime
 
 
-def get_all_stocks_data():
-    Config = configparser.ConfigParser()
-    Config.read("../../config.ini")
-    dir = Config.get('Paths', 'STOCK_US')
-
-    stocklist = getStocksList()['Symbol'].values.tolist()
+def get_all_stocks_data(root_path):
+    stocklist = getStocksList(root_path)['Symbol'].values.tolist()
 
     day_selection = []
     week_selection = []
@@ -150,13 +157,13 @@ def get_all_stocks_data():
 
     startTime = time.time()
     for stock in stocklist:
-        processing_stock_data(dir, stock, day_selection, week_selection, month_selection)
+        processing_stock_data(root_path, stock, day_selection, week_selection, month_selection)
     print('total processing in:  %.4s seconds' % ((time.time() - startTime)))
 
     # startTime = time.time()
     # with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
     #     # Start the load operations and mark each future with its URL
-    #     future_to_stock = {executor.submit(processing_stock_data, dir, stock, week_selection, month_selection): stock for stock in stocklist}
+    #     future_to_stock = {executor.submit(processing_stock_data, root_path, stock, week_selection, month_selection): stock for stock in stocklist}
     #     for future in concurrent.futures.as_completed(future_to_stock):
     #         stock = future_to_stock[future]
     #         try:
@@ -179,10 +186,19 @@ if __name__ == "__main__":
     warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
 
     now = datetime.datetime.now().strftime("%Y-%m-%d")
-    updateStockData_US([], "1990-01-01", now, True)
+    
+    from Start_DB_Server import StartServer, ShutdownServer
+
+    thread = StartServer(root_path)
+    
+    # wait for db start, the standard procedure should listen to 
+    # the completed event of function "StartServer"
+    time.sleep(3)
+    
+    #updateStockData_US(root_path, "1990-01-01", now)
     
     print("Processing data...")
-    day_selection, week_selection, month_selection = get_all_stocks_data()
+    day_selection, week_selection, month_selection = get_all_stocks_data(root_path)
     day_week_selection = list(set(day_selection) & set(week_selection))
     week_month_selection = list(set(week_selection) & set(month_selection))
     day_month_selection = list(set(day_selection) & set(month_selection))
@@ -197,3 +213,7 @@ if __name__ == "__main__":
     print("day_selection", len(day_selection), day_selection)
     print("week_selection", len(week_selection), week_selection)
     print("month_selection", len(month_selection), month_selection)
+
+    # stop database server (sync)
+    time.sleep(3)
+    ShutdownServer()
