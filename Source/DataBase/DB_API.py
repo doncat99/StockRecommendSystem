@@ -39,7 +39,7 @@ def queryStockList(root_path, database):
 
     if storeType == 2:
         csv_dir = root_path + "/" + global_config.get('Paths', database) + global_config.get('Paths', 'STOCK_SHARE')
-        filename = csv_dir + 'StockList.csv'
+        filename = csv_dir + stockListKey + '.csv'
         stockList = pd.read_csv(filename, index_col=0)
         #stockList = stockList[~stockList.Symbol.isin(symbol_exception)]
         return stockList
@@ -76,7 +76,7 @@ def storeStockList(root_path, database, df):
         csv_dir = root_path + "/" + global_config.get('Paths', database) + global_config.get('Paths', 'STOCK_SHARE')
         if os.path.exists(csv_dir) == False:
             os.makedirs(csv_dir)
-        filename = csv_dir + 'StockList.csv'
+        filename = csv_dir + stockListKey + '.csv'
         df.to_csv(filename)
 
 
@@ -116,7 +116,7 @@ def queryStockPublishDay(root_path, database, symbol):
 
     if storeType == 2:
         csv_dir = root_path + "/" + global_config.get('Paths', database) + global_config.get('Paths', 'STOCK_SHARE')
-        filename = csv_dir + 'StockPublishDay.csv'
+        filename = csv_dir + PublishDayKey + '.csv'
         if os.path.exists(filename):
             df = pd.read_csv(filename)
             publishDay = df[df['Code'] == symbol]
@@ -157,7 +157,7 @@ def storePublishDay(root_path, database, symbol, date):
         csv_dir = root_path + "/" + global_config.get('Paths', database) + global_config.get('Paths', 'STOCK_SHARE')
         if os.path.exists(csv_dir) == False:
             os.makedirs(csv_dir)
-        filename = csv_dir + 'StockPublishDay.csv'
+        filename = csv_dir + PublishDayKey + '.csv'
         if os.path.exists(filename):
             df = pd.read_csv(filename, index_col=["index"])
             publishDate = df[df['Code'] == symbol]
@@ -480,6 +480,8 @@ def queryCoorelation(root_path, database):
     storeType = int(global_config.get('Setting', 'StoreType'))
     stockCoorelation = pd.DataFrame()
 
+    Key = "us_company_coorelation"
+
     if storeType == 1:
         if global_store is None:
             from arctic import Arctic
@@ -491,7 +493,6 @@ def queryCoorelation(root_path, database):
             global_store.initialize_library(database)
             library = global_store[database]
 
-        Key = "us_company_coorelation"
         try:
             item = library.read(Key)
             return item.data
@@ -518,6 +519,8 @@ def storeCoorelation(root_path, database, df):
     now_date = datetime.datetime.now().strftime("%Y-%m-%d")
     storeType = int(global_config.get('Setting', 'StoreType'))
 
+    Key = "us_company_coorelation"
+
     if storeType == 1:
         if global_store is None:
             from arctic import Arctic
@@ -529,7 +532,6 @@ def storeCoorelation(root_path, database, df):
             global_store.initialize_library(database)
             library = global_store[database]
 
-        Key = "us_company_coorelation"
         #library.delete(symbol)
         library.write(Key, df)
 
