@@ -34,7 +34,7 @@ def get_all_stocks_correlation(root_path, dates_range):
     startTime = time.time()
 
     try:
-        df = queryCoorelation(root_path, "RESULT_COORELATION")
+        df = queryCoorelation(root_path, "COORELATION_US")
     except:
         df = pd.DataFrame()
 
@@ -76,7 +76,7 @@ def get_all_stocks_correlation(root_path, dates_range):
     df_us_company_pairs.loc[:, 'Correlation'] = pd.Series(pairwise_correlations).T
     df_us_company_pairs = df_us_company_pairs.sort_values(['Correlation'], ascending=[False]).reset_index(drop=True)#.reset_index(drop=True)
 
-    storeCoorelation(root_path, "RESULT_COORELATION", df_us_company_pairs)
+    storeCoorelation(root_path, "COORELATION_US", df_us_company_pairs)
     
     #print(df_us_company_pairs.head(30))
 
