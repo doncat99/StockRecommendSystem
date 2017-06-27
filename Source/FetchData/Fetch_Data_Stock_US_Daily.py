@@ -1,4 +1,4 @@
-import sys, os, io, time, datetime, requests, warnings
+import sys, os, io, time, datetime, requests, warnings, configparser
 import pandas as pd
 import numpy as np
 from pandas.tseries.holiday import USFederalHolidayCalendar
@@ -13,6 +13,7 @@ sys.path.append(root_path + "/" + 'Source/DataBase/')
 sys.path.append(root_path + "/" + 'Source/Utility/')
 from DB_API import queryStock, storeStock, queryStockList, storeStockList, queryStockPublishDay, storePublishDay
 import fix_yahoo_finance as yf
+
 
 def getStocksList(root_path):
     try:
@@ -117,7 +118,7 @@ def updateSingleStockData(root_path, symbol, from_date, till_date, force_check):
         end_date = end_date - datetime.timedelta(days=1)
      
     stockData, lastUpdateTime = queryStock(root_path, "STOCK_US", symbol)
-
+    
     if stockData.empty:
         stockData, message = getSingleStock(symbol, from_date, till_date)
         if stockData.empty == False:
@@ -134,7 +135,7 @@ def updateSingleStockData(root_path, symbol, from_date, till_date, force_check):
 
     first_date = pd.Timestamp(stockData.index[0])
     last_date  = pd.Timestamp(stockData.index[-1])
-    
+
     if start_date < first_date:
         to_date = (first_date - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
         if judgeNeedPreDownload(root_path, symbol, first_date, from_date, to_date):
@@ -186,29 +187,29 @@ def updateStockData_US(root_path, from_date, till_date, force_check = False):
     log_update = []
 
     # # debug only
-    # for stock in symbols:
-    #     startTime, message = updateSingleStockData(root_path, stock, from_date, till_date, force_check)
-    #     outMessage = '%-*s fetched in:  %.4s seconds' % (6, stock, (time.time() - startTime))
-    #     pbar.set_description(outMessage)
-    #     pbar.update(1)
+    for stock in symbols:
+        startTime, message = updateSingleStockData(root_path, stock, from_date, till_date, force_check)
+        outMessage = '%-*s fetched in:  %.4s seconds' % (6, stock, (time.time() - startTime))
+        pbar.set_description(outMessage)
+        pbar.update(1)
     
-    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-        # Start the load operations and mark each future with its URL
-        future_to_stock = {executor.submit(updateSingleStockData, root_path, symbol, from_date, till_date, force_check): symbol for symbol in symbols}
-        for future in concurrent.futures.as_completed(future_to_stock):
-            stock = future_to_stock[future]
-            try:
-                startTime, message = future.result()
-            except Exception as exc:
-                startTime = time.time()
-                log_errors.append('%r generated an exception: %s' % (stock, exc))
-                len_errors = len(log_errors)
-                if len_errors % 5 == 0: print(log_errors[(len_errors-5):]) 
-            else:
-                if len(message) > 0: log_update.append(message)
-            outMessage = '%-*s fetched in:  %.4s seconds' % (6, stock, (time.time() - startTime))
-            pbar.set_description(outMessage)
-            pbar.update(1)
+    # with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+    #     # Start the load operations and mark each future with its URL
+    #     future_to_stock = {executor.submit(updateSingleStockData, root_path, symbol, from_date, till_date, force_check): symbol for symbol in symbols}
+    #     for future in concurrent.futures.as_completed(future_to_stock):
+    #         stock = future_to_stock[future]
+    #         try:
+    #             startTime, message = future.result()
+    #         except Exception as exc:
+    #             startTime = time.time()
+    #             log_errors.append('%r generated an exception: %s' % (stock, exc))
+    #             len_errors = len(log_errors)
+    #             if len_errors % 5 == 0: print(log_errors[(len_errors-5):]) 
+    #         else:
+    #             if len(message) > 0: log_update.append(message)
+    #         outMessage = '%-*s fetched in:  %.4s seconds' % (6, stock, (time.time() - startTime))
+    #         pbar.set_description(outMessage)
+    #         pbar.update(1)
     
     pbar.close()
     if len(log_errors) > 0:
@@ -236,13 +237,13 @@ if __name__ == "__main__":
         
         # wait for db start, the standard procedure should listen to 
         # the completed event of function "StartServer"
-        time.sleep(3)
+        time.sleep(5)
     
     updateStockData_US(root_path, "1990-01-01", now, True)
 
     if storeType == 1:
         # stop database server (sync)
-        time.sleep(3)
+        time.sleep(5)
         ShutdownServer()
 
 

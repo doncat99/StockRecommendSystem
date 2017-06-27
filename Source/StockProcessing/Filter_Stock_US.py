@@ -198,10 +198,10 @@ if __name__ == "__main__":
         
         # wait for db start, the standard procedure should listen to 
         # the completed event of function "StartServer"
-        time.sleep(3)
+        time.sleep(5)
     
     print("updating data...")
-    #updateStockData_US(root_path, "1990-01-01", now)
+    updateStockData_US(root_path, "1990-01-01", now)
     
     print("Processing data...")
     day_selection, week_selection, month_selection = get_all_stocks_data(root_path)
@@ -222,6 +222,6 @@ if __name__ == "__main__":
 
     if storeType == 1:
         # stop database server (sync)
-        time.sleep(3)
+        time.sleep(5)
         ShutdownServer()
 

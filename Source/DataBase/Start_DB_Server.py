@@ -11,7 +11,8 @@ def DoStartServer(root_path):
     if os.path.exists(database_path) == False: 
         os.makedirs(database_path)
 
-    call(["mongod", "--quiet", "--dbpath", database_path])
+    call(["mongod", "--quiet", "--repair", "--dbpath", database_path, "--storageEngine", "wiredTiger"])
+    #call(["mongod", "--quiet", "--dbpath", database_path])
 
 def StartServer(root_path):
     thread = threading.Thread(target=DoStartServer, args=(root_path, ))
@@ -32,5 +33,6 @@ if __name__ == "__main__":
         cur_path = root_path
 
     StartServer(root_path)
-    time.sleep(2)
-    ShutdownServer()
+    time.sleep(5)
+    
+    #ShutdownServer()

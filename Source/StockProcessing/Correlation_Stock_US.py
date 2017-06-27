@@ -106,7 +106,7 @@ if __name__ == "__main__":
         
         # wait for db start, the standard procedure should listen to 
         # the completed event of function "StartServer"
-        time.sleep(3)
+        time.sleep(5)
     
     df = get_all_stocks_correlation(root_path, pd.date_range(start_date, end_date))
 
@@ -115,7 +115,7 @@ if __name__ == "__main__":
 
     if storeType == 1:
         # stop database server (sync)
-        time.sleep(3)
+        time.sleep(5)
         ShutdownServer()
     print("Processing data...")
     

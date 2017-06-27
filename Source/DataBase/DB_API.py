@@ -1,111 +1,93 @@
+
 import os, datetime, configparser
 import pandas as pd
+from bson import json_util
 
 global_config = None
-global_store = None
+global_client = None
 
-def queryStockList(root_path, database):
+def getConfig(root_path):
     global global_config
-    global global_store
-
-    #symbol_exception = ['AXON', 'CTT', 'ARL']
-
     if global_config is None:
         global_config = configparser.ConfigParser()
         global_config.read(root_path + "/" + "config.ini")
-    storeType = int(global_config.get('Setting', 'StoreType'))
+    return global_config
+
+def getClient():
+    global global_client
+    from pymongo import MongoClient
+    if global_client is None: global_client = MongoClient('localhost', 27017)
+    return global_client
+
+def getCollection(database, collection):
+    client = getClient()
+    db = client[database]
+    return db[collection]
+
+def readFromCollection(collection):
+    return pd.DataFrame(list(collection.find()))
+
+def writeToCollection(collection, df):
+    jsonStrings = df.to_json(orient='records')
+    bsonStrings = json_util.loads(jsonStrings)
+    collection.insert_many(bsonStrings)
+
+
+def queryStockList(root_path, database):
+    #symbol_exception = ['AXON', 'CTT', 'ARL']
+    CollectionKey = "StockList"
     stockList = pd.DataFrame()
-
-    stockListKey = "StockList"
-
+    config = getConfig(root_path)
+    storeType = int(config.get('Setting', 'StoreType'))
+    
     if storeType == 1:
-        if global_store is None:
-            from arctic import Arctic
-            global_store = Arctic('localhost')
-
+        collection = getCollection(database, CollectionKey)
         try:
-            library = global_store[database]
-        except:
-            global_store.initialize_library(database)
-            library = global_store[database]
-
-        try:
-            item = library.read(stockListKey)
-            stockList = item.data
-            #stockList = stockList[~stockList.Symbol.isin(symbol_exception)]
-            return stockList
+            return readFromCollection(collection)
         except Exception as e:
+            print("queryStockList Exception", e)
             return stockList
 
     if storeType == 2:
-        csv_dir = root_path + "/" + global_config.get('Paths', database) + global_config.get('Paths', 'STOCK_SHARE')
-        filename = csv_dir + stockListKey + '.csv'
-        stockList = pd.read_csv(filename, index_col=0)
-        #stockList = stockList[~stockList.Symbol.isin(symbol_exception)]
-        return stockList
+        csv_dir = root_path + "/" + config.get('Paths', database) + config.get('Paths', 'STOCK_SHARE')
+        filename = csv_dir + CollectionKey + '.csv'
+        return pd.read_csv(filename, index_col=0)
 
     return stockList
 
 def storeStockList(root_path, database, df):
-    global global_config
-    global global_store
+    CollectionKey = "StockList"
+    config = getConfig(root_path)
+    storeType = int(config.get('Setting', 'StoreType')) 
 
-    if global_config is None:
-        global_config = configparser.ConfigParser() 
-        global_config.read(root_path + "/" + "config.ini")
-    storeType = int(global_config.get('Setting', 'StoreType'))
-
-    stockListKey = "StockList"
+    df.index.name = 'index'
+    df = df.reset_index(drop=True)
 
     if storeType == 1:
-        if global_store is None:
-            from arctic import Arctic
-            global_store = Arctic('localhost')
-
-        try:
-            library = global_store[database]
-        except:
-            global_store.initialize_library(database)
-            library = global_store[database]
-
-        now_date = datetime.datetime.now().strftime("%Y-%m-%d")
-        library.delete(stockListKey)
-        library.write(stockListKey, df, metadata={'lastUpdate': now_date})
+        collection = getCollection(database, CollectionKey)
+        collection.remove()
+        writeToCollection(collection, df)
 
     if storeType == 2:
-        csv_dir = root_path + "/" + global_config.get('Paths', database) + global_config.get('Paths', 'STOCK_SHARE')
+        csv_dir = root_path + "/" + config.get('Paths', database) + config.get('Paths', 'STOCK_SHARE')
         if os.path.exists(csv_dir) == False:
             os.makedirs(csv_dir)
-        filename = csv_dir + stockListKey + '.csv'
+        filename = csv_dir + CollectionKey + '.csv'
         df.to_csv(filename)
 
 
 def queryStockPublishDay(root_path, database, symbol):
-    global global_config
-    global global_store
-
-    if global_config is None:    
-        global_config = configparser.ConfigParser()
-        global_config.read(root_path + "/" + "config.ini")
-    storeType = int(global_config.get('Setting', 'StoreType'))
-
-    PublishDayKey = "StockPublishDay"
+    CollectionKey = "StockPublishDay"
+    config = getConfig(root_path)
+    storeType = int(config.get('Setting', 'StoreType'))
 
     if storeType == 1:
-        if global_store is None:
-            from arctic import Arctic
-            global_store = Arctic('localhost')
+        collection = getCollection(database, CollectionKey)
 
         try:
-            library = global_store[database]
-        except:
-            global_store.initialize_library(database)
-            library = global_store[database]
-
-        try:
-            item = library.read(PublishDayKey)
-            df = item.data
+            df = readFromCollection(collection)
         except Exception as e:
+            print("queryStockPublishDay Exception", e)
             return ''
             
         if df.empty == False:
@@ -115,49 +97,34 @@ def queryStockPublishDay(root_path, database, symbol):
         return ''
 
     if storeType == 2:
-        csv_dir = root_path + "/" + global_config.get('Paths', database) + global_config.get('Paths', 'STOCK_SHARE')
-        filename = csv_dir + PublishDayKey + '.csv'
+        csv_dir = root_path + "/" + config.get('Paths', database) + config.get('Paths', 'STOCK_SHARE')
+        filename = csv_dir + CollectionKey + '.csv'
         if os.path.exists(filename):
             df = pd.read_csv(filename)
             publishDay = df[df['Code'] == symbol]
             if len(publishDay) == 1:
                 return publishDay['Date'].values[0]
         return ''
-
     return ''
 
 def storePublishDay(root_path, database, symbol, date):
-    global global_config
-    global global_store
-
-    if global_config is None:
-        global_config = configparser.ConfigParser()
-        global_config.read(root_path + "/" + "config.ini")
-    storeType = int(global_config.get('Setting', 'StoreType'))
-
-    PublishDayKey = "StockPublishDay"
+    CollectionKey = "StockPublishDay"
+    config = getConfig(root_path)
+    storeType = int(config.get('Setting', 'StoreType'))
 
     if storeType == 1:
-        if global_store is None:
-            from arctic import Arctic
-            global_store = Arctic('localhost')
-        try:
-            library = global_store[database]
-        except:
-            global_store.initialize_library(database)
-            library = global_store[database]
+        collection = getCollection(database, CollectionKey)
 
         df = pd.DataFrame(columns = ['Code', 'Date'])
         df.index.name = 'index'
         df.loc[len(df)] = [symbol, date]
-        now_date = datetime.datetime.now().strftime("%Y-%m-%d")
-        library.append(PublishDayKey, df, metadata={'lastUpdate': now_date})
+        writeToCollection(collection, df)
 
     if storeType == 2:
-        csv_dir = root_path + "/" + global_config.get('Paths', database) + global_config.get('Paths', 'STOCK_SHARE')
+        csv_dir = root_path + "/" + config.get('Paths', database) + config.get('Paths', 'STOCK_SHARE')
         if os.path.exists(csv_dir) == False:
             os.makedirs(csv_dir)
-        filename = csv_dir + PublishDayKey + '.csv'
+        filename = csv_dir + CollectionKey + '.csv'
         if os.path.exists(filename):
             df = pd.read_csv(filename, index_col=["index"])
             publishDate = df[df['Code'] == symbol]
@@ -171,92 +138,69 @@ def storePublishDay(root_path, database, symbol, date):
     
 
 def queryStock(root_path, database, symbol):
-    global global_config
-    global global_store
-
-    if global_config is None:
-        global_config = configparser.ConfigParser()
-        global_config.read(root_path + "/" + "config.ini")
-    storeType = int(global_config.get('Setting', 'StoreType'))
+    CollectionKey = symbol
+    config = getConfig(root_path)
+    storeType = int(config.get('Setting', 'StoreType'))
     
     stockData = pd.DataFrame()
     lastUpdateTime = pd.Timestamp('1970-01-01')
 
     if storeType == 1:
-        if global_store is None:
-            from arctic import Arctic
-            global_store = Arctic('localhost')
-        try:
-            library = global_store[database]
-        except:
-            global_store.initialize_library(database)
-            library = global_store[database]
+        collection = getCollection(database, CollectionKey)
 
         try:
-            item = library.read(symbol)
-            metadata = item.metadata
-            return item.data, pd.Timestamp(metadata['lastUpdate'])
-        except Exception as e:
+            stockData = readFromCollection(collection)
+            lastUpdateTime = pd.Timestamp(stockData['lastUpdate'].iloc[0])
+            stockData = stockData.set_index('Date')
             return stockData, lastUpdateTime
+        except Exception as e:
+            print("queryStock Exception", e)
+            return pd.DataFrame(), lastUpdateTime
 
     if storeType == 2:
-        csv_dir = root_path + "/" + global_config.get('Paths', database)
-        filename = csv_dir + symbol + '.csv'
+        csv_dir = root_path + "/" + config.get('Paths', database)
+        filename = csv_dir + CollectionKey + '.csv'
         try:
             stockData = pd.read_csv(filename, index_col=["Date"])
             if 'lastUpdate' in stockData:
                 lastUpdateTime = pd.Timestamp(stockData['lastUpdate'].iloc[0])
             return stockData, lastUpdateTime
         except Exception as e:
-            return stockData, lastUpdateTime
+            return pd.DataFrame(), lastUpdateTime
 
-    return stockData, pd.Timestamp('1970-01-01')
+    return stockData, lastUpdateTime
 
 
 def storeStock(root_path, database, symbol, stockData):
-    global global_config
-    global global_store
-
-    if global_config is None:
-        global_config = configparser.ConfigParser()
-        global_config.read(root_path + "/" + "config.ini")
-
+    CollectionKey = symbol
+    config = getConfig(root_path)
+    storeType = int(config.get('Setting', 'StoreType'))
     now_date = datetime.datetime.now().strftime("%Y-%m-%d")
-    storeType = int(global_config.get('Setting', 'StoreType'))
     stockData.index.name = 'Date'
     
-    if 'Date' in stockData:
-        stockData.set_index('Date')  
+    if 'Date' in stockData: stockData.set_index('Date')  
 
+    stockData['lastUpdate'] = now_date
     stockData.index = stockData.index.astype(str)
     stockData.sort_index(ascending=True, inplace=True)
 
     if storeType == 1:
-        if global_store is None:
-            from arctic import Arctic
-            global_store = Arctic('localhost')
-
-        try:
-            library = global_store[database]
-        except:
-            global_store.initialize_library(database)
-            library = global_store[database]
-
-        #library.delete(symbol)
-        library.write(symbol, stockData, metadata={'lastUpdate': now_date})
+        collection = getCollection(database, CollectionKey)
+        collection.remove()
+        stockData = stockData.reset_index() 
+        writeToCollection(collection, stockData)
 
     if storeType == 2:
-        csv_dir = root_path + "/" + global_config.get('Paths', database)
+        csv_dir = root_path + "/" + config.get('Paths', database)
         if os.path.exists(csv_dir) == False:
             os.makedirs(csv_dir)
         filename = csv_dir + symbol + '.csv'
-        stockData['lastUpdate'] = now_date
         stockData.to_csv(filename)
 
 
 def queryNews(root_path, database, symbol):
     global global_config
-    global global_store
+    global global_client
 
     if global_config is None:
         global_config = configparser.ConfigParser()
@@ -267,18 +211,16 @@ def queryNews(root_path, database, symbol):
     stockListKey = "StockList"
 
     if storeType == 1:
-        if global_store is None:
-            from arctic import Arctic
-            global_store = Arctic('localhost')
+        if global_client is None: global_client = createClient()
 
         try:
-            library = global_store[database]
+            collection = global_client[database]
         except:
-            global_store.initialize_library(database)
-            library = global_store[database]
+            global_client.initialize_collection(database)
+            collection = global_client[database]
 
         try:
-            item = library.read(symbol)
+            item = collection.read(symbol)
             return item.data
         except Exception as e:
             return stockNews
@@ -294,7 +236,7 @@ def queryNews(root_path, database, symbol):
 
 def storeNews(root_path, database, symbol, df):
     global global_config
-    global global_store
+    global global_client
 
     if global_config is None:
         global_config = configparser.ConfigParser()
@@ -308,18 +250,16 @@ def storeNews(root_path, database, symbol, df):
     df.sort_index(ascending=True, inplace=True)
     
     if storeType == 1:
-        if global_store is None:
-            from arctic import Arctic
-            global_store = Arctic('localhost')
+        if global_client is None: global_client = createClient()
 
         try:
-            library = global_store[database]
+            collection = global_client[database]
         except:
-            global_store.initialize_library(database)
-            library = global_store[database]
+            global_client.initialize_collection(database)
+            collection = global_client[database]
 
-        #library.delete(symbol)
-        library.write(symbol, df)
+        #collection.delete(symbol)
+        collection.write(symbol, df)
 
     if storeType == 2:
         csv_dir = root_path + "/" + global_config.get('Paths', database)
@@ -331,7 +271,7 @@ def storeNews(root_path, database, symbol, df):
 
 def queryEarnings(root_path, database, date):
     global global_config
-    global global_store
+    global global_client
 
     if global_config is None:
         global_config = configparser.ConfigParser()
@@ -340,18 +280,16 @@ def queryEarnings(root_path, database, date):
     stockEarnings = pd.DataFrame()
 
     if storeType == 1:
-        if global_store is None:
-            from arctic import Arctic
-            global_store = Arctic('localhost')
+        if global_client is None: global_client = createClient()
 
         try:
-            library = global_store[database]
+            collection = global_client[database]
         except:
-            global_store.initialize_library(database)
-            library = global_store[database]
+            global_client.initialize_collection(database)
+            collection = global_client[database]
 
         try:
-            item = library.read(date)
+            item = collection.read(date)
             return item.data
         except Exception as e:
             return stockEarnings
@@ -367,7 +305,7 @@ def queryEarnings(root_path, database, date):
 
 def storeEarnings(root_path, database, date, df):
     global global_config
-    global global_store
+    global global_client
 
     if global_config is None:
         global_config = configparser.ConfigParser()
@@ -377,18 +315,16 @@ def storeEarnings(root_path, database, date, df):
     storeType = int(global_config.get('Setting', 'StoreType'))
     
     if storeType == 1:
-        if global_store is None:
-            from arctic import Arctic
-            global_store = Arctic('localhost')
+        if global_client is None: global_client = createClient()
 
         try:
-            library = global_store[database]
+            collection = global_client[database]
         except:
-            global_store.initialize_library(database)
-            library = global_store[database]
+            global_client.initialize_collection(database)
+            collection = global_client[database]
 
-        #library.delete(symbol)
-        library.write(date, df)
+        #collection.delete(symbol)
+        collection.write(date, df)
 
     if storeType == 2:
         csv_dir = root_path + "/" + global_config.get('Paths', database)
@@ -400,7 +336,7 @@ def storeEarnings(root_path, database, date, df):
 
 def queryTweets(root_path, database, symbol, col):
     global global_config
-    global global_store
+    global global_client
 
     if global_config is None:
         global_config = configparser.ConfigParser()
@@ -409,18 +345,16 @@ def queryTweets(root_path, database, symbol, col):
     stockTweets = pd.DataFrame()
 
     if storeType == 1:
-        if global_store is None:
-            from arctic import Arctic
-            global_store = Arctic('localhost')
+        if global_client is None: global_client = createClient()
 
         try:
-            library = global_store[database]
+            collection = global_client[database]
         except:
-            global_store.initialize_library(database)
-            library = global_store[database]
+            global_client.initialize_collection(database)
+            collection = global_client[database]
 
         try:
-            item = library.read(symbol)
+            item = collection.read(symbol)
             return item.data
         except Exception as e:
             return stockTweets
@@ -436,7 +370,7 @@ def queryTweets(root_path, database, symbol, col):
 
 def storeTweets(root_path, database, symbol, df):
     global global_config
-    global global_store
+    global global_client
 
     if global_config is None:
         global_config = configparser.ConfigParser()
@@ -449,18 +383,16 @@ def storeTweets(root_path, database, symbol, df):
     df = df.sort_values(['Date'], ascending=[False]).reset_index(drop=True)
     
     if storeType == 1:
-        if global_store is None:
-            from arctic import Arctic
-            global_store = Arctic('localhost')
+        if global_client is None: global_client = createClient()
 
         try:
-            library = global_store[database]
+            collection = global_client[database]
         except:
-            global_store.initialize_library(database)
-            library = global_store[database]
+            global_client.initialize_collection(database)
+            collection = global_client[database]
 
-        #library.delete(symbol)
-        library.write(symbol, df)
+        #collection.delete(symbol)
+        collection.write(symbol, df)
 
     if storeType == 2:
         csv_dir = root_path + "/" + global_config.get('Paths', database)
@@ -472,7 +404,7 @@ def storeTweets(root_path, database, symbol, df):
 
 def queryCoorelation(root_path, database):
     global global_config
-    global global_store
+    global global_client
 
     if global_config is None:
         global_config = configparser.ConfigParser()
@@ -483,18 +415,16 @@ def queryCoorelation(root_path, database):
     Key = "us_company_coorelation"
 
     if storeType == 1:
-        if global_store is None:
-            from arctic import Arctic
-            global_store = Arctic('localhost')
+        if global_client is None: global_client = createClient()
 
         try:
-            library = global_store[database]
+            collection = global_client[database]
         except:
-            global_store.initialize_library(database)
-            library = global_store[database]
+            global_client.initialize_collection(database)
+            collection = global_client[database]
 
         try:
-            item = library.read(Key)
+            item = collection.read(Key)
             return item.data
         except Exception as e:
             return stockCoorelation
@@ -510,7 +440,7 @@ def queryCoorelation(root_path, database):
 
 def storeCoorelation(root_path, database, df):
     global global_config
-    global global_store
+    global global_client
 
     if global_config is None:
         global_config = configparser.ConfigParser()
@@ -522,18 +452,16 @@ def storeCoorelation(root_path, database, df):
     Key = "us_company_coorelation"
 
     if storeType == 1:
-        if global_store is None:
-            from arctic import Arctic
-            global_store = Arctic('localhost')
+        if global_client is None: global_client = createClient()
 
         try:
-            library = global_store[database]
+            collection = global_client[database]
         except:
-            global_store.initialize_library(database)
-            library = global_store[database]
+            global_client.initialize_collection(database)
+            collection = global_client[database]
 
-        #library.delete(symbol)
-        library.write(Key, df)
+        #collection.delete(symbol)
+        collection.write(Key, df)
 
     if storeType == 2:
         csv_dir = root_path + "/" + global_config.get('Paths', database)

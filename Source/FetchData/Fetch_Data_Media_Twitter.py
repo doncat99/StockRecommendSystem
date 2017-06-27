@@ -204,11 +204,11 @@ if __name__ == "__main__":
         
         # wait for db start, the standard procedure should listen to 
         # the completed event of function "StartServer"
-        time.sleep(3)
+        time.sleep(5)
     
     updateStockTwitterData(root_path, ["NVDA"], "1990-01-01", now)
 
     if storeType == 1:
         # stop database server (sync)
-        time.sleep(3)
+        time.sleep(5)
         ShutdownServer()

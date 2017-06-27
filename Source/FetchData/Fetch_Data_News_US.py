@@ -125,13 +125,13 @@ if __name__ == "__main__":
         
         # wait for db start, the standard procedure should listen to 
         # the completed event of function "StartServer"
-        time.sleep(3)
+        time.sleep(5)
     
     updateNewsArticle(root_path, 'MEETME', "2017-06-01", now, 200)
 
     if storeType == 1:
         # stop database server (sync)
-        time.sleep(3)
+        time.sleep(5)
         ShutdownServer()
     
  

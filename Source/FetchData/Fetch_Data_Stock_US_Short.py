@@ -34,7 +34,7 @@ def getSignleStockShortInfo(stock):
             df = table
         else:
             df = pd.concat([df, table])
-    df.reset_index(drop=True, inplace=True)
+    df = df.reset_index(drop=True, inplace=True)
     #print(df)
         
     soup = BeautifulSoup(response.text, 'lxml')

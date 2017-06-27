@@ -19,9 +19,7 @@ if __name__ == "__main__":
     
     # wait for db start, the standard procedure should listen to 
     # the completed event of function "StartServer"
-    time.sleep(3)
-
-
+    time.sleep(5)
 
     # from arctic import Arctic
     # store = Arctic("localhost")
@@ -56,9 +54,9 @@ if __name__ == "__main__":
     # updateStockData_US(root_path, "1990-01-01", now)
 
     # Fetch CHN Stock
-    updateStockData_CHN(root_path)
+    #updateStockData_CHN(root_path)
 
     # stop database server (sync)
-    time.sleep(3)
+    time.sleep(5)
     ShutdownServer()
 
