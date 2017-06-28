@@ -13,8 +13,8 @@ brew services start mongodb
 mongod --dbpath (Your Porject Folder)/Data/DB  
 
 When you storing stock data with mongodb mode, you may meet [too many open files](https://superuser.com/questions/433746/is-there-a-fix-for-the-too-many-open-files-in-system-error-on-os-x-10-7-1) problem, try the following codes in command line:   
-sysctl -w kern.maxfiles=20480 (or whatever number you choose)
-sysctl -w kern.maxfilesperproc=18000 (or whatever number you choose) 
+sysctl -w kern.maxfiles=20480 (or whatever number you choose)   
+sysctl -w kern.maxfilesperproc=18000 (or whatever number you choose)   
 
 ## Data Fetching:
 Cover stock related data fetching, storaging in either MongoDB or CSV mode (See config.ini [Setting] sector for more detail).   
