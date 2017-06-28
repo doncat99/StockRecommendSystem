@@ -4,8 +4,7 @@
 ## Main Requirement:
 Python 3.5.2   
 TensorFlow 1.0   
-mongodb   
-arctic (git+https://github.com/manahl/arctic.git)   
+pymongo   
 nltk   
 
 ## Install
