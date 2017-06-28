@@ -29,7 +29,7 @@ def getSingleStockNewsArticle(root_path, stock, from_date, till_date, count):
     end_y, end_m, end_d = int(end[0]), int(end[1]), int(end[2]) # until now
 
     q = QueryArticles(lang='eng')
-    q.setDateLimit(datetime.datetime(start_y, start_m, start_d), datetime.datetime(end_y, end_m, end_d))
+    #q.setDateLimit(datetime.datetime(start_y, start_m, start_d), datetime.datetime(end_y, end_m, end_d))
     q.addKeyword(stock)
     q.addRequestedResult(RequestArticlesInfo(count = count, 
     returnInfo = ReturnInfo(
@@ -78,7 +78,8 @@ def updateNewsArticle(root_path, symbol, from_date, till_date, count):
         df = getSingleStockNewsArticle(root_path, symbol, from_date, till_date, count)
         storeNews(root_path, "NEWS_US", symbol, df)
         return 
-        
+    
+    print(df)
     first_date = pd.Timestamp(df['Date'].iloc[0]).tz_localize(None)
     last_date  = pd.Timestamp(df['Date'].iloc[-1]).tz_localize(None)
 

@@ -217,7 +217,11 @@ def queryNews(root_path, database, symbol):
     try:
         if storeType == 1:
             collection = getCollection(database, CollectionKey)
-            return readFromCollection(collection)
+            df = readFromCollection(collection)
+            if df.empty: return pd.DataFrame()
+            del df['_id']
+            df = df.set_index('Date')
+            return df
 
         if storeType == 2:
             dir = root_path + "/" + config.get('Paths', database)
@@ -244,6 +248,7 @@ def storeNews(root_path, database, symbol, df):
     try:
         if storeType == 1:
             collection = getCollection(database, CollectionKey)
+            df = df.reset_index()
             writeToCollection(collection, df)
 
         if storeType == 2:
