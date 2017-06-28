@@ -118,7 +118,7 @@ def updateSingleStockData(root_path, symbol, from_date, till_date, force_check):
         end_date = end_date - datetime.timedelta(days=1)
      
     stockData, lastUpdateTime = queryStock(root_path, "STOCK_US", symbol)
-    
+    print(stockData, lastUpdateTime)
     if stockData.empty:
         stockData, message = getSingleStock(symbol, from_date, till_date)
         if stockData.empty == False:
