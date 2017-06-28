@@ -40,7 +40,7 @@ def getStocksList(root_path):
                 print ("exception in getStocks:" + exchange, str(e))
                 continue
 
-    df = df[(df['MarketCap'] > 1500000000)]
+    df = df[(df['MarketCap'] > 100000000)]
     df = df.drop_duplicates(subset=['Symbol'], keep='first')
     df.sort_index(ascending=True, inplace=True)
 
