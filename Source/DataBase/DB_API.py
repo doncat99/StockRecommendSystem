@@ -9,6 +9,7 @@ global_client = None
 def getConfig(root_path):
     global global_config
     if global_config is None:
+        print("initial Config...")
         global_config = configparser.ConfigParser()
         global_config.read(root_path + "/" + "config.ini")
     return global_config
@@ -16,7 +17,9 @@ def getConfig(root_path):
 def getClient():
     global global_client
     from pymongo import MongoClient
-    if global_client is None: global_client = MongoClient('localhost', 27017)
+    if global_client is None: 
+        print("initial DB Client...")
+        global_client = MongoClient('localhost', 27017)
     return global_client
 
 def getCollection(database, collection):
@@ -150,59 +153,60 @@ def queryStock(root_path, database, symbol):
     CollectionKey = symbol
     config = getConfig(root_path)
     storeType = int(config.get('Setting', 'StoreType'))
-    
-    stockData = pd.DataFrame()
     lastUpdateTime = pd.Timestamp('1970-01-01')
 
     try:
         if storeType == 1:
             collection = getCollection(database, CollectionKey)
-            stockData = readFromCollection(collection)
-            del stockData['_id']
-            lastUpdateTime = pd.Timestamp(stockData['lastUpdate'].iloc[0])
-            stockData = stockData.set_index('Date')
-            return stockData, lastUpdateTime
+            df = readFromCollection(collection)
+            if df.empty: return pd.DataFrame(), lastUpdateTime
+            del df['_id']
+            lastUpdateTime = pd.Timestamp(df['lastUpdate'].iloc[0])
+            df = df.set_index('Date')
+            return df, lastUpdateTime
             
         if storeType == 2:
             csv_dir = root_path + "/" + config.get('Paths', database)
             filename = csv_dir + CollectionKey + '.csv'
-            stockData = pd.read_csv(filename, index_col=["Date"])
-            if 'lastUpdate' in stockData:
-                lastUpdateTime = pd.Timestamp(stockData['lastUpdate'].iloc[0])
-            return stockData, lastUpdateTime
+            df = pd.read_csv(filename, index_col=["Date"])
+            if 'lastUpdate' in df:
+                lastUpdateTime = pd.Timestamp(df['lastUpdate'].iloc[0])
+            return df, lastUpdateTime
         
     except Exception as e:
-            print("queryStock Exception", e)
-            return pd.DataFrame(), lastUpdateTime
+        print("queryStock Exception", e)
+        return pd.DataFrame(), lastUpdateTime
 
-    return stockData, lastUpdateTime
+    return pd.DataFrame(), lastUpdateTime
 
 
-def storeStock(root_path, database, symbol, stockData):
+def storeStock(root_path, database, symbol, df):
     CollectionKey = symbol
     config = getConfig(root_path)
     storeType = int(config.get('Setting', 'StoreType'))
     now_date = datetime.datetime.now().strftime("%Y-%m-%d")
-    stockData.index.name = 'Date'
+    df.index.name = 'Date'
     
-    if 'Date' in stockData: stockData.set_index('Date')  
+    if 'Date' in df: df.set_index('Date')  
 
-    stockData['lastUpdate'] = now_date
-    stockData.index = stockData.index.astype(str)
-    stockData.sort_index(ascending=True, inplace=True)
+    df['lastUpdate'] = now_date
+    df.index = df.index.astype(str)
+    df.sort_index(ascending=True, inplace=True)
 
     try:
         if storeType == 1:
             collection = getCollection(database, CollectionKey)
+            df = df.reset_index()
             collection.remove()
-            stockData = stockData.reset_index() 
-            writeToCollection(collection, stockData)
+            writeToCollection(collection, df)
 
         if storeType == 2:
             csv_dir = root_path + "/" + config.get('Paths', database)
-            writeToCSV(csv_dir, CollectionKey, stockData)
+            writeToCSV(csv_dir, CollectionKey, df)
 
     except Exception as e:
+        print(df)
+        print(symbol)
         print("storeStock Exception", e)
 
 def queryNews(root_path, database, symbol):
