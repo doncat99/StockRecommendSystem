@@ -151,7 +151,7 @@ def storePublishDay(root_path, database, symbol, date):
         print("storePublishDay Exception", e)
 
 def queryStock(root_path, database, symbol):
-    CollectionKey = 'StockDaily'
+    CollectionKey = 'StockDaily_' + symbol[0]
     config = getConfig(root_path)
     storeType = int(config.get('Setting', 'StoreType'))
     lastUpdateTime = pd.Timestamp('1970-01-01')
@@ -159,8 +159,9 @@ def queryStock(root_path, database, symbol):
     try:
         if storeType == 1:
             collection = getCollection(database, CollectionKey)
-            queryString = { "Symbol" : symbol }
-            df = readFromCollection(collection, queryString)
+            #queryString = { "Symbol" : symbol }
+            collection = collection[symbol]
+            df = readFromCollection(collection, {})
             if df.empty: return pd.DataFrame(), lastUpdateTime
             del df['_id']
             lastUpdateTime = pd.Timestamp(df['lastUpdate'].iloc[0])
@@ -183,7 +184,7 @@ def queryStock(root_path, database, symbol):
 
 
 def storeStock(root_path, database, symbol, df):
-    CollectionKey = 'StockDaily'
+    CollectionKey = 'StockDaily_' + symbol[0]
     config = getConfig(root_path)
     storeType = int(config.get('Setting', 'StoreType'))
     now_date = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -197,9 +198,9 @@ def storeStock(root_path, database, symbol, df):
     try:
         if storeType == 1:
             collection = getCollection(database, CollectionKey)
-            df['Symbol'] = symbol
+            collection = collection[symbol]
+            # df['Symbol'] = symbol
             df = df.reset_index()
-            print("store:", symbol)
             writeToCollection(collection, df)
 
         if storeType == 2:
