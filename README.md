@@ -23,8 +23,8 @@ Cover stock related data fetching, storaging in either MongoDB or CSV mode (See 
 1. Stock:（NSDQ, NYSE）-> US, (HKSE) -> HK, (SSE，SZSE) -> CHN
 2. Earning: US stock market earning info.
 3. Short: US stock market short squeeze info. (Require Multi IP Routing Support)
-4. News: EventRegistry
-5. Media: Twitter Data 
+4. News: EventRegistry (6.4.3)
+5. Media: Twitter Data
 
 ## Stock Processing:
 Correlation

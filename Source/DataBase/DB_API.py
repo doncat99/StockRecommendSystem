@@ -27,13 +27,14 @@ def getCollection(database, collection):
     db = client[database]
     return db[collection]
 
-def readFromCollection(collection):
-    return pd.DataFrame(list(collection.find()))
+def readFromCollection(collection, queryString):
+    if len(queryString) == 0: return pd.DataFrame(list(collection.find()))
+    return pd.DataFrame(list(collection.find(queryString)))
 
 def writeToCollection(collection, df):
     jsonStrings = df.to_json(orient='records')
     bsonStrings = json_util.loads(jsonStrings)
-    collection.insert_many(bsonStrings)
+    collection.insert_many(bsonStrings, ordered=False)
 
 def writeToCSV(csv_dir, CollectionKey, df):
     if os.path.exists(csv_dir) == False:
@@ -51,7 +52,7 @@ def queryStockList(root_path, database):
     try:
         if storeType == 1:
             collection = getCollection(database, CollectionKey)
-            return readFromCollection(collection)
+            return readFromCollection(collection, {})
             
         if storeType == 2:
             csv_dir = root_path + "/" + config.get('Paths', database) + config.get('Paths', 'STOCK_SHARE')
@@ -94,7 +95,7 @@ def queryStockPublishDay(root_path, database, symbol):
     try:
         if storeType == 1:
             collection = getCollection(database, CollectionKey)
-            df = readFromCollection(collection)
+            df = readFromCollection(collection, {})
             if df.empty == False:
                 publishDay = df[df['Code'] == symbol]
                 if len(publishDay) == 1:
@@ -150,7 +151,7 @@ def storePublishDay(root_path, database, symbol, date):
         print("storePublishDay Exception", e)
 
 def queryStock(root_path, database, symbol):
-    CollectionKey = symbol
+    CollectionKey = 'StockDaily'
     config = getConfig(root_path)
     storeType = int(config.get('Setting', 'StoreType'))
     lastUpdateTime = pd.Timestamp('1970-01-01')
@@ -158,7 +159,8 @@ def queryStock(root_path, database, symbol):
     try:
         if storeType == 1:
             collection = getCollection(database, CollectionKey)
-            df = readFromCollection(collection)
+            queryString = { "Symbol" : symbol }
+            df = readFromCollection(collection, queryString)
             if df.empty: return pd.DataFrame(), lastUpdateTime
             del df['_id']
             lastUpdateTime = pd.Timestamp(df['lastUpdate'].iloc[0])
@@ -167,7 +169,7 @@ def queryStock(root_path, database, symbol):
             
         if storeType == 2:
             csv_dir = root_path + "/" + config.get('Paths', database)
-            filename = csv_dir + CollectionKey + '.csv'
+            filename = csv_dir + symbol + '.csv'
             df = pd.read_csv(filename, index_col=["Date"])
             if 'lastUpdate' in df:
                 lastUpdateTime = pd.Timestamp(df['lastUpdate'].iloc[0])
@@ -181,14 +183,13 @@ def queryStock(root_path, database, symbol):
 
 
 def storeStock(root_path, database, symbol, df):
-    CollectionKey = symbol
+    CollectionKey = 'StockDaily'
     config = getConfig(root_path)
     storeType = int(config.get('Setting', 'StoreType'))
     now_date = datetime.datetime.now().strftime("%Y-%m-%d")
     df.index.name = 'Date'
     
     if 'Date' in df: df.set_index('Date')  
-
     df['lastUpdate'] = now_date
     df.index = df.index.astype(str)
     df.sort_index(ascending=True, inplace=True)
@@ -196,13 +197,14 @@ def storeStock(root_path, database, symbol, df):
     try:
         if storeType == 1:
             collection = getCollection(database, CollectionKey)
+            df['Symbol'] = symbol
             df = df.reset_index()
-            collection.remove()
+            print("store:", symbol)
             writeToCollection(collection, df)
 
         if storeType == 2:
             csv_dir = root_path + "/" + config.get('Paths', database)
-            writeToCSV(csv_dir, CollectionKey, df)
+            writeToCSV(csv_dir, symbol, df)
 
     except Exception as e:
         print(df)
@@ -217,7 +219,7 @@ def queryNews(root_path, database, symbol):
     try:
         if storeType == 1:
             collection = getCollection(database, CollectionKey)
-            df = readFromCollection(collection)
+            df = readFromCollection(collection, {})
             if df.empty: return pd.DataFrame()
             del df['_id']
             df = df.set_index('Date')
@@ -267,7 +269,7 @@ def queryEarnings(root_path, database, date):
     try:
         if storeType == 1:
             collection = getCollection(database, CollectionKey)
-            return readFromCollection(collection)
+            return readFromCollection(collection, {})
         
         if storeType == 2:
             dir = root_path + "/" + config.get('Paths', database)
@@ -309,7 +311,7 @@ def queryTweets(root_path, database, symbol, col):
     try:
         if storeType == 1:
             collection = getCollection(database, CollectionKey)
-            return readFromCollection(collection)
+            return readFromCollection(collection, {})
 
         if storeType == 2:
             dir = root_path + "/" + config.get('Paths', database)
@@ -354,7 +356,7 @@ def queryCoorelation(root_path, database):
     try:
         if storeType == 1:
             collection = getCollection(database, CollectionKey)
-            return readFromCollection(collection)
+            return readFromCollection(collection, {})
         
         if storeType == 2:
             dir = root_path + "/" + config.get('Paths', database)
