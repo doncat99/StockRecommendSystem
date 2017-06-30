@@ -17,6 +17,7 @@ When you storing stock data with mongodb mode, you may meet [too many open files
 > sysctl -w kern.maxfilesperproc=18000 (or whatever number you choose)   
 > launchctl limit maxfiles 1000000 (or whatever number you choose)   
 > brew services restart mongodb   
+> mongodump -h localhost:27017 -d STOCK_US -o ./
 
 ## Data Fetching:
 Cover stock related data fetching, storaging in either MongoDB or CSV mode (See config.ini [Setting] sector for more detail).   

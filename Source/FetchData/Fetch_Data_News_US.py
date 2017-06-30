@@ -1,5 +1,5 @@
 #install eventregistry using "pip install eventregistry" - see https://github.com/gregorleban/EventRegistry    
-import sys, os, time, configparser
+import sys, os, time, datetime, configparser
 import pandas as pd
 from eventregistry import *
 from googletrans import Translator
@@ -69,10 +69,10 @@ def updateNewsArticle(root_path, symbol, from_date, till_date, count):
 
     if len(symbol) == 0: return startTime, message
 
-    try:
-        df = queryNews(root_path, "NEWS_US", symbol)
-    except:
-        df = pd.DataFrame()
+    df, lastUpdateTime = queryNews(root_path, "NEWS_US", symbol)
+
+    if (datetime.datetime.now() - lastUpdateTime) < datetime.timedelta(hours=24):
+        return
 
     if df.empty:
         df = getSingleStockNewsArticle(root_path, symbol, from_date, till_date, count)
@@ -105,13 +105,17 @@ def updateNewsArticle(root_path, symbol, from_date, till_date, count):
 
     
 if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("please input Stock symbol after python file")
+        exit()
+
     pd.set_option('precision', 3)
     pd.set_option('display.width',1000)
     warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
 
     #stocklist = getStocksList()
-    stocklist = ['AMD', 'WDC', 'SINA', 'WB', 'CTRP', 'NTES', 'ATVI', 'FB', 'GLUU', 'NVDA', 'NFLX', 'GPRO',
-                 'MRVL', 'SMCI', 'JD', 'INTC', 'AMZN', 'BIDU', 'BGNE', 'QIWI', 'XNET', 'MOMO', 'YY']
+    # stocklist = ['AMD', 'WDC', 'SINA', 'WB', 'CTRP', 'NTES', 'ATVI', 'FB', 'GLUU', 'NVDA', 'NFLX', 'GPRO',
+    #              'MRVL', 'SMCI', 'JD', 'INTC', 'AMZN', 'BIDU', 'BGNE', 'QIWI', 'XNET', 'MOMO', 'YY']
 
     now = datetime.datetime.now().strftime("%Y-%m-%d")
 
@@ -128,7 +132,9 @@ if __name__ == "__main__":
         # the completed event of function "StartServer"
         time.sleep(5)
     
-    updateNewsArticle(root_path, 'MEETME', "2017-06-01", now, 200)
+    symbol = str(sys.argv[1])
+    print("fetching news of stock:", symbol)
+    updateNewsArticle(root_path, symbol, "2016-06-01", now, 200)
 
     if storeType == 1:
         # stop database server (sync)
