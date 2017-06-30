@@ -128,8 +128,9 @@ def queryStockPublishDay(root_path, database, sheet, symbol):
         if storeType == 2:
             csv_dir = root_path + "/" + config.get('Paths', database) + config.get('Paths', sheet) + config.get('Paths', 'CSV_SHARE')
             filename = csv_dir + CollectionKey + '.csv'
-            if os.path.exists(filename):
-                df = pd.read_csv(filename)
+            if os.path.exists(filename) == False: return ''
+            df = pd.read_csv(filename, index_col=["index"])
+            if df.empty == False:
                 publishDay = df[df['Code'] == symbol]
                 if len(publishDay) == 1:
                     return publishDay['Date'].values[0]
@@ -140,6 +141,7 @@ def queryStockPublishDay(root_path, database, sheet, symbol):
         return ''
     return ''
 
+
 def storePublishDay(root_path, database, sheet, symbol, date):
     CollectionKey = sheet + "_IPO"
     config = getConfig(root_path)
@@ -148,7 +150,6 @@ def storePublishDay(root_path, database, sheet, symbol, date):
     try:
         if storeType == 1:
             collection = getCollection(database, CollectionKey)
-
             df = pd.DataFrame(columns = ['Code', 'Date'])
             df.index.name = 'index'
             df.loc[len(df)] = [symbol, date]
@@ -162,14 +163,15 @@ def storePublishDay(root_path, database, sheet, symbol, date):
                 publishDate = df[df['Code'] == symbol]
                 if publishDate.empty:
                     df.loc[len(df)] = [symbol, date]
-            else: 
+            else:   
                 df = pd.DataFrame(columns = ['Code', 'Date'])
                 df.index.name = 'index'
                 df.loc[len(df)] = [symbol, date]
-            df.to_csv(filename)
+            writeToCSV(csv_dir, CollectionKey, df)
     
     except Exception as e:
         print("storePublishDay Exception", e)
+
 
 def queryStock(root_path, database, sheet, symbol):
     CollectionKey = sheet + '_DATA'

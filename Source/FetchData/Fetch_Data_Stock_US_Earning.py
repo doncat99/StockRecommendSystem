@@ -119,33 +119,39 @@ def updateEarningByDate(root_path, date):
     return startTime
 
 
-def updateEarnings_US(duedays):
+def updateEarnings_US(duedays, storeType):
 
     pbar = tqdm(total=len(duedays))
 
-    for date in duedays:
+    if storeType == 2:
+        for date in duedays:
+            startTime = updateEarningByDate(root_path, date)
+            outMessage = '%-*s fetched in:  %.4s seconds' % (12, date, (time.time() - startTime))
+            pbar.set_description(outMessage)
+            pbar.update(1)
         
-        startTime = updateEarningByDate(root_path, date)
-        outMessage = '%-*s fetched in:  %.4s seconds' % (12, date, (time.time() - startTime))
-        pbar.set_description(outMessage)
-        pbar.update(1)
-        
-    # with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-    #     # Start the load operations and mark each future with its URL
-    #     future_to_stock = {executor.submit(updateEarningByDate, root_path, date): date for date in duedays}
-    #     for future in concurrent.futures.as_completed(future_to_stock):
-    #         date = future_to_stock[future]
-    #         try:
-    #             startTime = future.result()
-    #         except Exception as exc:
-    #             startTime = time.time()
-    #             log_errors.append('%r generated an exception: %s' % (stock, exc))
-    #             len_errors = len(log_errors)
-    #             if len_errors % 5 == 0: print(log_errors[(len_errors-5):]) 
-    #         outMessage = '%-*s fetched in:  %.4s seconds' % (12, date, (time.time() - startTime))
-    #         pbar.set_description(outMessage)
-    #         pbar.update(1)
-
+    if storeType == 1:
+        log_errors = []
+        log_update = []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+            # Start the load operations and mark each future with its URL
+            future_to_stock = {executor.submit(updateEarningByDate, root_path, date): date for date in duedays}
+            for future in concurrent.futures.as_completed(future_to_stock):
+                date = future_to_stock[future]
+                try:
+                    startTime = future.result()
+                except Exception as exc:
+                    startTime = time.time()
+                    log_errors.append('%r generated an exception: %s' % (stock, exc))
+                    len_errors = len(log_errors)
+                    if len_errors % 5 == 0: print(log_errors[(len_errors-5):]) 
+                outMessage = '%-*s fetched in:  %.4s seconds' % (12, date, (time.time() - startTime))
+                pbar.set_description(outMessage)
+                pbar.update(1)
+        if len(log_errors) > 0: print(log_errors)
+        # if len(log_update) > 0: print(log_update)
+    
+    pbar.close()
 
 if __name__ == "__main__":
     pd.set_option('precision', 3)
@@ -170,7 +176,7 @@ if __name__ == "__main__":
         # the completed event of function "StartServer"
         time.sleep(5)
     
-    updateEarnings_US(duedays)
+    updateEarnings_US(duedays, storeType)
 
     if storeType == 1:
         # stop database server (sync)

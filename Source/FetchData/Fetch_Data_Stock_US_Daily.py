@@ -181,46 +181,46 @@ def updateSingleStockData(root_path, symbol, from_date, till_date, force_check):
         message = ""
     return startTime, message
 
-def updateStockData_US(root_path, from_date, till_date, force_check = False):
+def updateStockData_US(root_path, from_date, till_date, storeType, force_check = False):
     symbols = getStocksList(root_path)['Symbol'].values.tolist()
 
     pbar = tqdm(total=len(symbols))
-    log_errors = []
-    log_update = []
 
-    # # debug only
-    # count = 10
-    # for stock in symbols:
-    #     startTime, message = updateSingleStockData(root_path, stock, from_date, till_date, force_check)
-    #     outMessage = '%-*s fetched in:  %.4s seconds' % (6, stock, (time.time() - startTime))
-    #     pbar.set_description(outMessage)
-    #     pbar.update(1)
-    #     count = count - 1
-    #     if count == 0: break
-    
-    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-        # Start the load operations and mark each future with its URL
-        future_to_stock = {executor.submit(updateSingleStockData, root_path, symbol, from_date, till_date, force_check): symbol for symbol in symbols}
-        for future in concurrent.futures.as_completed(future_to_stock):
-            stock = future_to_stock[future]
-            try:
-                startTime, message = future.result()
-            except Exception as exc:
-                startTime = time.time()
-                log_errors.append('%r generated an exception: %s' % (stock, exc))
-                len_errors = len(log_errors)
-                if len_errors % 5 == 0: print(log_errors[(len_errors-5):]) 
-            else:
-                if len(message) > 0: log_update.append(message)
+    if storeType == 2:
+        # count = 10
+        for stock in symbols:
+            startTime, message = updateSingleStockData(root_path, stock, from_date, till_date, force_check)
             outMessage = '%-*s fetched in:  %.4s seconds' % (6, stock, (time.time() - startTime))
             pbar.set_description(outMessage)
             pbar.update(1)
+            # count = count - 1
+            # if count == 0: break
+    
+    if storeType == 1:
+        log_errors = []
+        log_update = []
+        # Parallel mode is not suitable in CSV storage mode, since no lock is added to limit csv file IO.
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+            # Start the load operations and mark each future with its URL
+            future_to_stock = {executor.submit(updateSingleStockData, root_path, symbol, from_date, till_date, force_check): symbol for symbol in symbols}
+            for future in concurrent.futures.as_completed(future_to_stock):
+                stock = future_to_stock[future]
+                try:
+                    startTime, message = future.result()
+                except Exception as exc:
+                    startTime = time.time()
+                    log_errors.append('%r generated an exception: %s' % (stock, exc))
+                    len_errors = len(log_errors)
+                    if len_errors % 5 == 0: print(log_errors[(len_errors-5):]) 
+                else:
+                    if len(message) > 0: log_update.append(message)
+                outMessage = '%-*s fetched in:  %.4s seconds' % (6, stock, (time.time() - startTime))
+                pbar.set_description(outMessage)
+                pbar.update(1)
+        if len(log_errors) > 0: print(log_errors)
+        # if len(log_update) > 0: print(log_update)
     
     pbar.close()
-    if len(log_errors) > 0:
-        print(log_errors)
-    # if len(log_update) > 0:
-    #     print(log_update)
     return symbols
 
 
@@ -244,7 +244,7 @@ if __name__ == "__main__":
         # the completed event of function "StartServer"
         time.sleep(5)
     
-    updateStockData_US(root_path, "1990-01-01", now, True)
+    updateStockData_US(root_path, "1990-01-01", now, storeType)
 
     if storeType == 1:
         # stop database server (sync)

@@ -162,36 +162,47 @@ def updateSingleStockTwitterData(root_path, symbol, from_date, till_date):
     return startTime
 
 
-def updateStockTwitterData(root_path, from_date, till_date):
+def updateStockTwitterData(root_path, from_date, till_date, storeType):
     symbols = getStocksList(root_path)['Symbol'].values.tolist()
 
     pbar = tqdm(total=len(symbols))
     
-    for symbol in symbols:
-        startTime = updateSingleStockTwitterData(root_path, symbol, from_date, till_date)
-        outMessage = '%-*s fetched in:  %.4s seconds' % (6, symbol, (time.time() - startTime))
-        pbar.set_description(outMessage)
-        pbar.update(1)
-        # top5 = getWordCount(df, symbol, stocklist)
-        # print("hot correlation:", top5)
-        # getSentiments(df)
+    if storeType == 2:
+        for symbol in symbols:
+            startTime = updateSingleStockTwitterData(root_path, symbol, from_date, till_date)
+            outMessage = '%-*s fetched in:  %.4s seconds' % (6, symbol, (time.time() - startTime))
+            pbar.set_description(outMessage)
+            pbar.update(1)
+            # top5 = getWordCount(df, symbol, stocklist)
+            # print("hot correlation:", top5)
+            # getSentiments(df)
 
-    # with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-    #     # Start the load operations and mark each future with its URL
-    #     future_to_stock = {executor.submit(updateSingleStockTwitterData, root_path, symbol, from_date, till_date): symbol for symbol in symbols}
-    #     for future in concurrent.futures.as_completed(future_to_stock):
-    #         stock = future_to_stock[future]
-    #         try:
-    #             startTime, message = future.result()
-    #         except Exception as exc:
-    #             print('%r generated an exception: %s' % (stock, exc))
-    #         else:
-    #             outMessage = '%-*s fetched in:  %.4s seconds' % (6, stock, (time.time() - startTime))
-    #             outMessage = outMessage + message
-    #             print(outMessage)
+    if storeType == 1:
+        log_errors = []
+        log_update = []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+            # Start the load operations and mark each future with its URL
+            future_to_stock = {executor.submit(updateSingleStockTwitterData, root_path, symbol, from_date, till_date): symbol for symbol in symbols}
+            for future in concurrent.futures.as_completed(future_to_stock):
+                stock = future_to_stock[future]
+                try:
+                    startTime, message = future.result()
+                except Exception as exc:
+                    startTime = time.time()
+                    log_errors.append('%r generated an exception: %s' % (stock, exc))
+                    len_errors = len(log_errors)
+                    if len_errors % 5 == 0: print(log_errors[(len_errors-5):]) 
+                else:
+                    if len(message) > 0: log_update.append(message)
+                outMessage = '%-*s fetched in:  %.4s seconds' % (6, stock, (time.time() - startTime))
+                pbar.set_description(outMessage)
+                pbar.update(1)
+        if len(log_errors) > 0: print(log_errors)
+        # if len(log_update) > 0: print(log_update)
 
-def
-if __name__ == "__main__":
+    pbar.close()
+
+def if __name__ == "__main__":
     #nltk.download()
     pd.set_option('precision', 3)
     pd.set_option('display.width',1000)
@@ -212,7 +223,7 @@ if __name__ == "__main__":
         # the completed event of function "StartServer"
         time.sleep(5)
     
-    updateStockTwitterData(root_path, "1990-01-01", now)
+    updateStockTwitterData(root_path, "1990-01-01", now, storeType)
 
     if storeType == 1:
         # stop database server (sync)

@@ -145,43 +145,42 @@ def updateSingleStockData(root_path, symbol, force_check):
 
     return startTime, message
 
-def updateStockData_CHN(root_path, force_check = False):
+def updateStockData_CHN(root_path, storeType, force_check = False):
 
     symbols = getStocksList(root_path).index.values.tolist()
 
     pbar = tqdm(total=len(symbols))
-    log_errors = []
-    log_update = []
 
-    # debug only
-    # for symbol in symbols:
-    #     startTime, message = updateSingleStockData(root_path, symbol, force_check)
-    #     outMessage = '%-*s fetched in:  %.4s seconds' % (6, symbol, (time.time() - startTime))
-    #     pbar.set_description(outMessage)
-    #     pbar.update(1)
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-        # Start the load operations and mark each future with its URL
-        future_to_stock = {executor.submit(updateSingleStockData, root_path, symbol, force_check): symbol for symbol in symbols}
-        for future in concurrent.futures.as_completed(future_to_stock):
-            stock = future_to_stock[future]
-            try:
-                startTime, message = future.result()
-            except Exception as exc:
-                startTime = time.time()
-                log_errors.append('%r generated an exception: %s' % (stock, exc))
-            else:
-                if len(message) > 0: log_update.append(message)
-            outMessage = '%-*s fetched in:  %.4s seconds' % (6, stock, (time.time() - startTime))
+    if storeType == 2:
+        for symbol in symbols:
+            startTime, message = updateSingleStockData(root_path, symbol, force_check)
+            outMessage = '%-*s fetched in:  %.4s seconds' % (6, symbol, (time.time() - startTime))
             pbar.set_description(outMessage)
             pbar.update(1)
 
-    pbar.close()
-    if len(log_errors) > 0:
-        print(log_errors)
-    # if len(log_update) > 0:
-    #     print(log_update)
+    if storeType == 1:
+        log_errors = []
+        log_update = []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+            # Start the load operations and mark each future with its URL
+            future_to_stock = {executor.submit(updateSingleStockData, root_path, symbol, force_check): symbol for symbol in symbols}
+            for future in concurrent.futures.as_completed(future_to_stock):
+                stock = future_to_stock[future]
+                try:
+                    startTime, message = future.result()
+                except Exception as exc:
+                    startTime = time.time()
+                    log_errors.append('%r generated an exception: %s' % (stock, exc))
+                else:
+                    if len(message) > 0: log_update.append(message)
+                outMessage = '%-*s fetched in:  %.4s seconds' % (6, stock, (time.time() - startTime))
+                pbar.set_description(outMessage)
+                pbar.update(1)
+        if len(log_errors) > 0: print(log_errors)
+        # if len(log_update) > 0: print(log_update)
 
+    pbar.close()
     return symbols
 
 if __name__ == "__main__":
@@ -202,7 +201,7 @@ if __name__ == "__main__":
         # the completed event of function "StartServer"
         time.sleep(5)
     
-    updateStockData_CHN(root_path, True)
+    updateStockData_CHN(root_path, storeType)
 
     if storeType == 1:
         # stop database server (sync)

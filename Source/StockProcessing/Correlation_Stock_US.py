@@ -11,7 +11,7 @@ for _ in range(2):
 sys.path.append(root_path + "/" + 'Source/FetchData/')
 sys.path.append(root_path + "/" + 'Source/DataBase/')
 
-from Fetch_Data_Stock_US_Daily import updateStockData_US, getStocksList
+from Fetch_Data_Stock_US_Daily import getStocksList
 from DB_API import queryStock, queryCoorelation, storeCoorelation
 
 

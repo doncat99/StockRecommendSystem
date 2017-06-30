@@ -204,7 +204,7 @@ if __name__ == "__main__":
         time.sleep(5)
     
     print("updating data...")
-    updateStockData_US(root_path, "1990-01-01", now)
+    updateStockData_US(root_path, "1990-01-01", now, storeType)
     
     print("Processing data...")
     day_selection, week_selection, month_selection = process_all_stocks_data(root_path)
