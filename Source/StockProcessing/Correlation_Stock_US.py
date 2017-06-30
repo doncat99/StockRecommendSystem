@@ -56,6 +56,7 @@ def get_all_stocks_correlation(root_path, dates_range):
         pbar.update(1)
         #count -= 1
         #if count == 0: break
+    pbar.close()
     
     print("merge stock data...")
     startTime = time.time()
@@ -83,8 +84,6 @@ def get_all_stocks_correlation(root_path, dates_range):
     df_us_company_pairs = df_us_company_pairs.sort_values(['Correlation'], ascending=[False]).reset_index(drop=True)#.reset_index(drop=True)
 
     storeCorrelation(root_path, "DB_STOCK", "SHEET_US_RELA", df_us_company_pairs)
-    
-    #print(df_us_company_pairs.head(30))
 
     print('total processing in:  %.4s seconds' % ((time.time() - startTime)))
 
@@ -125,7 +124,6 @@ if __name__ == "__main__":
         # stop database server (sync)
         time.sleep(5)
         ShutdownServer()
-    print("Processing data...")
     
 
  
