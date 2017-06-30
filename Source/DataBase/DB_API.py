@@ -387,31 +387,29 @@ def storeTweets(root_path, database, sheet, symbol, df):
         print("storeTweets Exception", e)
 
 
-def queryCoorelation(root_path, database):
-    CollectionKey = "us_company_coorelation"
+def queryCorrelation(root_path, database, sheet):
     config = getConfig(root_path)
     storeType = int(global_config.get('Setting', 'StoreType'))
 
     try:
         if storeType == 1:
-            collection = getCollection(database, CollectionKey)
+            collection = getCollection(database, sheet)
             return readFromCollection(collection)
         
         if storeType == 2:
-            dir = root_path + "/" + config.get('Paths', database)
-            filename = dir + CollectionKey + ".csv"
+            dir = root_path + "/" + config.get('Paths', database) + config.get('Paths', sheet)
+            filename = dir + "Correlation" + ".csv"
             if os.path.exists(filename): return pd.read_csv(filename, index_col=0)
             return pd.DataFrame()
 
     except Exception as e:
-        print("queryCoorelation Exception", e)
+        print("queryCorrelation Exception", e)
         return pd.DataFrame()
 
     return pd.DataFrame()
 
 
-def storeCoorelation(root_path, database, df):
-    CollectionKey = "us_company_coorelation"
+def storeCorrelation(root_path, database, sheet, df):
     config = getConfig(root_path)
     storeType = int(global_config.get('Setting', 'StoreType'))
 
@@ -419,12 +417,12 @@ def storeCoorelation(root_path, database, df):
 
     try:
         if storeType == 1:
-            collection = getCollection(database, CollectionKey)
+            collection = getCollection(database, sheet)
             writeToCollection(collection, df)
         
         if storeType == 2:
-            csv_dir = root_path + "/" + config.get('Paths', database)
-            writeToCSV(csv_dir, CollectionKey, df)
+            csv_dir = root_path + "/" + config.get('Paths', database) + config.get('Paths', sheet)
+            writeToCSV(csv_dir, "Correlation", df)
     
     except Exception as e:
-        print("storeCoorelation Exception", e)
+        print("storeCorrelation Exception", e)

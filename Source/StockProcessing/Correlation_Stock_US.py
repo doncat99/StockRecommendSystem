@@ -12,7 +12,7 @@ sys.path.append(root_path + "/" + 'Source/FetchData/')
 sys.path.append(root_path + "/" + 'Source/DataBase/')
 
 from Fetch_Data_Stock_US_Daily import getStocksList
-from DB_API import queryStock, queryCoorelation, storeCoorelation
+from DB_API import queryStock, queryCorrelation, storeCorrelation
 
 
 def get_single_stock_data(root_path, symbol, dates_range):
@@ -31,35 +31,41 @@ def get_single_stock_data(root_path, symbol, dates_range):
 
 
 def get_all_stocks_correlation(root_path, dates_range):
-    startTime = time.time()
+    
 
-    try:
-        df = queryCoorelation(root_path, "COORELATION_US")
-    except:
-        df = pd.DataFrame()
+    df = queryCorrelation(root_path, "DB_STOCK", "SHEET_US_RELA")
 
     if df.empty == False: return df
 
     symbols = getStocksList(root_path)['Symbol'].values.tolist()
+
+    pbar = tqdm(total=len(symbols))
 
     stockData = []
     stockList = []
     print("get stock data...")
     #count = 10
     for symbol in symbols:
+        startTime = time.time()
         df = get_single_stock_data(root_path, symbol, dates_range)
         if df.empty: continue
         stockData.append(df['Return'])
         stockList.append(symbol)
+        outMessage = '%-*s fetched in:  %.4s seconds' % (12, symbol, (time.time() - startTime))
+        pbar.set_description(outMessage)
+        pbar.update(1)
         #count -= 1
         #if count == 0: break
     
     print("merge stock data...")
+    startTime = time.time()
     df_returns = pd.concat(stockData, axis=1).fillna(0)
     df_returns.columns = stockList
     df_correlations = df_returns.corr()
+    print('total processing in:  %.4s seconds' % ((time.time() - startTime)))
 
     print("cal correlationship...")
+    startTime = time.time()
     pairwise_correlations = []
     stockCount = len(stockList)
     pbar = tqdm(total=stockCount*stockCount)
@@ -76,11 +82,13 @@ def get_all_stocks_correlation(root_path, dates_range):
     df_us_company_pairs.loc[:, 'Correlation'] = pd.Series(pairwise_correlations).T
     df_us_company_pairs = df_us_company_pairs.sort_values(['Correlation'], ascending=[False]).reset_index(drop=True)#.reset_index(drop=True)
 
-    storeCoorelation(root_path, "COORELATION_US", df_us_company_pairs)
+    storeCorrelation(root_path, "DB_STOCK", "SHEET_US_RELA", df_us_company_pairs)
     
     #print(df_us_company_pairs.head(30))
 
     print('total processing in:  %.4s seconds' % ((time.time() - startTime)))
+
+    pbar.close()
 
     return df_us_company_pairs
 
@@ -92,9 +100,9 @@ if __name__ == "__main__":
     pd.set_option('display.width',1000)
     warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
 
-    start_date = "2016-01-03"
-    end_date = "2017-06-10"
-    
+    start_date = "2017-01-03"
+    end_date = datetime.datetime.now().strftime("%Y-%m-%d")
+
     config = configparser.ConfigParser()
     config.read(root_path + "/" + "config.ini")
     storeType = int(config.get('Setting', 'StoreType'))
