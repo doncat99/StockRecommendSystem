@@ -79,7 +79,8 @@ def queryStockList(root_path, database, sheet):
         if storeType == 2:
             csv_dir = root_path + "/" + config.get('Paths', database) + config.get('Paths', sheet) + config.get('Paths', 'CSV_SHARE')
             filename = csv_dir + CollectionKey + '.csv'
-            return pd.read_csv(filename, index_col=0)
+            if os.path.exists(filename): return pd.read_csv(filename, index_col=0)
+            return pd.DataFrame()
 
     except Exception as e:
         print("queryStockList Exception", e)
@@ -155,8 +156,6 @@ def storePublishDay(root_path, database, sheet, symbol, date):
 
         if storeType == 2:
             csv_dir = root_path + "/" + config.get('Paths', database) + config.get('Paths', sheet) + config.get('Paths', 'CSV_SHARE')
-            if os.path.exists(csv_dir) == False:
-                os.makedirs(csv_dir)
             filename = csv_dir + CollectionKey + '.csv'
             if os.path.exists(filename):
                 df = pd.read_csv(filename, index_col=["index"])
@@ -191,6 +190,7 @@ def queryStock(root_path, database, sheet, symbol):
         if storeType == 2:
             csv_dir = root_path + "/" + config.get('Paths', database) + config.get('Paths', sheet) 
             filename = csv_dir + symbol + '.csv'
+            if os.path.exists(filename) == False: return pd.DataFrame(), lastUpdateTime
             df = pd.read_csv(filename, index_col=["Date"])
             if 'lastUpdate' in df:
                 lastUpdateTime = pd.Timestamp(df['lastUpdate'].iloc[0])
@@ -250,6 +250,7 @@ def queryNews(root_path, database, sheet, symbol):
         if storeType == 2:
             dir = root_path + "/" + config.get('Paths', database) + config.get('Paths', sheet)
             filename = dir + symbol + '.csv'
+            if os.path.exists(filename) == False: return pd.DataFrame(), lastUpdateTime
             df = pd.read_csv(filename)
             if 'lastUpdate' in df:
                 lastUpdateTime = pd.Timestamp(df['lastUpdate'].iloc[0])
@@ -301,14 +302,14 @@ def queryEarnings(root_path, database, sheet, date):
         if storeType == 2:
             dir = root_path + "/" + config.get('Paths', database) + config.get('Paths', sheet)
             filename = dir + date + ".csv"
-            return pd.read_csv(filename)
+            if os.path.exists(filename): return pd.read_csv(filename)
+            return pd.DataFrame()
 
     except Exception as e:
         print("queryEarnings Exception", e)
         return pd.DataFrame()
 
     return pd.DataFrame()
-
 
 def storeEarnings(root_path, database, sheet, date, df):
     config = getConfig(root_path)
@@ -347,6 +348,7 @@ def queryTweets(root_path, database, sheet, symbol, col):
         if storeType == 2:
             dir = root_path + "/" + config.get('Paths', database) + config.get('Paths', sheet)
             filename = dir + symbol + ".csv"
+            if os.path.exists(filename) == False: return pd.DataFrame(columns=col), lastUpdateTime
             df = pd.read_csv(filename)
             if df.empty: return pd.DataFrame(columns=col), lastUpdateTime
             if 'lastUpdate' in df:
@@ -396,7 +398,8 @@ def queryCoorelation(root_path, database):
         if storeType == 2:
             dir = root_path + "/" + config.get('Paths', database)
             filename = dir + CollectionKey + ".csv"
-            return pd.read_csv(filename, index_col=0)
+            if os.path.exists(filename): return pd.read_csv(filename, index_col=0)
+            return pd.DataFrame()
 
     except Exception as e:
         print("queryCoorelation Exception", e)
