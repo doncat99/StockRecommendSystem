@@ -23,7 +23,7 @@ if __name__ == "__main__":
 
     # from arctic import Arctic
     # store = Arctic("localhost")
-    # database = "STOCK_CHN"
+    # database = "DB_STOCK", "SHEET_CHN_DAILY"
     #store.delete_library(database)
     # try:
     #     library = store[database]

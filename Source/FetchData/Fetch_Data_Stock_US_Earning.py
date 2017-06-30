@@ -105,7 +105,7 @@ def updateEarningByDate(root_path, date):
     startTime = time.time()
     date = date.strftime("%Y-%m-%d")
     try:
-        df = queryEarnings(root_path, "EARNING_US", date)
+        df = queryEarnings(root_path, "DB_STOCK", "SHEET_US_EARN", date)
         if df.empty == False: return startTime
     except:
         df = pd.DataFrame()
@@ -115,7 +115,7 @@ def updateEarningByDate(root_path, date):
         if len(message) > 0: return startTime
 
     df = convertEarningsToDataFrame(text)
-    storeEarnings(root_path, "EARNING_US", date, df)
+    storeEarnings(root_path, "DB_STOCK", "SHEET_US_EARN", date, df)
     return startTime
 
 

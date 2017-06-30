@@ -5,7 +5,7 @@ from subprocess import call
 def DoStartServer(root_path):
     Config = configparser.ConfigParser()
     Config.read(root_path + "/" + "config.ini")
-    dir = Config.get('Paths', 'DATABASE')
+    dir = Config.get('Paths', 'DB_ROOT')
     database_path = root_path + "/" + dir
 
     if os.path.exists(database_path) == False: 

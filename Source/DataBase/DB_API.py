@@ -63,10 +63,9 @@ def writeToCSV(csv_dir, CollectionKey, df):
     df.to_csv(filename)
 
 
-def queryStockList(root_path, database):
+def queryStockList(root_path, database, sheet):
     global global_stocklist
-    #symbol_exception = ['AXON', 'CTT', 'ARL']
-    CollectionKey = "StockList"
+    CollectionKey = sheet + "_LIST"
     config = getConfig(root_path)
     storeType = int(config.get('Setting', 'StoreType'))
     
@@ -78,7 +77,7 @@ def queryStockList(root_path, database):
             return df
             
         if storeType == 2:
-            csv_dir = root_path + "/" + config.get('Paths', database) + config.get('Paths', 'STOCK_SHARE')
+            csv_dir = root_path + "/" + config.get('Paths', database) + config.get('Paths', sheet) + config.get('Paths', 'CSV_SHARE')
             filename = csv_dir + CollectionKey + '.csv'
             return pd.read_csv(filename, index_col=0)
 
@@ -88,8 +87,8 @@ def queryStockList(root_path, database):
     
     return pd.DataFrame()
 
-def storeStockList(root_path, database, df):
-    CollectionKey = "StockList"
+def storeStockList(root_path, database, sheet, df):
+    CollectionKey = sheet + "_LIST"
     config = getConfig(root_path)
     storeType = int(config.get('Setting', 'StoreType')) 
 
@@ -103,15 +102,15 @@ def storeStockList(root_path, database, df):
             writeToCollection(collection, df)
 
         if storeType == 2:
-            csv_dir = root_path + "/" + config.get('Paths', database) + config.get('Paths', 'STOCK_SHARE')
+            csv_dir = root_path + "/" + config.get('Paths', database) + config.get('Paths', sheet) + config.get('Paths', 'CSV_SHARE')
             writeToCSV(csv_dir, CollectionKey, df)
     
     except Exception as e:
         print("storeStockList Exception", e)
 
 
-def queryStockPublishDay(root_path, database, symbol):
-    CollectionKey = "StockPublishDay"
+def queryStockPublishDay(root_path, database, sheet, symbol):
+    CollectionKey = sheet + "_IPO"
     config = getConfig(root_path)
     storeType = int(config.get('Setting', 'StoreType'))
 
@@ -126,7 +125,7 @@ def queryStockPublishDay(root_path, database, symbol):
             return ''
 
         if storeType == 2:
-            csv_dir = root_path + "/" + config.get('Paths', database) + config.get('Paths', 'STOCK_SHARE')
+            csv_dir = root_path + "/" + config.get('Paths', database) + config.get('Paths', sheet) + config.get('Paths', 'CSV_SHARE')
             filename = csv_dir + CollectionKey + '.csv'
             if os.path.exists(filename):
                 df = pd.read_csv(filename)
@@ -140,8 +139,8 @@ def queryStockPublishDay(root_path, database, symbol):
         return ''
     return ''
 
-def storePublishDay(root_path, database, symbol, date):
-    CollectionKey = "StockPublishDay"
+def storePublishDay(root_path, database, sheet, symbol, date):
+    CollectionKey = sheet + "_IPO"
     config = getConfig(root_path)
     storeType = int(config.get('Setting', 'StoreType'))
 
@@ -155,7 +154,7 @@ def storePublishDay(root_path, database, symbol, date):
             writeToCollection(collection, df)
 
         if storeType == 2:
-            csv_dir = root_path + "/" + config.get('Paths', database) + config.get('Paths', 'STOCK_SHARE')
+            csv_dir = root_path + "/" + config.get('Paths', database) + config.get('Paths', sheet) + config.get('Paths', 'CSV_SHARE')
             if os.path.exists(csv_dir) == False:
                 os.makedirs(csv_dir)
             filename = csv_dir + CollectionKey + '.csv'
@@ -173,8 +172,8 @@ def storePublishDay(root_path, database, symbol, date):
     except Exception as e:
         print("storePublishDay Exception", e)
 
-def queryStock(root_path, database, symbol):
-    CollectionKey = 'StockDaily'
+def queryStock(root_path, database, sheet, symbol):
+    CollectionKey = sheet + '_DATA'
     config = getConfig(root_path)
     storeType = int(config.get('Setting', 'StoreType'))
     lastUpdateTime = pd.Timestamp('1970-01-01')
@@ -190,7 +189,7 @@ def queryStock(root_path, database, symbol):
             return df, lastUpdateTime
             
         if storeType == 2:
-            csv_dir = root_path + "/" + config.get('Paths', database)
+            csv_dir = root_path + "/" + config.get('Paths', database) + config.get('Paths', sheet) 
             filename = csv_dir + symbol + '.csv'
             df = pd.read_csv(filename, index_col=["Date"])
             if 'lastUpdate' in df:
@@ -204,8 +203,8 @@ def queryStock(root_path, database, symbol):
     return pd.DataFrame(), lastUpdateTime
 
 
-def storeStock(root_path, database, symbol, df):
-    CollectionKey = 'StockDaily'
+def storeStock(root_path, database, sheet, symbol, df):
+    CollectionKey = sheet + '_DATA'
     config = getConfig(root_path)
     storeType = int(config.get('Setting', 'StoreType'))
     now_date = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -226,21 +225,20 @@ def storeStock(root_path, database, symbol, df):
 
         if storeType == 2:
             df['lastUpdate'] = now_date
-            csv_dir = root_path + "/" + config.get('Paths', database)
+            csv_dir = root_path + "/" + config.get('Paths', database)+ config.get('Paths', sheet) 
             writeToCSV(csv_dir, symbol, df)
 
     except Exception as e:
         print("storeStock Exception", e)
 
-def queryNews(root_path, database, symbol):
-    CollectionKey = 'EventRegistry'
+def queryNews(root_path, database, sheet, symbol):
     config = getConfig(root_path)
     storeType = int(config.get('Setting', 'StoreType'))
     lastUpdateTime = pd.Timestamp('1970-01-01')
 
     try:
         if storeType == 1:
-            collection = getCollection(database, CollectionKey)
+            collection = getCollection(database, sheet)
             queryString = { "symbol" : symbol }
             df, metadata = readFromCollectionExtend(collection, queryString)
             if 'lastUpdate' in metadata:
@@ -250,7 +248,7 @@ def queryNews(root_path, database, symbol):
             return df, lastUpdateTime
 
         if storeType == 2:
-            dir = root_path + "/" + config.get('Paths', database)
+            dir = root_path + "/" + config.get('Paths', database) + config.get('Paths', sheet)
             filename = dir + symbol + '.csv'
             df = pd.read_csv(filename)
             if 'lastUpdate' in df:
@@ -264,8 +262,7 @@ def queryNews(root_path, database, symbol):
     return pd.DataFrame(), lastUpdateTime
 
 
-def storeNews(root_path, database, symbol, df):
-    CollectionKey = 'EventRegistry'
+def storeNews(root_path, database, sheet, symbol, df):
     config = getConfig(root_path)
     storeType = int(global_config.get('Setting', 'StoreType'))
     now_date = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -276,33 +273,34 @@ def storeNews(root_path, database, symbol, df):
     
     try:
         if storeType == 1:
-            collection = getCollection(database, CollectionKey)
+            collection = getCollection(database, sheet)
             metadata = {'lastUpdate':now_date}
             df = df.reset_index()
             writeToCollectionExtend(collection, symbol, df, metadata)
 
         if storeType == 2:
             df['lastUpdate'] = now_date
-            csv_dir = root_path + "/" + config.get('Paths', database)
+            csv_dir = root_path + "/" + config.get('Paths', database) + config.get('Paths', sheet)
             writeToCSV(csv_dir, symbol, df)
     
     except Exception as e:
         print("storeNews Exception", e)
 
 
-def queryEarnings(root_path, database, date):
-    CollectionKey = date
+def queryEarnings(root_path, database, sheet, date):
     config = getConfig(root_path)
     storeType = int(config.get('Setting', 'StoreType'))
 
     try:
         if storeType == 1:
-            collection = getCollection(database, CollectionKey)
-            return readFromCollection(collection)
+            collection = getCollection(database, sheet)
+            queryString = { "symbol" : date }
+            df, metadata = readFromCollectionExtend(collection, queryString)
+            return df
         
         if storeType == 2:
-            dir = root_path + "/" + config.get('Paths', database)
-            filename = dir + CollectionKey + ".csv"
+            dir = root_path + "/" + config.get('Paths', database) + config.get('Paths', sheet)
+            filename = dir + date + ".csv"
             return pd.read_csv(filename)
 
     except Exception as e:
@@ -312,66 +310,74 @@ def queryEarnings(root_path, database, date):
     return pd.DataFrame()
 
 
-def storeEarnings(root_path, database, date, df):
-    CollectionKey = date
+def storeEarnings(root_path, database, sheet, date, df):
     config = getConfig(root_path)
     storeType = int(config.get('Setting', 'StoreType'))
-
     now_date = datetime.datetime.now().strftime("%Y-%m-%d")
     
     try:
         if storeType == 1:
-            collection = getCollection(database, CollectionKey)
-            writeToCollection(collection, df)
+            collection = getCollection(database, sheet)
+            writeToCollectionExtend(collection, date, df)
 
         if storeType == 2:
-            csv_dir = root_path + "/" + config.get('Paths', database)
-            writeToCSV(csv_dir, CollectionKey, df)
+            csv_dir = root_path + "/" + config.get('Paths', database) + config.get('Paths', sheet)
+            writeToCSV(csv_dir, date, df)
 
     except Exception as e:
         print("storeNews Exception", e)
 
 
-def queryTweets(root_path, database, symbol, col):
-    CollectionKey = symbol
+def queryTweets(root_path, database, sheet, symbol, col):
     config = getConfig(root_path)
     storeType = int(config.get('Setting', 'StoreType'))
+    lastUpdateTime = pd.Timestamp('1970-01-01')
 
     try:
         if storeType == 1:
-            collection = getCollection(database, CollectionKey)
-            return readFromCollection(collection)
+            collection = getCollection(database, sheet)
+            queryString = { "symbol" : symbol }
+            df, metadata = readFromCollectionExtend(collection, queryString)
+            if 'lastUpdate' in metadata:
+                lastUpdateTime = pd.Timestamp(metadata['lastUpdate'])
+            if df.empty: return pd.DataFrame(columns=col), lastUpdateTime
+            df = df.set_index('Date')
+            return df, lastUpdateTime
 
         if storeType == 2:
-            dir = root_path + "/" + config.get('Paths', database)
-            filename = dir + CollectionKey + ".csv"
-            return pd.read_csv(filename, usecols=col)
+            dir = root_path + "/" + config.get('Paths', database) + config.get('Paths', sheet)
+            filename = dir + symbol + ".csv"
+            df = pd.read_csv(filename)
+            if df.empty: return pd.DataFrame(columns=col), lastUpdateTime
+            if 'lastUpdate' in df:
+                lastUpdateTime = pd.Timestamp(df['lastUpdate'].iloc[0])
+            return df, lastUpdateTime
 
     except Exception as e:
         print("queryTweets Exception", e)
-        return pd.DataFrame()
+        return pd.DataFrame(columns=col), lastUpdateTime
 
-    return pd.DataFrame()
+    return pd.DataFrame(columns=col), lastUpdateTime
 
 
-def storeTweets(root_path, database, symbol, df):
-    CollectionKey = symbol
+def storeTweets(root_path, database, sheet, symbol, df):
     config = getConfig(root_path)
     storeType = int(config.get('Setting', 'StoreType'))
-
     now_date = datetime.datetime.now().strftime("%Y-%m-%d")
-
     df = df.drop_duplicates(keep='last')
     df = df.sort_values(['Date'], ascending=[False]).reset_index(drop=True)
     
     try:
         if storeType == 1:
-            collection = getCollection(database, CollectionKey)
-            writeToCollection(collection, df)
+            collection = getCollection(database, sheet)
+            metadata = {'lastUpdate':now_date}
+            df = df.reset_index()
+            writeToCollectionExtend(collection, symbol, df, metadata)
         
         if storeType == 2:
-            csv_dir = root_path + "/" + config.get('Paths', database)
-            writeToCSV(csv_dir, CollectionKey, df)
+            df['lastUpdate'] = now_date
+            csv_dir = root_path + "/" + config.get('Paths', database) + config.get('Paths', sheet)
+            writeToCSV(csv_dir, symbol, df)
 
     except Exception as e:
         print("storeTweets Exception", e)

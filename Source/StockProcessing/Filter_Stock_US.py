@@ -102,7 +102,7 @@ def get_single_stock_data(root_path, symbol):
     #     memory_map=True,
     #     #chunksize=300,
     # ).sort_index()
-    df, lastUpdateTime = queryStock(root_path, "STOCK_US", symbol)
+    df, lastUpdateTime = queryStock(root_path, "DB_STOCK", "SHEET_US_DAILY", symbol)
     df.index = pd.to_datetime(df.index)
 
     if df.empty: 

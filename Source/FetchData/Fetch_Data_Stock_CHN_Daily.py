@@ -14,7 +14,7 @@ from DB_API import queryStock, storeStock, queryStockList, storeStockList, query
 
 def getStocksList(root_path):
     try:
-        df = queryStockList(root_path, "STOCK_CHN")
+        df = queryStockList(root_path, "DB_STOCK", "SHEET_CHN_DAILY")
         df.index = df.index.astype(str).str.zfill(6)
     except Exception as e:
         df = pd.DataFrame()
@@ -27,8 +27,8 @@ def getStocksList(root_path):
     #listData.index = listData.index.astype(str).str.zfill(6) #[str(symbol).zfill(6) for symbol in listData.index] #listData.index.astype(str).str.zfill(6)
     #print(listData.index)
     #listData['Symbol'] = listData['Symbol'].str.strip()
-    storeStockList(root_path, "STOCK_CHN", listData)
-    df = queryStockList(root_path, "STOCK_CHN")
+    storeStockList(root_path, "DB_STOCK", "SHEET_CHN_DAILY", listData)
+    df = queryStockList(root_path, "DB_STOCK", "SHEET_CHN_DAILY")
     df.index = df.index.astype(str).str.zfill(6)
     return df
 
@@ -107,12 +107,12 @@ def updateSingleStockData(root_path, symbol, force_check):
     till_date = (datetime.datetime.now()).strftime("%Y-%m-%d")
     end_date  = pd.Timestamp(till_date)
     
-    stockData, lastUpdateTime = queryStock(root_path, "STOCK_CHN", symbol)
+    stockData, lastUpdateTime = queryStock(root_path, "DB_STOCK", "SHEET_CHN_DAILY", symbol)
 
     if stockData.empty:
         stockData, message = getSingleStock(symbol)
         if stockData.empty == False:
-            storeStock(root_path, "STOCK_CHN", symbol, stockData)
+            storeStock(root_path, "DB_STOCK", "SHEET_CHN_DAILY", symbol, stockData)
         return startTime, message
 
     modified = False
@@ -135,10 +135,10 @@ def updateSingleStockData(root_path, symbol, force_check):
         
     if modified:
         stockData = stockData[~stockData.index.duplicated(keep='first')]
-        storeStock(root_path, "STOCK_CHN", symbol, stockData)
+        storeStock(root_path, "DB_STOCK", "SHEET_CHN_DAILY", symbol, stockData)
     elif updateOnce:
         stockData = stockData[~stockData.index.duplicated(keep='first')]
-        storeStock(root_path, "STOCK_CHN", symbol, stockData)
+        storeStock(root_path, "DB_STOCK", "SHEET_CHN_DAILY", symbol, stockData)
         message = message + ", nothing updated"
     else:
         message = ""

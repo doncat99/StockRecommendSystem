@@ -17,7 +17,7 @@ import fix_yahoo_finance as yf
 
 def getStocksList(root_path):
     try:
-        df = queryStockList(root_path, "STOCK_US")
+        df = queryStockList(root_path, "DB_STOCK", "SHEET_US_DAILY")
     except Exception as e:
         df = pd.DataFrame()
 
@@ -48,8 +48,8 @@ def getStocksList(root_path):
     listData.loc[len(listData)] = ['SPY', 'SPDR S&P 500 ETF Trust', 0.0, '', '']
     listData.loc[len(listData)] = ['^VIX', 'VOLATILITY S&P 500', 0.0, '', '']
     listData['Symbol'] = listData['Symbol'].str.strip()
-    storeStockList(root_path, "STOCK_US", listData)
-    return queryStockList(root_path, "STOCK_US")
+    storeStockList(root_path, "DB_STOCK", "SHEET_US_DAILY", listData)
+    return queryStockList(root_path, "DB_STOCK", "SHEET_US_DAILY")
 
 
 def getSingleStock(symbol, from_date, till_date):
@@ -80,7 +80,7 @@ def judgeOpenDaysInRange(from_date, to_date):
     return opendays
 
 def judgeNeedPreDownload(root_path, symbol, first_date, from_date, to_date):
-    publishDay = pd.Timestamp(queryStockPublishDay(root_path, "STOCK_US", symbol))
+    publishDay = pd.Timestamp(queryStockPublishDay(root_path, "DB_STOCK", "SHEET_US_DAILY", symbol))
     if pd.isnull(publishDay) == False and publishDay == first_date:
         return False
 
@@ -117,16 +117,16 @@ def updateSingleStockData(root_path, symbol, from_date, till_date, force_check):
     if end_date == now_date: 
         end_date = end_date - datetime.timedelta(days=1)
      
-    stockData, lastUpdateTime = queryStock(root_path, "STOCK_US", symbol)
+    stockData, lastUpdateTime = queryStock(root_path, "DB_STOCK", "SHEET_US_DAILY", symbol)
     
     if stockData.empty:
         stockData, message = getSingleStock(symbol, from_date, till_date)
         if stockData.empty == False:
-            storeStock(root_path, "STOCK_US", symbol, stockData)
+            storeStock(root_path, "DB_STOCK", "SHEET_US_DAILY", symbol, stockData)
             first_date = pd.Timestamp(stockData.index[0])
             to_date = (first_date - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
             if judgeNeedPreDownload(root_path, symbol, first_date, from_date, to_date):
-                storePublishDay(root_path, "STOCK_US", symbol, first_date.strftime("%Y-%m-%d"))
+                storePublishDay(root_path, "DB_STOCK", "SHEET_US_DAILY", symbol, first_date.strftime("%Y-%m-%d"))
             message = message + ", database updated"
         else:
             print("get stock from network failed", symbol)
@@ -152,7 +152,7 @@ def updateSingleStockData(root_path, symbol, from_date, till_date, force_check):
                 stockData.index.name = 'Date'
             else:
                 savePublishDay = True
-                storePublishDay(root_path, "STOCK_US", symbol, first_date.strftime("%Y-%m-%d"))
+                storePublishDay(root_path, "DB_STOCK", "SHEET_US_DAILY", symbol, first_date.strftime("%Y-%m-%d"))
                 message = message + ", save stock publish(IPO) day, next time won't check it again"
 
     updateOnce = now_date > lastUpdateTime
@@ -172,10 +172,10 @@ def updateSingleStockData(root_path, symbol, from_date, till_date, force_check):
 
     if modified:
         stockData = stockData[~stockData.index.duplicated(keep='first')]
-        storeStock(root_path, "STOCK_US", symbol, stockData)
+        storeStock(root_path, "DB_STOCK", "SHEET_US_DAILY", symbol, stockData)
     elif updateOnce:
         stockData = stockData[~stockData.index.duplicated(keep='first')]
-        storeStock(root_path, "STOCK_US", symbol, stockData)
+        storeStock(root_path, "DB_STOCK", "SHEET_US_DAILY", symbol, stockData)
         message = message + ", nothing updated"
     elif savePublishDay == False:
         message = ""

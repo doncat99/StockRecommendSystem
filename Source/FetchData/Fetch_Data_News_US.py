@@ -69,14 +69,14 @@ def updateNewsArticle(root_path, symbol, from_date, till_date, count):
 
     if len(symbol) == 0: return startTime, message
 
-    df, lastUpdateTime = queryNews(root_path, "NEWS_US", symbol)
+    df, lastUpdateTime = queryNews(root_path, "DB_STOCK", "SHEET_US_NEWS", symbol)
 
     if (datetime.datetime.now() - lastUpdateTime) < datetime.timedelta(hours=24):
         return
 
     if df.empty:
         df = getSingleStockNewsArticle(root_path, symbol, from_date, till_date, count)
-        storeNews(root_path, "NEWS_US", symbol, df)
+        storeNews(root_path, "DB_STOCK", "SHEET_US_NEWS", symbol, df)
         return 
     
     print(df)
@@ -101,7 +101,7 @@ def updateNewsArticle(root_path, symbol, from_date, till_date, count):
         modified = True
 
     if modified:
-        storeNews(root_path, "NEWS_US", symbol, df)
+        storeNews(root_path, "DB_STOCK", "SHEET_US_NEWS", symbol, df)
 
     
 if __name__ == "__main__":
