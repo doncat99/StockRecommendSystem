@@ -103,8 +103,5 @@ ENV/
 # DS_Store
 .DS_Store
 
-# fetch data
+# data storage
 Data/
-
-# Result output
-Result/
