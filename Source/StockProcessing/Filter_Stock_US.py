@@ -1,6 +1,7 @@
 import sys, os, time, datetime, warnings, configparser
 import pandas as pd
 import concurrent.futures
+from tqdm import tqdm
 
 from pandas.tseries.offsets import CustomBusinessMonthBegin
 from pandas.tseries.holiday import USFederalHolidayCalendar
@@ -148,39 +149,41 @@ def processing_stock_data(root_path, symbol, day_selection, week_selection, mont
     return startTime
 
 
-def get_all_stocks_data(root_path):
-    stocklist = getStocksList(root_path)['Symbol'].values.tolist()
+def process_all_stocks_data(root_path):
+    symbols = getStocksList(root_path)['Symbol'].values.tolist()
+
+    pbar = tqdm(total=len(symbols))
 
     day_selection = []
     week_selection = []
     month_selection = []
 
-    startTime = time.time()
-    for stock in stocklist:
-        processing_stock_data(root_path, stock, day_selection, week_selection, month_selection)
-    print('total processing in:  %.4s seconds' % ((time.time() - startTime)))
-
     # startTime = time.time()
-    # with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-    #     # Start the load operations and mark each future with its URL
-    #     future_to_stock = {executor.submit(processing_stock_data, root_path, stock, week_selection, month_selection): stock for stock in stocklist}
-    #     for future in concurrent.futures.as_completed(future_to_stock):
-    #         stock = future_to_stock[future]
-    #         try:
-    #             subStartTime = future.result()
-    #         except Exception as exc:
-    #             print('%r generated an exception: %s' % (stock, exc))
-    #         else:
-    #             outMessage = '%-*s processing in:  %.4s seconds' % (6, stock, (time.time() - subStartTime))
-    #             print(outMessage)
+    # for symbol in symbols:
+    #     startTime = processing_stock_data(root_path, symbol, day_selection, week_selection, month_selection)
+    #     outMessage = '%-*s processed in:  %.4s seconds' % (6, symbol, (time.time() - startTime))
+    #     pbar.set_description(outMessage)
+    #     pbar.update(1)
     # print('total processing in:  %.4s seconds' % ((time.time() - startTime)))
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+        # Start the load operations and mark each future with its URL
+        future_to_stock = {executor.submit(processing_stock_data, root_path, symbol, day_selection, week_selection, month_selection): symbol for symbol in symbols}
+        for future in concurrent.futures.as_completed(future_to_stock):
+            stock = future_to_stock[future]
+            try:
+                startTime = future.result()
+            except Exception as exc:
+                startTime = time.time()
+                print('%r generated an exception: %s' % (stock, exc))
+            outMessage = '%-*s processed in:  %.4s seconds' % (6, stock, (time.time() - startTime))
+            pbar.set_description(outMessage)
+            pbar.update(1)
 
     return day_selection, week_selection, month_selection
 
 
 if __name__ == "__main__":
-    #np.seterr(divide='ignore', invalid='ignore')
-    #np.set_printoptions(precision=3, suppress=True)
     pd.set_option('precision', 3)
     pd.set_option('display.width',1000)
     warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
@@ -201,10 +204,10 @@ if __name__ == "__main__":
         time.sleep(5)
     
     print("updating data...")
-    updateStockData_US(root_path, "1990-01-01", now)
+    #updateStockData_US(root_path, "1990-01-01", now)
     
     print("Processing data...")
-    day_selection, week_selection, month_selection = get_all_stocks_data(root_path)
+    day_selection, week_selection, month_selection = process_all_stocks_data(root_path)
     day_week_selection = list(set(day_selection) & set(week_selection))
     week_month_selection = list(set(week_selection) & set(month_selection))
     day_month_selection = list(set(day_selection) & set(month_selection))
