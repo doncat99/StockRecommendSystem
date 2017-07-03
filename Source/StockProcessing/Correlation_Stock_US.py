@@ -31,8 +31,6 @@ def get_single_stock_data(root_path, symbol, dates_range):
 
 
 def get_all_stocks_correlation(root_path, dates_range):
-    
-
     df = queryCorrelation(root_path, "DB_STOCK", "SHEET_US_RELA")
 
     if df.empty == False: return df

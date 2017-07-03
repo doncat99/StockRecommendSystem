@@ -31,6 +31,10 @@ Cover stock related data fetching, storaging in either MongoDB or CSV mode (See 
 cd Source/FetchData   
 python Fetch_Data_Stock_US_Daily.py   
 
+## Stock Prediction:
+
+Under Development...
+
 ## Stock Processing:
 Correlation
 >        Company1 Company2  Correlation  
@@ -50,7 +54,7 @@ Correlation
 cd Source/StockProcessing   
 python Correlation_Stock_US.py   
 
-## Reinforment Learning:
+## Reinforcement Learning:
 This sector is directly clone from: [Link](https://github.com/shenyichen105/Deep-Reinforcement-Learning-in-Stock-Trading)
 
 More in mind:
