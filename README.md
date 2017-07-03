@@ -27,6 +27,10 @@ Cover stock related data fetching, storaging in either MongoDB or CSV mode (See 
 4. News: EventRegistry (6.4.3)
 5. Media: Twitter Data
 
+### Run
+cd Source/FetchData   
+python Fetch_Data_Stock_US_Daily.py   
+
 ## Stock Processing:
 Correlation
 >        Company1 Company2  Correlation  
@@ -42,7 +46,9 @@ Correlation
 >            NTB      FBK        0.988
 >           GOOG    GOOGL        0.987
 
-For the whole correlation list, run it and check "Result" folder for it.
+### Run
+cd Source/StockProcessing   
+python Correlation_Stock_US.py   
 
 ## Reinforment Learning:
 This sector is directly clone from: [Link](https://github.com/shenyichen105/Deep-Reinforcement-Learning-in-Stock-Trading)
@@ -65,6 +71,9 @@ testing output:
 > Runner: Taking action 2017-06-14 00:00:00 buy  
 > Final outcome: 121500.348294  
 
+### Run
+cd Source/ReinforcementLearning   
+python runner.py   
 
 ## ToDo:
 More AI approach will be arranged and upload ASAP
