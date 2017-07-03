@@ -313,8 +313,6 @@ class random_forrest_classification(random_forrest_model):
         print('Save Directory: ', self.paras.save_folder)
         self.paras.model_folder = self.get_model_directory()
         print('Model Directory: ', self.paras.model_folder)
-        self.paras.stock_folder = self.get_stock_directory()
-        print('Stock Directory: ', self.paras.stock_folder)
         ################################################################################
 
         LabelColumnName = 'label'

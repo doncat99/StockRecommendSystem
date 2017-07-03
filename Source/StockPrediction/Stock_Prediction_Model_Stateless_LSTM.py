@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt  # http://matplotlib.org/examples/pylab_examples
 import pandas as pd
 import numpy as np
 from Stock_Prediction_Base import base_model
-from Stock_Prediction_Data_Processing import get_all_stocks_feature_data, preprocessing_data, kmeans_claasification
+from Stock_Prediction_Data_Processing import reshape_input, get_all_stocks_feature_data, preprocessing_data, kmeans_claasification
 
 class lstm_model(base_model):
     def build_model(self, index):
@@ -323,8 +323,6 @@ class rnn_lstm_classification(lstm_model):
         print('Save Directory: ', self.paras.save_folder)
         self.paras.model_folder = self.get_model_directory()
         print('Model Directory: ', self.paras.model_folder)
-        self.paras.stock_folder = self.get_stock_directory()
-        print('Stock Directory: ', self.paras.stock_folder)
         ################################################################################
 
         LabelColumnName = 'label'

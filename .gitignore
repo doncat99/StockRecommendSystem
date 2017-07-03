@@ -105,3 +105,9 @@ ENV/
 
 # data storage
 Data/
+
+# Machine Learning Model folder
+Model/
+
+# history log folder
+History/

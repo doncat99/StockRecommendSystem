@@ -1,18 +1,25 @@
 from Stock_Prediction_Base import SP_Paras
-from Stock_Prediction_Data_Stock import updateStockData
 from Stock_Prediction_Model_Stateless_LSTM import rnn_lstm_classification
 from Stock_Prediction_Model_DBN import dbn_classification
 from Stock_Prediction_Model_Random_Forrest import random_forrest_classification
 from Stock_Prediction_Recommand_System import recommand_system
 
-import warnings
+import sys, os, time, datetime, warnings, configparser
 import tensorflow as tf
-import numpy as np
 import pandas as pd
 from keras import backend
 
-def run_lstm_classification(train_symbols, predict_symbols, need_training, need_plot_training_diagram, need_predict):
-    paras = SP_Paras('lstm', train_symbols, predict_symbols)
+cur_path = os.path.dirname(os.path.abspath(__file__))
+for _ in range(2):
+    root_path = cur_path[0:cur_path.rfind('/', 0, len(cur_path))]
+    cur_path = root_path
+sys.path.append(root_path + "/" + 'Source/FetchData/')
+sys.path.append(root_path + "/" + 'Source/DataBase/')
+from Fetch_Data_Stock_US_Daily import updateStockData_US, getStocksList
+
+
+def run_lstm_classification(root_path, train_symbols, predict_symbols, need_training, need_plot_training_diagram, need_predict):
+    paras = SP_Paras('lstm', root_path, train_symbols, predict_symbols)
     paras.save = True
     paras.load = False
     paras.plot = need_plot_training_diagram
@@ -26,7 +33,7 @@ def run_lstm_classification(train_symbols, predict_symbols, need_training, need_
     paras.pred_len = 1
     paras.valid_len = 20
     paras.start_date = '2012-01-03'
-    paras.end_date = '2017-05-08'
+    paras.end_date = datetime.datetime.now().strftime("%Y-%m-%d")
     paras.verbose = 1
     
     paras.batch_size = 64
@@ -65,7 +72,7 @@ def run_dbn_classification(train_symbols, predict_symbols, need_training, need_p
     paras.pred_len = 1
     paras.valid_len = 20
     paras.start_date = '2016-01-03'
-    paras.end_date = '2017-04-18'
+    paras.end_date = datetime.datetime.now().strftime("%Y-%m-%d")
     paras.verbose = 1
 
     paras.batch_size = 64
@@ -91,8 +98,8 @@ def run_dbn_classification(train_symbols, predict_symbols, need_training, need_p
     return paras
 
 
-def run_rf_classification(train_symbols, predict_symbols, need_training, need_plot_training_diagram, need_predict):
-    paras = SP_Paras('randomForrest', train_symbols, predict_symbols)
+def run_rf_classification(root_path, train_symbols, predict_symbols, need_training, need_plot_training_diagram, need_predict):
+    paras = SP_Paras('randomForrest', root_path, train_symbols, predict_symbols)
     paras.save = True
     paras.load = False
     paras.plot = need_plot_training_diagram
@@ -109,7 +116,7 @@ def run_rf_classification(train_symbols, predict_symbols, need_training, need_pl
     paras.pred_len = 1
     paras.valid_len = 20
     paras.start_date = '2016-01-03'
-    paras.end_date = '2017-04-26'
+    paras.end_date = datetime.datetime.now().strftime("%Y-%m-%d")
     paras.verbose = 0
 
     # paras.tree_min = [10, 22, 46] # times 16x = trees
@@ -127,7 +134,7 @@ def run_rf_classification(train_symbols, predict_symbols, need_training, need_pl
     paras.window_max = 44
 
     paras.out_class_type = 'classification'
-    paras.n_out_class = 2  # ignore for regression
+    paras.n_out_class = 7  # ignore for regression
 
     # run
     rf_cla = random_forrest_classification(paras)
@@ -143,7 +150,7 @@ def run_recommand_system(train_symbols, predict_symbols, need_training, need_plo
     paras.pred_len = 1
     paras.valid_len = 20
     paras.start_date = '2016-01-03'
-    paras.end_date = '2017-04-20'
+    paras.end_date = datetime.datetime.now().strftime("%Y-%m-%d")
     paras.verbose = 0
     paras.epoch = 200
 
@@ -155,24 +162,38 @@ def run_recommand_system(train_symbols, predict_symbols, need_training, need_plo
     rs.run(need_training, need_predict)
 
 if __name__ == "__main__":
-    warnings.filterwarnings('ignore', category=DeprecationWarning)
+    warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
     tf.logging.set_verbosity(tf.logging.ERROR)
-    np.seterr(divide='ignore', invalid='ignore')
-    np.set_printoptions(precision=3, suppress=True)
-    pd.set_option('precision', 3)
-    pd.set_option('display.width',1000)
 
     predict_symbols = ['AMD', 'WDC', 'SINA', 'WB', 'CTRP', 'NTES', 'ATVI', 'FB', 'GLUU', 'NVDA', 'NFLX', 
                        'MRVL', 'SMCI', 'JD', 'INTC', 'AMZN', 'BIDU', 'BGNE', 'QIWI', 'XNET', 'MOMO', 'YY']
 
-    predict_symbols = ['AMD']
+    now = datetime.datetime.now().strftime("%Y-%m-%d")
 
-    train_symbols = updateStockData(predict_symbols, "2002-01-01", "2017-05-24", 20, True)
+    config = configparser.ConfigParser()
+    config.read(root_path + "/" + "config.ini")
+    storeType = int(config.get('Setting', 'StoreType'))
 
-    #paras = run_lstm_classification(train_symbols, predict_symbols, True, False, True)
+    if storeType == 1:
+        from Start_DB_Server import StartServer, ShutdownServer
+        # start database server (async)
+        thread = StartServer(root_path)
+        
+        # wait for db start, the standard procedure should listen to 
+        # the completed event of function "StartServer"
+        time.sleep(5)
+
+    #updateStockData_US(root_path, "1990-01-01", now, storeType)
+
+    #paras = run_lstm_classification(root_path, predict_symbols, predict_symbols, True, False, True)
     #paras = run_dbn_classification(train_symbols, predict_symbols, True, False, True)
-    #paras = run_rf_classification(train_symbols, predict_symbols, True, False, True)
+    paras = run_rf_classification(root_path, predict_symbols, predict_symbols, True, False, True)
 
     #run_recommand_system(train_symbols, predict_symbols, True, False, True)
+    
+    if storeType == 1:
+        # stop database server (sync)
+        time.sleep(5)
+        ShutdownServer()
 
     backend.clear_session()

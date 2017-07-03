@@ -1,11 +1,18 @@
-import os, datetime
+import sys, os, datetime
 import numpy as np
 import pandas as pd
-from stockstats import *
+#from stockstats import *
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from scipy.stats import zscore
 
 from sklearn.cluster import KMeans
+
+cur_path = os.path.dirname(os.path.abspath(__file__))
+for _ in range(2):
+    root_path = cur_path[0:cur_path.rfind('/', 0, len(cur_path))]
+    cur_path = root_path
+sys.path.append(root_path + "/" + 'Source/DataBase/')
+from DB_API import queryStock
 
 ###################################
 ###                             ###
@@ -141,37 +148,53 @@ def kmeans_claasification(df, n_cluster=5):
 ###       Read Stock Data       ###
 ###                             ###
 ###################################
-
-def get_single_stock_data(ticker, stock_folder):
+def get_single_stock_data(root_path, symbol):
     '''
     All data is from quandl wiki dataset
     Feature set: [Open  High    Low  Close    Volume  Ex-Dividend  Split Ratio Adj. Open  Adj. High  Adj. Low
     Adj. Close  Adj. Volume]
     '''
-    file_name = stock_folder + ticker + '.csv'
-    COLUMNS = ['Date', 'Open', 'High', 'Low', 'Close', 'Volume']
+    # file_name = stock_folder + ticker + '.csv'
+    # COLUMNS = ['Date', 'Open', 'High', 'Low', 'Close', 'Volume']
+    # RENAME_COLUMNS = ['date', 'open', 'high', 'low', 'close', 'volume']
 
-    if os.path.exists(file_name) == False: 
-        print("get stock: " + ticker + " failed")
-        return pd.DataFrame()
+    # if os.path.exists(file_name) == False: 
+    #     print("get stock: " + ticker + " failed")
+    #     return pd.DataFrame()
 
-    return pd.read_csv(
-        file_name,
-        #names=COLUMNS,
-        skipinitialspace=True,
-        engine='python',
-        index_col=['Date'],
-        #usecols=['Date', 'Open', 'High', 'Low', 'Close', 'Volume', 'Analyist', 'Estimate', 'Actual', 'Surprise'],
-        parse_dates=['Date'],
-        #skiprows=1
-    ).sort_index()
+    # df = pd.read_csv(
+    #     file_name,
+    #     #names=COLUMNS,
+    #     skipinitialspace=True,
+    #     engine='python',
+    #     index_col=['Date'],
+    #     #usecols=COLUMNS,
+    #     parse_dates=['Date'],
+    #     #skiprows=1,
+    #     memory_map=True,
+    #     #chunksize=300,
+    # ).sort_index()
+    df, lastUpdateTime = queryStock(root_path, "DB_STOCK", "SHEET_US_DAILY", symbol)
+    df.index = pd.to_datetime(df.index)
+
+    if df.empty: 
+        print("empty df", symbol)
+        return df
+
+    # if 'Adj Close' in df:
+    #     close = 'Adj Close'
+    # else:
+    #     close = 'Close'
+    #df=df.rename(columns = {'Date':'date', 'Open':'open', 'High':'high', 'Low':'low', close:'close', 'Volume':'volume'})
+
+    return df
 
 
-def get_all_stocks_data(train_tickers, stock_folder):
+def get_all_stocks_data(root_path, train_tickers):
     data_original = {}
     # get data
     for ticker in train_tickers:
-        data = get_single_stock_data(ticker, stock_folder) #[df, df_valid, df_lately, df_all, counters, centers_ori]
+        data = get_single_stock_data(root_path, ticker) #[df, df_valid, df_lately, df_all, counters, centers_ori]
         if data.empty: continue
         data_original[ticker] = data
     return data_original
@@ -288,7 +311,8 @@ def get_single_stock_feature_data(paras, input_data, LabelColumnName):
     input_data = input_data.loc[(input_data.index >= start_date) & (input_data.index <= end_date)]
     input_data = input_data[input_data['Volume'] > 0]
 
-    dataset = StockDataFrame.retype(input_data)
+    # dataset = StockDataFrame.retype(input_data)
+    dataset = input_data.rename(columns = {'Date':'date', 'Open':'open', 'High':'high', 'Low':'low', 'Close':'close', 'Volume':'volume'})
 
     # dataset['last_close']  = dataset['close'].shift(1 * (paras.pred_len))
     # dataset['last_volume'] = dataset['volume'].shift(1 * (paras.pred_len))
@@ -305,17 +329,17 @@ def get_single_stock_feature_data(paras, input_data, LabelColumnName):
     # dataset['middle_pct']  = dataset['middle_pct'].abs()
     # dataset['bottom_pct']  = dataset[['open_pct', 'close_pct']].min(axis=1) - dataset['low_pct']
         
-    dataset.get('rsi_7')
-    dataset.get('rsi_14')
-    dataset.get('rsi_21')
-    dataset.get('kdjk_9')
-    dataset.get('kdjk_14')
-    dataset.get('wr_9')
-    dataset.get('wr_14')
-    dataset.get('close_-5_r')
-    dataset.get('close_-10_r')
-    dataset.get('close_-20_r')
-    dataset.get('close_-60_r')
+    # dataset.get('rsi_7')
+    # dataset.get('rsi_14')
+    # dataset.get('rsi_21')
+    # dataset.get('kdjk_9')
+    # dataset.get('kdjk_14')
+    # dataset.get('wr_9')
+    # dataset.get('wr_14')
+    # dataset.get('close_-5_r')
+    # dataset.get('close_-10_r')
+    # dataset.get('close_-20_r')
+    # dataset.get('close_-60_r')
     # dataset = dataset[np.isfinite(dataset['close_-20_r'])]
     
     dataset['frac_change'] = (dataset['close'] - dataset['open']) / dataset['open']
@@ -341,8 +365,8 @@ def get_single_stock_feature_data(paras, input_data, LabelColumnName):
                   #'close_-5_r', 'close_-10_r', 'close_-20_r', 'close_-60_r'
                   #'open_pct', 'high_pct', 'low_pct', 'close_pct', 'volume_pct',
                   #'top_pct', 'middle_pct', 'bottom_pct', 'stock_stat'
-                  'rsi_7', 'rsi_14', 'rsi_21', 'kdjk_9', 'kdjk_14', 'wr_9', 
-                  'wr_14', 'close_-5_r', 'close_-10_r', 'close_-20_r',
+                  #'rsi_7', 'rsi_14', 'rsi_21', 'kdjk_9', 'kdjk_14', 'wr_9', 
+                  #'wr_14', 'close_-5_r', 'close_-10_r', 'close_-20_r',
                   'c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol', 
                 ]]
 
@@ -351,7 +375,7 @@ def get_single_stock_feature_data(paras, input_data, LabelColumnName):
     return df
 
 def get_all_stocks_feature_data(paras, window_len, LabelColumnName):
-    data_original = get_all_stocks_data(paras.train_tickers, paras.stock_folder)
+    data_original = get_all_stocks_data(paras.root_path, paras.train_tickers)
     data_feature = {}
     # get data
     for ticker, single_data in data_original.items():

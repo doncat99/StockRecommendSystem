@@ -1,11 +1,14 @@
-import os, datetime, numpy
+import os, datetime, numpy, configparser
 
 class SP_Global_Paras(object):
     
-    def __init__(self, name, train_tickers, predict_tickers):
+    def __init__(self, name, root_path, train_tickers, predict_tickers):
         self._name = name
         #self._identify = name + '_' + ''.join(tickers) + '_' + str(datetime.datetime.now().strftime("%Y-%m-%d %H_%M_%S"))
         self._identify = name + '_' + str(datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))
+        self._config = configparser.ConfigParser()
+        self._config.read(root_path + "/" + "config.ini")
+        self._root_path = root_path
         self._save_folder = ''
         self._model_folder = ''
         self._stock_folder = ''
@@ -65,6 +68,20 @@ class SP_Global_Paras(object):
     def identify(self, value):
         self._identify = value
         
+    @property
+    def config(self):
+        return self._config
+    @config.setter
+    def config(self, value):
+        self._config = value
+
+    @property
+    def root_path(self):
+        return self._root_path
+    @root_path.setter
+    def root_path(self, value):
+        self._root_path = value
+
     @property
     def save_folder(self):
         return self._save_folder
@@ -239,8 +256,8 @@ class SP_Global_Paras(object):
 
 class SP_Paras(SP_Global_Paras):
     
-    def __init__(self, name, train_tickers, predict_tickers):
-        super(SP_Paras, self).__init__(name, train_tickers = train_tickers, predict_tickers = predict_tickers)
+    def __init__(self, name, root_path, train_tickers, predict_tickers):
+        super(SP_Paras, self).__init__(name, root_path = root_path, train_tickers = train_tickers, predict_tickers = predict_tickers)
 
         # ------------- LSTM -------------
         self._batch_size = 32
@@ -310,24 +327,18 @@ class base_model(object):
         return self.paras.identify
 
     def get_save_directory(self):
-        dir = './history/'
-        if os.path.exists(dir) == False:
-            os.makedirs(dir)
+        history_folder = self.paras.config.get('Paths', 'ML_HISTORY')
+        dir = self.paras.root_path + '/' + history_folder
+        if os.path.exists(dir) == False: os.makedirs(dir)
         file_id = self.get_file_id()
         save_folder = str(dir) + str(file_id)
         os.makedirs(save_folder)
         return (save_folder + '/')
 
     def get_model_directory(self):
-        dir = './model/'
-        if os.path.exists(dir) == False:
-            os.makedirs(dir)
-        return dir
-
-    def get_stock_directory(self):
-        dir = './stock/'
-        if os.path.exists(dir) == False:
-            os.makedirs(dir)
+        model_folder = self.paras.config.get('Paths', 'ML_MODEL')
+        dir = self.paras.root_path + '/' + model_folder
+        if os.path.exists(dir) == False: os.makedirs(dir)
         return dir
 
     def get_model_name(self, window_len):
