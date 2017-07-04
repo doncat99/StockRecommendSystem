@@ -2,6 +2,7 @@ from Stock_Prediction_Base import SP_Paras
 from Stock_Prediction_Model_Stateless_LSTM import rnn_lstm_classification
 from Stock_Prediction_Model_DBN import dbn_classification
 from Stock_Prediction_Model_Random_Forrest import random_forrest_classification
+from Stock_Prediction_Model_Random_Forrest_1 import random_forrest_regression
 from Stock_Prediction_Recommand_System import recommand_system
 
 import sys, os, time, datetime, warnings, configparser
@@ -141,6 +142,49 @@ def run_rf_classification(root_path, train_symbols, predict_symbols, need_traini
     rf_cla.run(need_training, need_predict)
     return paras
 
+def run_rf_regression(root_path, train_symbols, predict_symbols, need_training, need_plot_training_diagram, need_predict):
+    paras = SP_Paras('randomForrest', root_path, train_symbols, predict_symbols)
+    paras.save = True
+    paras.load = False
+    paras.plot = need_plot_training_diagram
+    # 0_index: no norm   1_index: standard norm   2_index: minmax norm   3_index: zscore norm
+    paras.features = {#'0_0':['frac_change', 'frac_high', 'frac_low'], 
+                      #'0_0':['rsi_7', 'rsi_14', 'rsi_21', 'kdjk_9', 'kdjk_14', 'wr_9', 
+                      #       'wr_14', 'close_-5_r', 'close_-10_r', 'close_-20_r']
+                      '0_0':['c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol']
+                      #'3_0':['volume']
+                     } 
+                      
+    #paras.window_len = [5, 10, 20]
+    paras.window_len = [0]
+    paras.pred_len = 1
+    paras.valid_len = 20
+    paras.start_date = '2016-01-03'
+    paras.end_date = datetime.datetime.now().strftime("%Y-%m-%d")
+    paras.verbose = 0
+
+    # paras.tree_min = [10, 22, 46] # times 16x = trees
+    # paras.tree_max = [12, 24, 48] # times 16x = trees
+    # paras.feature_min = np.array(paras.window_len) * paras.n_features
+    # paras.feature_max = np.array(paras.window_len) * paras.n_features
+    # paras.window_min = 1
+    # paras.window_max = 1
+
+    paras.tree_min = [1] # times 16x = trees
+    paras.tree_max = [10] # times 16x = trees
+    paras.feature_min = [1]
+    paras.feature_max = [paras.n_features]
+    paras.window_min = 44
+    paras.window_max = 44
+
+    paras.out_class_type = 'regression'
+    paras.n_out_class = 7  # ignore for regression
+
+    # run
+    rf_cla = random_forrest_regression(paras)
+    rf_cla.run(need_training, need_predict)
+    return paras
+
 def run_recommand_system(root_path, train_symbols, predict_symbols, need_training, need_plot_training_diagram, need_predict):
     paras = SP_Paras('recommandSystem', root_path, train_symbols, predict_symbols)
     paras.save = True
@@ -155,7 +199,7 @@ def run_recommand_system(root_path, train_symbols, predict_symbols, need_trainin
     paras.epoch = 200
 
     paras.out_class_type = 'classification'
-    paras.n_out_class = 7  # ignore for regression
+    paras.n_out_class = 2  # ignore for regression
 
     # run
     rs = recommand_system(paras)
@@ -189,7 +233,8 @@ if __name__ == "__main__":
     #paras = run_dbn_classification(root_path, predict_symbols, predict_symbols, True, False, True)
     #paras = run_rf_classification(root_path, predict_symbols, predict_symbols, True, False, True)
 
-    run_recommand_system(root_path, predict_symbols, predict_symbols, True, False, True)
+    #run_recommand_system(root_path, predict_symbols, predict_symbols, True, False, True)
+    paras = run_rf_regression(root_path, predict_symbols, predict_symbols, True, False, True)
     
     if storeType == 1:
         # stop database server (sync)

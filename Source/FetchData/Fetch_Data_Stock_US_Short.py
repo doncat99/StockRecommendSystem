@@ -51,7 +51,7 @@ def updateStockShortData_US():
     if os.path.exists(dir) == False: 
         os.makedirs(dir)
 
-    stocklist = getStocksList()['Symbol'].values.tolist()
+    stocklist = getStocksList()['symbol'].values.tolist()
 
     symbols = stocklist
 

@@ -163,7 +163,7 @@ def updateSingleStockTwitterData(root_path, symbol, from_date, till_date):
 
 
 def updateStockTwitterData(root_path, from_date, till_date, storeType):
-    symbols = getStocksList(root_path)['Symbol'].values.tolist()
+    symbols = getStocksList(root_path)['symbol'].values.tolist()
 
     pbar = tqdm(total=len(symbols))
     

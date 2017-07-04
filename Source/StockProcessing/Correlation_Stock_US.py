@@ -35,7 +35,7 @@ def get_all_stocks_correlation(root_path, dates_range):
 
     if df.empty == False: return df
 
-    symbols = getStocksList(root_path)['Symbol'].values.tolist()
+    symbols = getStocksList(root_path)['symbol'].values.tolist()
 
     pbar = tqdm(total=len(symbols))
 

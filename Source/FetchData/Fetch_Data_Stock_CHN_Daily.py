@@ -23,10 +23,10 @@ def getStocksList(root_path):
     
     stock_info = ts.get_stock_basics()
     listData = pd.DataFrame(stock_info)
-    #listData.index.name = 'Symbol'
+    #listData.index.name = 'symbol'
     #listData.index = listData.index.astype(str).str.zfill(6) #[str(symbol).zfill(6) for symbol in listData.index] #listData.index.astype(str).str.zfill(6)
     #print(listData.index)
-    #listData['Symbol'] = listData['Symbol'].str.strip()
+    #listData['symbol'] = listData['symbol'].str.strip()
     storeStockList(root_path, "DB_STOCK", "SHEET_CHN_DAILY", listData)
     df = queryStockList(root_path, "DB_STOCK", "SHEET_CHN_DAILY")
     df.index = df.index.astype(str).str.zfill(6)

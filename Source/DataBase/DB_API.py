@@ -220,7 +220,7 @@ def storeStock(root_path, database, sheet, symbol, df):
     try:
         if storeType == 1:
             collection = getCollection(database, CollectionKey)
-            name = global_stocklist.loc[global_stocklist['Symbol'] == symbol]['Name'].values[0]
+            name = global_stocklist.loc[global_stocklist['symbol'] == symbol]['name'].values[0]
             metadata = {'lastUpdate':now_date, 'name':name}
             df = df.reset_index()
             writeToCollectionExtend(collection, symbol, df, metadata)

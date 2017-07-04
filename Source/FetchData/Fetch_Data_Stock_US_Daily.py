@@ -43,11 +43,12 @@ def getStocksList(root_path):
     df = df[(df['MarketCap'] > 100000000)]
     df = df.drop_duplicates(subset=['Symbol'], keep='first')
     df.sort_index(ascending=True, inplace=True)
-
     listData = df[['Symbol', 'Name', 'MarketCap', 'Sector', 'Industry']].copy()
+
+    listData=listData.rename(columns = {'Symbol':'symbol', 'Name':'name', 'MarketCap':'market_cap', 'Industry':'industry'})
     listData.loc[len(listData)] = ['SPY', 'SPDR S&P 500 ETF Trust', 0.0, '', '']
     listData.loc[len(listData)] = ['^VIX', 'VOLATILITY S&P 500', 0.0, '', '']
-    listData['Symbol'] = listData['Symbol'].str.strip()
+    listData['symbol'] = listData['symbol'].str.strip()
     storeStockList(root_path, "DB_STOCK", "SHEET_US_DAILY", listData)
     return queryStockList(root_path, "DB_STOCK", "SHEET_US_DAILY")
 
@@ -182,7 +183,7 @@ def updateSingleStockData(root_path, symbol, from_date, till_date, force_check):
     return startTime, message
 
 def updateStockData_US(root_path, from_date, till_date, storeType, force_check = False):
-    symbols = getStocksList(root_path)['Symbol'].values.tolist()
+    symbols = getStocksList(root_path)['symbol'].values.tolist()
 
     pbar = tqdm(total=len(symbols))
 

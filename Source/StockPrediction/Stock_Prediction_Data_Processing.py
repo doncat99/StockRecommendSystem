@@ -309,7 +309,7 @@ def get_single_stock_feature_data(paras, input_data, LabelColumnName):
     input_data = input_data[input_data['Volume'] > 0]
 
     # dataset = StockDataFrame.retype(input_data)
-    dataset = input_data.rename(columns = {'Date':'date', 'Open':'open', 'High':'high', 'Low':'low', 'Close':'close', 'Volume':'volume'})
+    dataset = input_data.rename(columns = {'Date':'date', 'Open':'open', 'High':'high', 'Low':'low', 'Close':'close', "Adj Close":'adj_close', 'Volume':'volume'})
 
     # dataset['last_close']  = dataset['close'].shift(1 * (paras.pred_len))
     # dataset['last_volume'] = dataset['volume'].shift(1 * (paras.pred_len))
@@ -352,6 +352,10 @@ def get_single_stock_feature_data(paras, input_data, LabelColumnName):
     dataset['c_2_h'] = zscore(ret(dataset['high'], dataset['close']))
     dataset['h_2_l'] = zscore(ret(dataset['high'], dataset['low']))
     dataset['vol']   = zscore(dataset['volume'])
+
+    dataset["hl_perc"] = (dataset["high"]-dataset["low"]) / dataset["low"] * 100
+    dataset["co_perc"] = (dataset["close"] - dataset["open"]) / dataset["open"] * 100
+    dataset["price_next_month"] = dataset["adj_close"].shift(-30)
     
     dataset['last_close']  = dataset['close'].shift(1 * (paras.pred_len))
     dataset['pred_profit'] = ((dataset['close'] - dataset['last_close']) / dataset['last_close'] * 100).shift(-1 * (paras.pred_len))
@@ -365,6 +369,7 @@ def get_single_stock_feature_data(paras, input_data, LabelColumnName):
                   #'rsi_7', 'rsi_14', 'rsi_21', 'kdjk_9', 'kdjk_14', 'wr_9', 
                   #'wr_14', 'close_-5_r', 'close_-10_r', 'close_-20_r',
                   'c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol', 
+                  'hl_perc', 'co_perc', 'price_next_month',
                 ]]
 
     # Data frame output
