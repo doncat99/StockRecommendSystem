@@ -52,9 +52,9 @@ def readFromCollectionExtend(collection, queryString=None):
     return pd.read_json(result['data'], orient='records'), result['metadata']
 
 def writeToCollectionExtend(collection, symbol, df, metadata=None):
-    jsonStrings = {"symbol":symbol, "data":df.to_json(orient='records'), "metadata":metadata}
+    jsonStrings = {"_id":symbol, "symbol":symbol, "data":df.to_json(orient='records'), "metadata":metadata}
     #bsonStrings = json_util.loads(jsonStrings)
-    collection.insert_one(jsonStrings)
+    collection.save(jsonStrings)
 
 def writeToCSV(csv_dir, CollectionKey, df):
     if os.path.exists(csv_dir) == False:
