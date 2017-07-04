@@ -93,9 +93,6 @@ def simple_means(value):
     else:                return 6
 
 def simple_claasification(df, n_cluster=5):
-    '''
-    Use KMeans algorithm to get the classification output
-    '''
     len_total = len(df)
     df.dropna(inplace=True)
     labels = [simple_means(df[i]) for i in range(len(df))]
@@ -395,20 +392,14 @@ def get_single_stock_label_possibility_data(paras, ticker):
     df_data = pd.DataFrame()
 
     for window in paras.window_len:
-        file_name = paras.save_folder + ticker + '_' + str(window) + '.csv'
-        if os.path.exists(file_name) == False: continue
+        # file_name = paras.save_folder + ticker + '_' + str(window) + '.csv'
+        # if os.path.exists(file_name) == False: continue
         
         #df_read_col = ['Date', 'label']
         df_possbibilty_col = [str(window) + '_' + str(i) for i in range(paras.n_out_class)]
         #df_read_col.extend(df_possbibilty_col)
 
-        df = pd.read_csv(file_name,
-                         skipinitialspace=True,
-                         engine='python',
-                         index_col=['Date'],
-                         #usecols=df_read_col,
-                         #parse_dates=['Date']
-        ).sort_index()
+        df = get_single_stock_data(paras.root_path, ticker)
 
         if first:
             df_data = df.rename(columns={'label': 'label'})

@@ -59,8 +59,8 @@ def run_lstm_classification(root_path, train_symbols, predict_symbols, need_trai
     return paras
 
 
-def run_dbn_classification(train_symbols, predict_symbols, need_training, need_plot_training_diagram, need_predict):
-    paras = SP_Paras('dbn', train_symbols, predict_symbols)
+def run_dbn_classification(root_path, train_symbols, predict_symbols, need_training, need_plot_training_diagram, need_predict):
+    paras = SP_Paras('dbn', root_path, train_symbols, predict_symbols)
     paras.save = True
     paras.load = False
     paras.plot = need_plot_training_diagram
@@ -141,8 +141,8 @@ def run_rf_classification(root_path, train_symbols, predict_symbols, need_traini
     rf_cla.run(need_training, need_predict)
     return paras
 
-def run_recommand_system(train_symbols, predict_symbols, need_training, need_plot_training_diagram, need_predict):
-    paras = SP_Paras('recommandSystem', train_symbols, predict_symbols)
+def run_recommand_system(root_path, train_symbols, predict_symbols, need_training, need_plot_training_diagram, need_predict):
+    paras = SP_Paras('recommandSystem', root_path, train_symbols, predict_symbols)
     paras.save = True
     paras.load = False
     paras.plot = need_plot_training_diagram
@@ -166,7 +166,7 @@ if __name__ == "__main__":
     tf.logging.set_verbosity(tf.logging.ERROR)
 
     predict_symbols = ['AMD', 'WDC', 'SINA', 'WB', 'CTRP', 'NTES', 'ATVI', 'FB', 'GLUU', 'NVDA', 'NFLX', 
-                       'MRVL', 'SMCI', 'JD', 'INTC', 'AMZN', 'BIDU', 'BGNE', 'QIWI', 'XNET', 'MOMO', 'YY']
+                       'MRVL', 'SMCI', 'JD', 'INTC', 'AMZN', 'BIDU', 'BGNE', 'QIWI', 'MOMO', 'YY']
 
     now = datetime.datetime.now().strftime("%Y-%m-%d")
 
@@ -186,10 +186,10 @@ if __name__ == "__main__":
     #updateStockData_US(root_path, "1990-01-01", now, storeType)
 
     #paras = run_lstm_classification(root_path, predict_symbols, predict_symbols, True, False, True)
-    #paras = run_dbn_classification(train_symbols, predict_symbols, True, False, True)
-    paras = run_rf_classification(root_path, predict_symbols, predict_symbols, True, False, True)
+    #paras = run_dbn_classification(root_path, predict_symbols, predict_symbols, True, False, True)
+    #paras = run_rf_classification(root_path, predict_symbols, predict_symbols, True, False, True)
 
-    #run_recommand_system(train_symbols, predict_symbols, True, False, True)
+    run_recommand_system(root_path, predict_symbols, predict_symbols, True, False, True)
     
     if storeType == 1:
         # stop database server (sync)

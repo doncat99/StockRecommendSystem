@@ -290,6 +290,6 @@ class recommand_system(recommand_system_model):
         model = None
         
         # Fixme: "train" must be True by far, since save/load model functions are not yet accomplished
-        #if train: model = self.train_data(data_possibility, LabelColumnName, CategoricalColumnName, ContinuousColumnName, FLAGS)
+        if train: model = self.train_data(data_possibility, LabelColumnName, CategoricalColumnName, ContinuousColumnName, FLAGS)
         
-        #if predict: self.predict_data(model, data_possibility, LabelColumnName)
+        if predict: self.predict_data(model, data_possibility, LabelColumnName)
