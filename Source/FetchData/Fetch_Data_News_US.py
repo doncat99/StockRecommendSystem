@@ -38,7 +38,7 @@ def getSingleStockNewsArticle(root_path, stock, from_date, till_date, count):
             categories = True, location = True, image = True))))
     res = global_eventRegistry.execQuery(q)
 
-    df = pd.DataFrame(columns=['Date', 'Title', 'Source', 'Body', 'Uri'])
+    df = pd.DataFrame(columns=['date', 'title', 'source', 'body', 'uri'])
 
     if 'info' in res:
         print(stock, res["info"])
@@ -47,7 +47,7 @@ def getSingleStockNewsArticle(root_path, stock, from_date, till_date, count):
     #translator = Translator()
     #count = 1
     for art in res["articles"]["results"]:
-        df.loc[len(df)] = [art['dateTime'], art['title'], art['source']['title'], art['body'], art['uri']]
+        df.loc[len(df)] = [art['date'], art['title'], art['source']['title'], art['body'], art['uri']]
         # print("\n-------- " + str(count) + " --------\n")
         # print("title: ", art['title'])
         # print("source: ", art['source']['title'])
@@ -80,8 +80,8 @@ def updateNewsArticle(root_path, symbol, from_date, till_date, count):
         return 
     
     print(df)
-    first_date = pd.Timestamp(df['Date'].iloc[0]).tz_localize(None)
-    last_date  = pd.Timestamp(df['Date'].iloc[-1]).tz_localize(None)
+    first_date = pd.Timestamp(df['date'].iloc[0]).tz_localize(None)
+    last_date  = pd.Timestamp(df['date'].iloc[-1]).tz_localize(None)
 
     modified = False
 

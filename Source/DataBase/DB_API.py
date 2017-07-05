@@ -120,9 +120,9 @@ def queryStockPublishDay(root_path, database, sheet, symbol):
             collection = getCollection(database, CollectionKey)
             df = readFromCollection(collection)
             if df.empty == False:
-                publishDay = df[df['Code'] == symbol]
+                publishDay = df[df['symbol'] == symbol]
                 if len(publishDay) == 1:
-                    return publishDay['Date'].values[0]
+                    return publishDay['date'].values[0]
             return ''
 
         if storeType == 2:
@@ -131,9 +131,9 @@ def queryStockPublishDay(root_path, database, sheet, symbol):
             if os.path.exists(filename) == False: return ''
             df = pd.read_csv(filename, index_col=["index"])
             if df.empty == False:
-                publishDay = df[df['Code'] == symbol]
+                publishDay = df[df['symbol'] == symbol]
                 if len(publishDay) == 1:
-                    return publishDay['Date'].values[0]
+                    return publishDay['date'].values[0]
             return ''
 
     except Exception as e:
@@ -150,7 +150,7 @@ def storePublishDay(root_path, database, sheet, symbol, date):
     try:
         if storeType == 1:
             collection = getCollection(database, CollectionKey)
-            df = pd.DataFrame(columns = ['Code', 'Date'])
+            df = pd.DataFrame(columns = ['symbol', 'date'])
             df.index.name = 'index'
             df.loc[len(df)] = [symbol, date]
             writeToCollection(collection, df)
@@ -160,11 +160,11 @@ def storePublishDay(root_path, database, sheet, symbol, date):
             filename = csv_dir + CollectionKey + '.csv'
             if os.path.exists(filename):
                 df = pd.read_csv(filename, index_col=["index"])
-                publishDate = df[df['Code'] == symbol]
+                publishDate = df[df['symbol'] == symbol]
                 if publishDate.empty:
                     df.loc[len(df)] = [symbol, date]
             else:   
-                df = pd.DataFrame(columns = ['Code', 'Date'])
+                df = pd.DataFrame(columns = ['symbol', 'date'])
                 df.index.name = 'index'
                 df.loc[len(df)] = [symbol, date]
             writeToCSV(csv_dir, CollectionKey, df)
@@ -185,17 +185,17 @@ def queryStock(root_path, database, sheet, symbol):
             queryString = { "symbol" : symbol }
             df, metadata = readFromCollectionExtend(collection, queryString)
             if df.empty: return pd.DataFrame(), lastUpdateTime
-            lastUpdateTime = pd.Timestamp(metadata['lastUpdate'])
-            df = df.set_index('Date')
+            lastUpdateTime = pd.Timestamp(metadata['last_update'])
+            df = df.set_index('date')
             return df, lastUpdateTime
             
         if storeType == 2:
             csv_dir = root_path + "/" + config.get('Paths', database) + config.get('Paths', sheet) 
             filename = csv_dir + symbol + '.csv'
             if os.path.exists(filename) == False: return pd.DataFrame(), lastUpdateTime
-            df = pd.read_csv(filename, index_col=["Date"])
-            if 'lastUpdate' in df:
-                lastUpdateTime = pd.Timestamp(df['lastUpdate'].iloc[0])
+            df = pd.read_csv(filename, index_col=["date"])
+            if 'last_update' in df:
+                lastUpdateTime = pd.Timestamp(df['last_update'].iloc[0])
             return df, lastUpdateTime
         
     except Exception as e:
@@ -210,9 +210,9 @@ def storeStock(root_path, database, sheet, symbol, df):
     config = getConfig(root_path)
     storeType = int(config.get('Setting', 'StoreType'))
     now_date = datetime.datetime.now().strftime("%Y-%m-%d")
-    df.index.name = 'Date'
+    df.index.name = 'date'
     
-    if 'Date' in df: df.set_index('Date')  
+    if 'date' in df: df.set_index('date')  
     
     df.index = df.index.astype(str)
     df.sort_index(ascending=True, inplace=True)
@@ -221,12 +221,12 @@ def storeStock(root_path, database, sheet, symbol, df):
         if storeType == 1:
             collection = getCollection(database, CollectionKey)
             name = global_stocklist.loc[global_stocklist['symbol'] == symbol]['name'].values[0]
-            metadata = {'lastUpdate':now_date, 'name':name}
+            metadata = {'last_update':now_date, 'name':name}
             df = df.reset_index()
             writeToCollectionExtend(collection, symbol, df, metadata)
 
         if storeType == 2:
-            df['lastUpdate'] = now_date
+            df['last_update'] = now_date
             csv_dir = root_path + "/" + config.get('Paths', database)+ config.get('Paths', sheet) 
             writeToCSV(csv_dir, symbol, df)
 
@@ -243,10 +243,10 @@ def queryNews(root_path, database, sheet, symbol):
             collection = getCollection(database, sheet)
             queryString = { "symbol" : symbol }
             df, metadata = readFromCollectionExtend(collection, queryString)
-            if 'lastUpdate' in metadata:
-                lastUpdateTime = pd.Timestamp(metadata['lastUpdate'])
+            if 'last_update' in metadata:
+                lastUpdateTime = pd.Timestamp(metadata['last_update'])
             if df.empty: return pd.DataFrame(), lastUpdateTime
-            df = df.set_index('Date')
+            df = df.set_index('date')
             return df, lastUpdateTime
 
         if storeType == 2:
@@ -254,8 +254,8 @@ def queryNews(root_path, database, sheet, symbol):
             filename = dir + symbol + '.csv'
             if os.path.exists(filename) == False: return pd.DataFrame(), lastUpdateTime
             df = pd.read_csv(filename)
-            if 'lastUpdate' in df:
-                lastUpdateTime = pd.Timestamp(df['lastUpdate'].iloc[0])
+            if 'last_update' in df:
+                lastUpdateTime = pd.Timestamp(df['last_update'].iloc[0])
             return df, lastUpdateTime
     
     except Exception as e:
@@ -270,19 +270,19 @@ def storeNews(root_path, database, sheet, symbol, df):
     storeType = int(global_config.get('Setting', 'StoreType'))
     now_date = datetime.datetime.now().strftime("%Y-%m-%d")
     
-    df = df.drop_duplicates(subset=['Uri'], keep='first')
-    df.set_index(['Date'], inplace=True)
+    df = df.drop_duplicates(subset=['uri'], keep='first')
+    df.set_index(['date'], inplace=True)
     df.sort_index(ascending=True, inplace=True)
     
     try:
         if storeType == 1:
             collection = getCollection(database, sheet)
-            metadata = {'lastUpdate':now_date}
+            metadata = {'last_update':now_date}
             df = df.reset_index()
             writeToCollectionExtend(collection, symbol, df, metadata)
 
         if storeType == 2:
-            df['lastUpdate'] = now_date
+            df['last_update'] = now_date
             csv_dir = root_path + "/" + config.get('Paths', database) + config.get('Paths', sheet)
             writeToCSV(csv_dir, symbol, df)
     
@@ -341,8 +341,8 @@ def queryTweets(root_path, database, sheet, symbol, col):
             collection = getCollection(database, sheet)
             queryString = { "symbol" : symbol }
             df, metadata = readFromCollectionExtend(collection, queryString)
-            if 'lastUpdate' in metadata:
-                lastUpdateTime = pd.Timestamp(metadata['lastUpdate'])
+            if 'last_update' in metadata:
+                lastUpdateTime = pd.Timestamp(metadata['last_update'])
             if df.empty: return pd.DataFrame(columns=col), lastUpdateTime
             df = df.set_index('Date')
             return df, lastUpdateTime
@@ -353,8 +353,8 @@ def queryTweets(root_path, database, sheet, symbol, col):
             if os.path.exists(filename) == False: return pd.DataFrame(columns=col), lastUpdateTime
             df = pd.read_csv(filename)
             if df.empty: return pd.DataFrame(columns=col), lastUpdateTime
-            if 'lastUpdate' in df:
-                lastUpdateTime = pd.Timestamp(df['lastUpdate'].iloc[0])
+            if 'last_update' in df:
+                lastUpdateTime = pd.Timestamp(df['last_update'].iloc[0])
             return df, lastUpdateTime
 
     except Exception as e:
@@ -374,12 +374,12 @@ def storeTweets(root_path, database, sheet, symbol, df):
     try:
         if storeType == 1:
             collection = getCollection(database, sheet)
-            metadata = {'lastUpdate':now_date}
+            metadata = {'last_update':now_date}
             df = df.reset_index()
             writeToCollectionExtend(collection, symbol, df, metadata)
         
         if storeType == 2:
-            df['lastUpdate'] = now_date
+            df['last_update'] = now_date
             csv_dir = root_path + "/" + config.get('Paths', database) + config.get('Paths', sheet)
             writeToCSV(csv_dir, symbol, df)
 

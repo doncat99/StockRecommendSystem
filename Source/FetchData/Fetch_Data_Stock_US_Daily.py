@@ -45,7 +45,7 @@ def getStocksList(root_path):
     df.sort_index(ascending=True, inplace=True)
     listData = df[['Symbol', 'Name', 'MarketCap', 'Sector', 'Industry']].copy()
 
-    listData=listData.rename(columns = {'Symbol':'symbol', 'Name':'name', 'MarketCap':'market_cap', 'Industry':'industry'})
+    listData=listData.rename(columns = {'Symbol':'symbol', 'Name':'name', 'MarketCap':'market_cap', 'Sector':'sector', 'Industry':'industry'})
     listData.loc[len(listData)] = ['SPY', 'SPDR S&P 500 ETF Trust', 0.0, '', '']
     listData.loc[len(listData)] = ['^VIX', 'VOLATILITY S&P 500', 0.0, '', '']
     listData['symbol'] = listData['symbol'].str.strip()
@@ -63,6 +63,8 @@ def getSingleStock(symbol, from_date, till_date):
     for _ in range(repeat_times): 
         try:
             data = yf.download(symbol, from_date, till_date, progress=False)
+            data = data.rename(columns = {'Date':'date', 'Open':'open', 'High':'high', 'Low':'low', 'Close':'close', "Adj Close":'adj_close', 'Volume':'volume'})
+            data.index.name = 'date'
             data.sort_index()
             return data, ""
         except Exception as e:
@@ -75,9 +77,9 @@ def judgeOpenDaysInRange(from_date, to_date):
     holidays = cal.holidays(from_date, to_date)
     duedays = pd.bdate_range(from_date, to_date)
     df = pd.DataFrame()
-    df['Date'] = duedays
-    df['Holiday'] = duedays.isin(holidays)
-    opendays = df[df['Holiday'] == False]
+    df['date'] = duedays
+    df['holiday'] = duedays.isin(holidays)
+    opendays = df[df['holiday'] == False]
     return opendays
 
 def judgeNeedPreDownload(root_path, symbol, first_date, from_date, to_date):
@@ -87,7 +89,7 @@ def judgeNeedPreDownload(root_path, symbol, first_date, from_date, to_date):
 
     dateList = judgeOpenDaysInRange(from_date, to_date)
     if len(dateList) > 0:
-        lastDay = pd.Timestamp(dateList['Date'].index[-1])
+        lastDay = pd.Timestamp(dateList['date'].index[-1])
         if pd.isnull(publishDay) or lastDay > publishDay: 
             return True
     return False
@@ -150,7 +152,7 @@ def updateSingleStockData(root_path, symbol, from_date, till_date, force_check):
                     moreStockData.index = moreStockData.index.strftime("%Y-%m-%d")
                 modified = True
                 stockData = pd.concat([moreStockData, stockData])
-                stockData.index.name = 'Date'
+                stockData.index.name = 'date'
             else:
                 savePublishDay = True
                 storePublishDay(root_path, "DB_STOCK", "SHEET_US_DAILY", symbol, first_date.strftime("%Y-%m-%d"))
@@ -169,7 +171,7 @@ def updateSingleStockData(root_path, symbol, from_date, till_date, force_check):
                     moreStockData.index = moreStockData.index.strftime("%Y-%m-%d")
                 modified = True
                 stockData = pd.concat([stockData, moreStockData])
-                stockData.index.name = 'Date'
+                stockData.index.name = 'date'
 
     if modified:
         stockData = stockData[~stockData.index.duplicated(keep='first')]
@@ -236,21 +238,21 @@ if __name__ == "__main__":
     config.read(root_path + "/" + "config.ini")
     storeType = int(config.get('Setting', 'StoreType'))
 
-    if storeType == 1:
-        from Start_DB_Server import StartServer, ShutdownServer
-        # start database server (async)
-        thread = StartServer(root_path)
+    # if storeType == 1:
+    #     from Start_DB_Server import StartServer, ShutdownServer
+    #     # start database server (async)
+    #     thread = StartServer(root_path)
         
-        # wait for db start, the standard procedure should listen to 
-        # the completed event of function "StartServer"
-        time.sleep(5)
+    #     # wait for db start, the standard procedure should listen to 
+    #     # the completed event of function "StartServer"
+    #     time.sleep(5)
     
     updateStockData_US(root_path, "1990-01-01", now, storeType)
 
-    if storeType == 1:
-        # stop database server (sync)
-        time.sleep(5)
-        ShutdownServer()
+    # if storeType == 1:
+    #     # stop database server (sync)
+    #     time.sleep(5)
+    #     ShutdownServer()
 
 
     

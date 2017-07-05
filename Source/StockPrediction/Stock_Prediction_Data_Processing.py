@@ -306,10 +306,10 @@ def get_single_stock_feature_data(paras, input_data, LabelColumnName):
     start_date = pd.Timestamp(paras.start_date)
     end_date   = pd.Timestamp(paras.end_date)
     input_data = input_data.loc[(input_data.index >= start_date) & (input_data.index <= end_date)]
-    input_data = input_data[input_data['Volume'] > 0]
+    input_data = input_data[input_data['volume'] > 0]
 
     # dataset = StockDataFrame.retype(input_data)
-    dataset = input_data.rename(columns = {'Date':'date', 'Open':'open', 'High':'high', 'Low':'low', 'Close':'close', "Adj Close":'adj_close', 'Volume':'volume'})
+    # dataset = input_data.rename(columns = {'Date':'date', 'Open':'open', 'High':'high', 'Low':'low', 'Close':'close', "Adj Close":'adj_close', 'Volume':'volume'})
 
     # dataset['last_close']  = dataset['close'].shift(1 * (paras.pred_len))
     # dataset['last_volume'] = dataset['volume'].shift(1 * (paras.pred_len))

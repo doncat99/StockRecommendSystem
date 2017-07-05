@@ -47,7 +47,7 @@ def KDJ(df):
     return(df['kdj_k'][-1], df['kdj_d'][-1], df['kdj_j'][-1])
 
 def judge_rule(ticker, dataset, str):
-    dataset['ma5'] = dataset['close'].rolling(window=5, center=False).mean()
+    dataset['ma5']  = dataset['close'].rolling(window=5, center=False).mean()
     dataset['ma10'] = dataset['close'].rolling(window=10, center=False).mean()
     dataset['ma20'] = dataset['close'].rolling(window=20, center=False).mean()
     dataset['ma30'] = dataset['close'].rolling(window=30, center=False).mean()
@@ -109,11 +109,9 @@ def get_single_stock_data(root_path, symbol):
         print("empty df", symbol)
         return df
 
-    if 'Adj Close' in df:
-        close = 'Adj Close'
-    else:
-        close = 'Close'
-    df=df.rename(columns = {'Date':'date', 'Open':'open', 'High':'high', 'Low':'low', close:'close', 'Volume':'volume'})
+    if 'adj_close' in df:
+        df = df.drop('close', 1)
+        df = df.rename(columns = {'adj_close':'close'})
 
     return df
 
@@ -194,17 +192,17 @@ if __name__ == "__main__":
     config.read(root_path + "/" + "config.ini")
     storeType = int(config.get('Setting', 'StoreType'))
 
-    if storeType == 1:
-        from Start_DB_Server import StartServer, ShutdownServer
-        # start database server (async)
-        thread = StartServer(root_path)
+    # if storeType == 1:
+    #     from Start_DB_Server import StartServer, ShutdownServer
+    #     # start database server (async)
+    #     thread = StartServer(root_path)
         
-        # wait for db start, the standard procedure should listen to 
-        # the completed event of function "StartServer"
-        time.sleep(5)
+    #     # wait for db start, the standard procedure should listen to 
+    #     # the completed event of function "StartServer"
+    #     time.sleep(5)
     
     print("updating data...")
-    updateStockData_US(root_path, "1990-01-01", now, storeType)
+    #updateStockData_US(root_path, "1990-01-01", now, storeType)
     
     print("Processing data...")
     day_selection, week_selection, month_selection = process_all_stocks_data(root_path)
@@ -223,8 +221,8 @@ if __name__ == "__main__":
     print("week_selection", len(week_selection), week_selection)
     print("month_selection", len(month_selection), month_selection)
 
-    if storeType == 1:
-        # stop database server (sync)
-        time.sleep(5)
-        ShutdownServer()
+    # if storeType == 1:
+    #     # stop database server (sync)
+    #     time.sleep(5)
+    #     ShutdownServer()
 

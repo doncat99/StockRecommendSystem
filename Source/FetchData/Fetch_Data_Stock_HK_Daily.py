@@ -107,7 +107,7 @@ def updateSingleStockData(dir, symbol, from_date, till_date, force_check):
         else:
             stockData, message = getSingleStock(symbol, from_date, till_date)
             if len(stockData) > 0: 
-                stockData['lastUpdate'] = now_date.strftime("%Y-%m-%d")
+                stockData['last_update'] = now_date.strftime("%Y-%m-%d")
                 stockData.to_csv(filename)
                 message = message + ", database updated"
             return startTime, message
@@ -116,8 +116,8 @@ def updateSingleStockData(dir, symbol, from_date, till_date, force_check):
     first_date = pd.Timestamp(stockData.index[0])
     last_date  = pd.Timestamp(stockData.index[-1])
     
-    if 'lastUpdate' in stockData:
-        lastUpdateTime = pd.Timestamp(stockData['lastUpdate'].iloc[0])
+    if 'last_update' in stockData:
+        lastUpdateTime = pd.Timestamp(stockData['last_update'].iloc[0])
     else:
         lastUpdateTime = pd.Timestamp('1970-01-01')
 
@@ -135,12 +135,12 @@ def updateSingleStockData(dir, symbol, from_date, till_date, force_check):
                 stockData.index.name = 'date'
     
     if modified:
-        stockData['lastUpdate'] = now_date.strftime("%Y-%m-%d")
+        stockData['last_update'] = now_date.strftime("%Y-%m-%d")
         stockData = stockData[~stockData.index.duplicated(keep='first')]
         stockData.sort_index(ascending=True, inplace=True)
         stockData.to_csv(filename)
     elif updateOnce:
-        stockData['lastUpdate'] = now_date.strftime("%Y-%m-%d")
+        stockData['last_update'] = now_date.strftime("%Y-%m-%d")
         stockData = stockData[~stockData.index.duplicated(keep='first')]
         stockData.sort_index(ascending=True, inplace=True)
         stockData.to_csv(filename)

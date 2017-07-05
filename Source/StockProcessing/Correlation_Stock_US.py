@@ -21,14 +21,12 @@ def get_single_stock_data(root_path, symbol, dates_range):
     if df.empty: return pd.DataFrame()
     
     df.index = pd.to_datetime(df.index)
-    #df = pd.read_csv(filename, index_col=["Date"], parse_dates=['Date'], usecols=['Date', 'Adj Close'])
     df = df[df.index.isin(dates_range)].sort_index()
-    df.loc[:, 'Close_Shift_1'] = df.loc[:, 'Adj Close'].shift(1)
+    df.loc[:, 'Close_Shift_1'] = df.loc[:, 'adj_close'].shift(1)
     
-    df.loc[:, 'Return'] = df.loc[:, 'Adj Close']/df.loc[:, 'Close_Shift_1'] - 1
+    df.loc[:, 'Return'] = df.loc[:, 'adj_close']/df.loc[:, 'Close_Shift_1'] - 1
     return df
     
-
 
 def get_all_stocks_correlation(root_path, dates_range):
     df = queryCorrelation(root_path, "DB_STOCK", "SHEET_US_RELA")

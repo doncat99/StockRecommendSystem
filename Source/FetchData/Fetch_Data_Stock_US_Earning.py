@@ -73,7 +73,7 @@ def parseEarningsColumn(column):
 
 
 def convertEarningsToDataFrame(responseText):
-    df = pd.DataFrame(columns=["Date", "Code", "Analyist", "Estimate", "Actual", "Surprise"])
+    df = pd.DataFrame(columns=["date", "symbol", "analyist", "estimate", "actual", "surprise"])
 
     soup = BeautifulSoup(responseText, 'html.parser')
     table = soup.find('table', {'class': 'USMN_EarningsCalendar'})

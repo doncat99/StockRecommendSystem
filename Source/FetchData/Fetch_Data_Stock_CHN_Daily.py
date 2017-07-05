@@ -40,7 +40,6 @@ def getSingleStock(symbol):
     for _ in range(repeat_times): 
         try:
             data = ts.get_hist_data(symbol)
-            data = data.rename(columns = {'date':'Date'})
             data.sort_index(ascending=True, inplace=True)
             return data, ""
         except Exception as e:
@@ -62,7 +61,6 @@ def getSingleStockByTime(symbol, from_date, till_date):
     for _ in range(repeat_times): 
         try:
             data = ts.get_hist_data(symbol, from_date, till_date)
-            data = data.rename(columns = {'date':'Date'})
             data.sort_index(ascending=True, inplace=True)
             return data, ""
         except Exception as e:
@@ -82,8 +80,8 @@ def judgeOpenDaysInRange(from_date, to_date):
     duedays = pd.bdate_range(from_date, to_date)
     df = pd.DataFrame()
     df['date'] = duedays
-    df['Holiday'] = duedays.isin(holidays)
-    opendays = df[df['Holiday'] == False]
+    df['holiday'] = duedays.isin(holidays)
+    opendays = df[df['holiday'] == False]
     return opendays
 
 def judgeNeedPostDownload(from_date, to_date):
