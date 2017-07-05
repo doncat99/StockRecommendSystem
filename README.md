@@ -29,30 +29,30 @@ Cover stock related data fetching, storaging in either MongoDB or CSV mode (See 
 
 ### Data Structure
 
->   **US Stock List**   
->   DB   : DB_STOCK   
->   SHEET: SHEET_US_DAILY_LIST   
->   ITEM : symbol, name, market_cap, sector, industry   
->     
->   **US Stock Daily**   
->   DB   : DB_STOCK   
->   SHEET: SHEET_US_DAILY_DATA   
->   ITEM : symbol (stock symbol)   
->          data -> [{date, open, high, low, close, adj_close, volume}]   
->          metadata -> {name, last_update}   
->      
->   **US Stock Earning**   
->   DB   : DB_STOCK   
->   SHEET: SHEET_US_EARN   
->   ITEM : symbol （date）   
->          data -> [{date, symbol, analyist, estimate, actual, surprise}]   
->   
->   **US News**   
->   DB   : DB_STOCK   
->   SHEET: SHEET_US_NEWS   
->   ITEM : symbol (stock symbol)   
->          data -> [{date, title, source, body, uri}]   
->          metadata -> {last_update}   
+    ** US Stock List **   
+    DB   : DB_STOCK   
+    SHEET: SHEET_US_DAILY_LIST   
+    ITEM : symbol, name, market_cap, sector, industry   
+     
+    ** US Stock Daily **   
+    DB   : DB_STOCK   
+    SHEET: SHEET_US_DAILY_DATA   
+    ITEM : symbol (stock symbol)   
+           data -> [{date, open, high, low, close, adj_close, volume}]   
+           metadata -> {name, last_update}   
+      
+    ** US Stock Earning **   
+    DB   : DB_STOCK   
+    SHEET: SHEET_US_EARN   
+    ITEM : symbol （date）   
+           data -> [{date, symbol, analyist, estimate, actual, surprise}]   
+   
+    ** US News **   
+    DB   : DB_STOCK   
+    SHEET: SHEET_US_NEWS   
+    ITEM : symbol (stock symbol)   
+           data -> [{date, title, source, body, uri}]   
+           metadata -> {last_update}   
 
 ### Run
 cd Source/FetchData   
