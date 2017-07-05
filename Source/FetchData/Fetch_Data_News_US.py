@@ -123,23 +123,23 @@ if __name__ == "__main__":
     config.read(root_path + "/" + "config.ini")
     storeType = int(config.get('Setting', 'StoreType'))
 
-    if storeType == 1:
-        from Start_DB_Server import StartServer, ShutdownServer
-        # start database server (async)
-        thread = StartServer(root_path)
+    # if storeType == 1:
+    #     from Start_DB_Server import StartServer, ShutdownServer
+    #     # start database server (async)
+    #     thread = StartServer(root_path)
         
-        # wait for db start, the standard procedure should listen to 
-        # the completed event of function "StartServer"
-        time.sleep(5)
+    #     # wait for db start, the standard procedure should listen to 
+    #     # the completed event of function "StartServer"
+    #     time.sleep(5)
     
     symbol = str(sys.argv[1])
     print("fetching news of stock:", symbol)
     updateNewsArticle(root_path, symbol, "2016-06-01", now, 200)
 
-    if storeType == 1:
-        # stop database server (sync)
-        time.sleep(5)
-        ShutdownServer()
+    # if storeType == 1:
+    #     # stop database server (sync)
+    #     time.sleep(5)
+    #     ShutdownServer()
     
  
     
