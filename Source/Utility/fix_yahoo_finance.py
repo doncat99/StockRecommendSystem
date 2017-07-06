@@ -89,7 +89,7 @@ def parse_ticker_csv(csv_str, auto_adjust):
 
         df = df[['Open', 'High', 'Low', 'Close', 'Volume']]
 
-    return df
+    return df.groupby(df.index).first()
 
 
 def download(tickers, start=None, end=None, as_panel=True,
