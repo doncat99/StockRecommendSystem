@@ -44,37 +44,32 @@ def KDJ(df):
     df['kdj_k'] = rsv.ewm(min_periods=0,adjust=True,ignore_na=False,com=2).mean()
     df['kdj_d'] = df['kdj_k'].ewm(min_periods=0,adjust=True,ignore_na=False,com=2).mean()
     df['kdj_j'] = 3 * df['kdj_k'] - 2 * df['kdj_d']
-    return(df['kdj_k'][-1], df['kdj_d'][-1], df['kdj_j'][-1])
+    return df
 
-def judge_rule(ticker, dataset, str):
+def judge_rule(symbol, dataset, window, selection, str):
+    dataset = KDJ(dataset)
     dataset['ma5']  = dataset['close'].rolling(window=5, center=False).mean()
     dataset['ma10'] = dataset['close'].rolling(window=10, center=False).mean()
     dataset['ma20'] = dataset['close'].rolling(window=20, center=False).mean()
     dataset['ma30'] = dataset['close'].rolling(window=30, center=False).mean()
     dataset['ma60'] = dataset['close'].rolling(window=60, center=False).mean()
-    df = dataset[['ma5', 'ma10', 'ma20', 'ma30', 'ma60']]
-    k, d, j = KDJ(dataset)
-    ma5, ma10, ma20, ma30, ma60 = df['ma5'][-1], df['ma10'][-1], df['ma20'][-1], df['ma30'][-1], df['ma60'][-1]
+    df = dataset[['ma5', 'ma10', 'ma20', 'ma30', 'ma60', 'kdj_k', 'kdj_d', 'kdj_j']]
 
-    fit_count = 0
-    if ma5  > ma10 or (ma10 - ma5)  > ma5  / 100: fit_count += 1
-    if ma10 > ma20: fit_count += 1
-    if ma20 > ma30: fit_count += 1
-    if ma30 > ma60: fit_count += 1
+    for index in range(-window, 0):
+        ma5, ma10, ma20, ma30, ma60, k, d, j = df['ma5'][index], df['ma10'][index], df['ma20'][index], df['ma30'][index], df['ma60'][index], df['kdj_k'][index], df['kdj_d'][index], df['kdj_j'][index]
+        fit_count = 0
+        if ma5  > ma10 or (ma10 - ma5)  > ma5  / 100: fit_count += 1
+        if ma10 > ma20: fit_count += 1
+        if ma20 > ma30: fit_count += 1
+        if ma30 > ma60: fit_count += 1
     
-    #if (ma10 - ma5)  > ma5  / 100 : fit_count += 0.5
-    #if (ma20 - ma10) > ma10 / 100 : fit_count += 0.5
-    #if (ma30 - ma20) > ma20 / 100 : fit_count += 0.5
-    #if (ma60 - ma30) > ma30 / 100 : fit_count += 0.5
 
-    if fit_count == 4 and d < 50:
-        return True
+        if fit_count == 4 and d < 50:
+            selection[index+window].append(symbol)
 
-    # if fit_count >= 3 and d > 0 and d < 40 and j - d > 0 and j - d < 10:
-    #     print(str, fit_count, ticker, ma5, ma10, ma20, ma30, ma60, k, d, j)
-    #     return True
-
-    return False
+        # if fit_count >= 3 and d > 0 and d < 40 and j - d > 0 and j - d < 10:
+        #     print(str, fit_count, ticker, ma5, ma10, ma20, ma30, ma60, k, d, j)
+        #     return True
 
 def get_single_stock_data(root_path, symbol):
     '''
@@ -115,7 +110,7 @@ def get_single_stock_data(root_path, symbol):
 
     return df
 
-def inner_processing_stock_data(symbol, input_data, day_selection, week_selection, month_selection):
+def inner_processing_stock_data(symbol, input_data, window, day_selection, week_selection, month_selection):
     # start_date = pd.Timestamp(paras.start_date)
     # end_date   = pd.Timestamp(paras.end_date)
     # input_data = input_data.loc[(input_data.index >= start_date) & (input_data.index <= end_date)]
@@ -123,42 +118,42 @@ def inner_processing_stock_data(symbol, input_data, day_selection, week_selectio
     week_data = convert_week_based_data(day_data)
     month_data = convert_month_based_data(day_data)
 
-    #day_dataset = StockDataFrame.retype(day_data)
-    #week_dataset = StockDataFrame.retype(week_data)
-    #month_dataset = StockDataFrame.retype(month_data)
+    judge_rule(symbol, day_data, window, day_selection, "day based")
+    judge_rule(symbol, week_data, window, week_selection, "week based")
+    judge_rule(symbol, month_data, window, month_selection, "month based")
 
-    if judge_rule(symbol, day_data, "day based"):
-        day_selection.append(symbol)
 
-    if judge_rule(symbol, week_data, "week based"):
-        week_selection.append(symbol)
-
-    if judge_rule(symbol, month_data, "month based"):
-        month_selection.append(symbol)
-
-def processing_stock_data(root_path, symbol, day_selection, week_selection, month_selection):
+def processing_stock_data(root_path, symbol, window, day_selection, week_selection, month_selection):
     startTime = time.time()
     data = get_single_stock_data(root_path, symbol)
     if data.empty: return startTime
     if len(data) < 100: return startTime
     
-    inner_processing_stock_data(symbol, data, day_selection, week_selection, month_selection)
+    inner_processing_stock_data(symbol, data, window, day_selection, week_selection, month_selection)
 
     return startTime
-
 
 def process_all_stocks_data(root_path):
     symbols = getStocksList(root_path)['symbol'].values.tolist()
 
     pbar = tqdm(total=len(symbols))
 
+    window = 5
     day_selection = []
     week_selection = []
     month_selection = []
 
+    for index in range(0, window):
+        day_window = []
+        day_selection.append(day_window)
+        week_window = []
+        week_selection.append(week_window)
+        month_window = []
+        month_selection.append(month_window)
+
     # startTime = time.time()
     # for symbol in symbols:
-    #     startTime = processing_stock_data(root_path, symbol, day_selection, week_selection, month_selection)
+    #     startTime = processing_stock_data(root_path, symbol, window, day_selection, week_selection, month_selection)
     #     outMessage = '%-*s processed in:  %.4s seconds' % (6, symbol, (time.time() - startTime))
     #     pbar.set_description(outMessage)
     #     pbar.update(1)
@@ -166,7 +161,7 @@ def process_all_stocks_data(root_path):
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
         # Start the load operations and mark each future with its URL
-        future_to_stock = {executor.submit(processing_stock_data, root_path, symbol, day_selection, week_selection, month_selection): symbol for symbol in symbols}
+        future_to_stock = {executor.submit(processing_stock_data, root_path, symbol, window, day_selection, week_selection, month_selection): symbol for symbol in symbols}
         for future in concurrent.futures.as_completed(future_to_stock):
             stock = future_to_stock[future]
             try:
@@ -178,7 +173,29 @@ def process_all_stocks_data(root_path):
             pbar.set_description(outMessage)
             pbar.update(1)
 
-    return day_selection, week_selection, month_selection
+    day_week_selection = []
+    week_month_selection = []
+    day_month_selection = []
+    all_selection = []
+
+    for index in range(0, window):
+        day_week_selection.append(list(set(day_selection[index]) & set(week_selection[index])))
+        week_month_selection.append(list(set(week_selection[index]) & set(month_selection[index])))
+        day_month_selection.append(list(set(day_selection[index]) & set(month_selection[index])))
+        all_selection.append(list(set(day_week_selection[index]) & set(week_month_selection[index])))
+
+        #day_selection = list(set(day_selection) - set(all_selection))
+        #week_selection = list(set(week_selection) - set(all_selection))
+        #month_selection = list(set(month_selection) - set(all_selection))
+
+        print("all_selection", len(all_selection[index]), all_selection[index])
+        print("day_week_selection", len(day_week_selection[index]), day_week_selection[index])
+        print("week_month_selection", len(week_month_selection[index]), week_month_selection[index])
+        print("day_month_selection", len(day_month_selection[index]), day_month_selection[index])
+        print("/n ------------------------ /n")
+    #print("day_selection", len(day_selection), day_selection)
+    #print("week_selection", len(week_selection), week_selection)
+    #print("month_selection", len(month_selection), month_selection)
 
 
 if __name__ == "__main__":
@@ -205,21 +222,7 @@ if __name__ == "__main__":
     #updateStockData_US(root_path, "1990-01-01", now, storeType)
     
     print("Processing data...")
-    day_selection, week_selection, month_selection = process_all_stocks_data(root_path)
-    day_week_selection = list(set(day_selection) & set(week_selection))
-    week_month_selection = list(set(week_selection) & set(month_selection))
-    day_month_selection = list(set(day_selection) & set(month_selection))
-    all_selection = list(set(day_week_selection) & set(week_month_selection))
-    day_selection = list(set(day_selection) - set(all_selection))
-    week_selection = list(set(week_selection) - set(all_selection))
-    month_selection = list(set(month_selection) - set(all_selection))
-    print("all_selection", len(all_selection), all_selection)
-    print("day_week_selection", len(day_week_selection), day_week_selection)
-    print("week_month_selection", len(week_month_selection), week_month_selection)
-    print("day_month_selection", len(day_month_selection), day_month_selection)
-    print("day_selection", len(day_selection), day_selection)
-    print("week_selection", len(week_selection), week_selection)
-    print("month_selection", len(month_selection), month_selection)
+    process_all_stocks_data(root_path)
 
     # if storeType == 1:
     #     # stop database server (sync)

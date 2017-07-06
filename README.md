@@ -6,6 +6,7 @@ Python 3.5.2
 TensorFlow 1.0   
 pymongo   
 nltk   
+<br>
 
 ## Install
 brew install mongodb --with-openssl   
@@ -18,6 +19,8 @@ When you storing stock data with mongodb mode, you may meet [too many open files
 > launchctl limit maxfiles 1000000 (or whatever number you choose)   
 > brew services restart mongodb   
 > mongodump -h localhost:27017 -d DB_STOCK -o ./
+
+<br>
 
 ## Data Fetching:
 Cover stock related data fetching, storaging in either MongoDB or CSV mode (See config.ini [Setting] sector for more detail).   
@@ -57,10 +60,13 @@ Cover stock related data fetching, storaging in either MongoDB or CSV mode (See 
 ### Run
 cd Source/FetchData   
 python Fetch_Data_Stock_US_Daily.py   
+<br>
 
 ## Stock Prediction:
 
 Under Development...
+
+<br>
 
 ## Stock Processing:
 Correlation
@@ -80,6 +86,8 @@ Correlation
 ### Run
 cd Source/StockProcessing   
 python Correlation_Stock_US.py   
+
+<br>
 
 ## Reinforcement Learning:
 This sector is directly clone from: [Link](https://github.com/shenyichen105/Deep-Reinforcement-Learning-in-Stock-Trading)
@@ -105,6 +113,8 @@ testing output:
 ### Run
 cd Source/ReinforcementLearning   
 python runner.py   
+
+<br>
 
 ## ToDo:
 More AI approach will be arranged and upload ASAP

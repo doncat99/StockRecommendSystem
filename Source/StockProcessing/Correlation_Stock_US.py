@@ -40,7 +40,7 @@ def get_all_stocks_correlation(root_path, dates_range):
     stockData = []
     stockList = []
     print("get stock data...")
-    #count = 10
+    # count = 500
     for symbol in symbols:
         startTime = time.time()
         df = get_single_stock_data(root_path, symbol, dates_range)
@@ -50,8 +50,8 @@ def get_all_stocks_correlation(root_path, dates_range):
         outMessage = '%-*s fetched in:  %.4s seconds' % (12, symbol, (time.time() - startTime))
         pbar.set_description(outMessage)
         pbar.update(1)
-        #count -= 1
-        #if count == 0: break
+        # count -= 1
+        # if count == 0: break
     pbar.close()
     
     print("merge stock data...")
@@ -75,9 +75,9 @@ def get_all_stocks_correlation(root_path, dates_range):
 
     us_company_pairs = combinations(stockList, 2)
     df_us_company_pairs = pd.DataFrame(list(us_company_pairs))
-    df_us_company_pairs.columns = ['Company1', 'Company2']
-    df_us_company_pairs.loc[:, 'Correlation'] = pd.Series(pairwise_correlations).T
-    df_us_company_pairs = df_us_company_pairs.sort_values(['Correlation'], ascending=[False]).reset_index(drop=True)#.reset_index(drop=True)
+    df_us_company_pairs.columns = ['company1', 'company2']
+    df_us_company_pairs.loc[:, 'correlation'] = pd.Series(pairwise_correlations).T
+    df_us_company_pairs = df_us_company_pairs.sort_values(['correlation'], ascending=[False]).reset_index(drop=True)#.reset_index(drop=True)
 
     storeCorrelation(root_path, "DB_STOCK", "SHEET_US_RELA", df_us_company_pairs)
 
@@ -102,24 +102,24 @@ if __name__ == "__main__":
     config.read(root_path + "/" + "config.ini")
     storeType = int(config.get('Setting', 'StoreType'))
 
-    if storeType == 1:
-        from Start_DB_Server import StartServer, ShutdownServer
-        # start database server (async)
-        thread = StartServer(root_path)
+    # if storeType == 1:
+    #     from Start_DB_Server import StartServer, ShutdownServer
+    #     # start database server (async)
+    #     thread = StartServer(root_path)
         
-        # wait for db start, the standard procedure should listen to 
-        # the completed event of function "StartServer"
-        time.sleep(5)
+    #     # wait for db start, the standard procedure should listen to 
+    #     # the completed event of function "StartServer"
+    #     time.sleep(5)
     
     df = get_all_stocks_correlation(root_path, pd.date_range(start_date, end_date))
 
-    df_amd = df[df['Company1'] == 'AMD'].reset_index(drop=True)
+    df_amd = df[df['company1'] == 'AMD'].reset_index(drop=True)
     print(df_amd.head(30))
 
-    if storeType == 1:
-        # stop database server (sync)
-        time.sleep(5)
-        ShutdownServer()
+    # if storeType == 1:
+    #     # stop database server (sync)
+    #     time.sleep(5)
+    #     ShutdownServer()
     
 
  
