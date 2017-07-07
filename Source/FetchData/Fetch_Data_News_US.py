@@ -79,9 +79,9 @@ def updateNewsArticle(root_path, symbol, from_date, till_date, count):
         storeNews(root_path, "DB_STOCK", "SHEET_US_NEWS", symbol, df)
         return 
     
-    print(df)
-    first_date = pd.Timestamp(df['date'].iloc[0]).tz_localize(None)
-    last_date  = pd.Timestamp(df['date'].iloc[-1]).tz_localize(None)
+    #print(df)
+    first_date = pd.Timestamp(df['date'].iloc[0])#.tz_localize(None)
+    last_date  = pd.Timestamp(df['date'].iloc[-1])#.tz_localize(None)
 
     modified = False
 
