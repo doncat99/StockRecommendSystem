@@ -8,11 +8,9 @@ cur_path = os.path.dirname(os.path.abspath(__file__))
 for _ in range(2):
     root_path = cur_path[0:cur_path.rfind('/', 0, len(cur_path))]
     cur_path = root_path
-sys.path.append(root_path + "/" + 'Source/FetchData/')
 sys.path.append(root_path + "/" + 'Source/DataBase/')
 
-from Fetch_Data_Stock_US_Daily import getStocksList
-from DB_API import queryStock, queryCorrelation, storeCorrelation
+from DB_API import queryStockList, queryStock, queryCorrelation, storeCorrelation
 
 
 def get_single_stock_data(root_path, symbol, dates_range):
@@ -32,8 +30,9 @@ def get_all_stocks_correlation(root_path, dates_range):
     df = queryCorrelation(root_path, "DB_STOCK", "SHEET_US_RELA")
 
     if df.empty == False: return df
-
-    symbols = getStocksList(root_path)['symbol'].values.tolist()
+    
+    df = queryStockList(root_path, "DB_STOCK", "SHEET_US_DAILY")
+    symbols = df['symbol'].values.tolist()
 
     pbar = tqdm(total=len(symbols))
 

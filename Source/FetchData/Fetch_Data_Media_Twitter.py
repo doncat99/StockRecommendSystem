@@ -12,8 +12,7 @@ for _ in range(2):
     cur_path = root_path
 sys.path.append(root_path + "/" + 'Source/Utility/python-twitter/')
 sys.path.append(root_path + "/" + 'Source/DataBase/')
-from DB_API import queryTweets, storeTweets
-from Fetch_Data_Stock_US_Daily import getStocksList
+from DB_API import queryStockList, queryTweets, storeTweets
 
 gloabl_api = None
 
@@ -163,7 +162,8 @@ def updateSingleStockTwitterData(root_path, symbol, from_date, till_date):
 
 
 def updateStockTwitterData(root_path, from_date, till_date, storeType):
-    symbols = getStocksList(root_path)['symbol'].values.tolist()
+    df = queryStockList(root_path, "DB_STOCK", "SHEET_US_DAILY")
+    symbols = df['symbol'].values.tolist()
 
     pbar = tqdm(total=len(symbols))
     

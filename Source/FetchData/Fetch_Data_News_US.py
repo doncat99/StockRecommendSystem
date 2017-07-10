@@ -9,45 +9,59 @@ for _ in range(2):
     root_path = cur_path[0:cur_path.rfind('/', 0, len(cur_path))]
     cur_path = root_path
 sys.path.append(root_path + "/" + 'Source/DataBase/')
-from DB_API import queryNews, storeNews
-from Fetch_Data_Stock_US_Daily import getStocksList
+from DB_API import queryStockList, queryNews, storeNews
 
 global_eventRegistry = None
 
-def getSingleStockNewsArticle(root_path, stock, from_date, till_date, count):
+def getEventRegistry(root_path):
     global global_eventRegistry
-
     if global_eventRegistry is None:
         config = configparser.ConfigParser()
         config.read(root_path + "/" + "config.ini")
         global_eventRegistry = EventRegistry(apiKey = config.get('EventRegistry', 'KEY'))
+    return global_eventRegistry
 
-    start = from_date.split('-')
-    start_y, start_m, start_d = int(start[0]), int(start[1]), int(start[2]) # starting date
+def getSingleStockNewsArticle(root_path, symbol, name, from_date, till_date, count):
+    er = getEventRegistry(root_path)
 
-    end = till_date.split('-')
-    end_y, end_m, end_d = int(end[0]), int(end[1]), int(end[2]) # until now
-
-    q = QueryArticles(lang='eng')
-    q.setDateLimit(datetime.datetime(start_y, start_m, start_d), datetime.datetime(end_y, end_m, end_d))
-    q.addKeyword(stock)
+    conceptUri = er.getConceptUri(symbol)
+    businessUri = er.getCategoryUri("Business")
+    financeUri = er.getCategoryUri("Finance")
+   
+    qStr = ComplexArticleQuery(
+        CombinedQuery.AND([
+            BaseQuery(dateStart = from_date, dateEnd = till_date),
+            # CombinedQuery.OR([
+            #     BaseQuery(conceptUri = QueryItems.OR([searchUri])),
+            #     BaseQuery(keyword = name)
+            # ]),
+            BaseQuery(keyword = QueryItems.OR(["NASDAQ:"+symbol, "NYSE:"+symbol, "("+symbol+")", name])),
+            #BaseQuery(conceptUri = conceptUri),
+            BaseQuery(categoryUri = QueryItems.OR([businessUri, financeUri])),
+            BaseQuery(lang = "eng")
+        ])
+    )
+    q = QueryArticles.initWithComplexQuery(qStr)
     q.addRequestedResult(RequestArticlesInfo(count = count, 
     returnInfo = ReturnInfo(
+        conceptInfo = ConceptInfoFlags(lang = "eng"),
         articleInfo = ArticleInfoFlags(
             bodyLen = -1, duplicateList = True, concepts = True, 
-            categories = True, location = True, image = True))))
-    res = global_eventRegistry.execQuery(q)
+            categories = True, location = False, image = False))))
+    res = er.execQuery(q)
 
     df = pd.DataFrame(columns=['date', 'title', 'source', 'body', 'uri'])
 
     if 'info' in res:
-        print(stock, res["info"])
+        print(symbol, res["info"])
         return df
 
     #translator = Translator()
     #count = 1
+    print(res)
     for art in res["articles"]["results"]:
         df.loc[len(df)] = [art['date'], art['title'], art['source']['title'], art['body'], art['uri']]
+        #print(res)
         # print("\n-------- " + str(count) + " --------\n")
         # print("title: ", art['title'])
         # print("source: ", art['source']['title'])
@@ -60,10 +74,11 @@ def getSingleStockNewsArticle(root_path, stock, from_date, till_date, count):
         #     trans = translator.translate(line, src='en', dest='zh-CN').text
         #     print(line + "\n\n" + trans + "\n")
         #count += 1
+    print("article", len(df))
     return df
     
     
-def updateNewsArticle(root_path, symbol, from_date, till_date, count):
+def updateNewsArticle(root_path, symbol, name, from_date, till_date, count):
     startTime = time.time()
     message = ""
 
@@ -75,7 +90,7 @@ def updateNewsArticle(root_path, symbol, from_date, till_date, count):
         return
 
     if df.empty:
-        df = getSingleStockNewsArticle(root_path, symbol, from_date, till_date, count)
+        df = getSingleStockNewsArticle(root_path, symbol, name, from_date, till_date, count)
         storeNews(root_path, "DB_STOCK", "SHEET_US_NEWS", symbol, df)
         return 
     
@@ -87,14 +102,14 @@ def updateNewsArticle(root_path, symbol, from_date, till_date, count):
 
     # require pre download
     if first_date > pd.Timestamp(from_date):
-        pre_df = getSingleStockNewsArticle(root_path, symbol, from_date, first_date.strftime("%Y-%m-%d"), count)
+        pre_df = getSingleStockNewsArticle(root_path, symbol, name, from_date, first_date.strftime("%Y-%m-%d"), count)
         #print("pre_df", from_date, first_date.strftime("%Y-%m-%d"))
         #print(pre_df)
         df = pd.concat([pre_df, df])
         modified = True
     
     if last_date < pd.Timestamp(till_date):
-        post_df = getSingleStockNewsArticle(root_path, symbol, last_date.strftime("%Y-%m-%d"), till_date, count)
+        post_df = getSingleStockNewsArticle(root_path, symbol, name, last_date.strftime("%Y-%m-%d"), till_date, count)
         #print("post_df", last_date.strftime("%Y-%m-%d"), till_date)
         #print(post_df)
         df = pd.concat([df, post_df])
@@ -113,9 +128,15 @@ if __name__ == "__main__":
     pd.set_option('display.width',1000)
     warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
 
-    #stocklist = getStocksList()
-    # stocklist = ['AMD', 'WDC', 'SINA', 'WB', 'CTRP', 'NTES', 'ATVI', 'FB', 'GLUU', 'NVDA', 'NFLX', 'GPRO',
-    #              'MRVL', 'SMCI', 'JD', 'INTC', 'AMZN', 'BIDU', 'BGNE', 'QIWI', 'XNET', 'MOMO', 'YY']
+    symbol = str(sys.argv[1])
+
+    stocklist = queryStockList(root_path, "DB_STOCK", "SHEET_US_DAILY")
+    
+    result = stocklist[stocklist['symbol'] == symbol]
+
+    if result.empty:
+        print("symbol not exist.")
+        exit()
 
     now = datetime.datetime.now().strftime("%Y-%m-%d")
 
@@ -132,9 +153,9 @@ if __name__ == "__main__":
     #     # the completed event of function "StartServer"
     #     time.sleep(5)
     
-    symbol = str(sys.argv[1])
-    print("fetching news of stock:", symbol)
-    updateNewsArticle(root_path, symbol, "2016-06-01", now, 200)
+    name = result['name'].values[0]
+    print("fetching news of stock:", symbol, name)
+    updateNewsArticle(root_path, symbol, name, "2016-06-01", now, 200)
 
     # if storeType == 1:
     #     # stop database server (sync)

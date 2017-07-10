@@ -27,6 +27,11 @@ def getCollection(database, collection):
     db = client[database]
     return db[collection]
 
+def setStockList(df):
+    global global_stocklist
+    global_stocklist = df
+    global_stocklist.set_index('symbol', inplace=True)
+
 def readFromCollection(collection, queryString=None):
     if queryString is None:
         result = collection.find()
@@ -64,7 +69,7 @@ def writeToCSV(csv_dir, CollectionKey, df):
 
 
 def queryStockList(root_path, database, sheet):
-    global global_stocklist
+    
     CollectionKey = sheet + "_LIST"
     config = getConfig(root_path)
     storeType = int(config.get('Setting', 'StoreType'))
@@ -73,13 +78,16 @@ def queryStockList(root_path, database, sheet):
         if storeType == 1:
             collection = getCollection(database, CollectionKey)
             df = readFromCollection(collection)
-            if df.empty == False: global_stocklist = df
+            if df.empty == False: setStockList(df)
             return df
             
         if storeType == 2:
             csv_dir = root_path + "/" + config.get('Paths', database) + config.get('Paths', sheet) + config.get('Paths', 'CSV_SHARE')
             filename = csv_dir + CollectionKey + '.csv'
-            if os.path.exists(filename): return pd.read_csv(filename, index_col=0)
+            if os.path.exists(filename): 
+                df = pd.read_csv(filename, index_col=0)
+                setStockList(df)
+                return df
             return pd.DataFrame()
 
     except Exception as e:
@@ -94,7 +102,6 @@ def storeStockList(root_path, database, sheet, df):
     storeType = int(config.get('Setting', 'StoreType')) 
 
     df.index.name = 'index'
-    df = df.reset_index(drop=True)
 
     try:
         if storeType == 1:
@@ -177,7 +184,7 @@ def queryStock(root_path, database, sheet, symbol):
     CollectionKey = sheet + '_DATA'
     config = getConfig(root_path)
     storeType = int(config.get('Setting', 'StoreType'))
-    lastUpdateTime = pd.Timestamp('1970-01-01')
+    lastUpdateTime = pd.Timestamp(global_stocklist.loc[symbol]['stock_update'])
 
     try:
         if storeType == 1:
@@ -185,7 +192,6 @@ def queryStock(root_path, database, sheet, symbol):
             queryString = { "symbol" : symbol }
             df, metadata = readFromCollectionExtend(collection, queryString)
             if df.empty: return pd.DataFrame(), lastUpdateTime
-            lastUpdateTime = pd.Timestamp(metadata['last_update'])
             df = df.set_index('date')
             return df, lastUpdateTime
             
@@ -194,8 +200,6 @@ def queryStock(root_path, database, sheet, symbol):
             filename = csv_dir + symbol + '.csv'
             if os.path.exists(filename) == False: return pd.DataFrame(), lastUpdateTime
             df = pd.read_csv(filename, index_col=["date"])
-            if 'last_update' in df:
-                lastUpdateTime = pd.Timestamp(df['last_update'].iloc[0])
             return df, lastUpdateTime
         
     except Exception as e:
@@ -209,24 +213,23 @@ def storeStock(root_path, database, sheet, symbol, df):
     CollectionKey = sheet + '_DATA'
     config = getConfig(root_path)
     storeType = int(config.get('Setting', 'StoreType'))
+    
     now_date = datetime.datetime.now().strftime("%Y-%m-%d")
+    global_stocklist.set_value(symbol, 'stock_update', now_date)
+    storeStockList(root_path, database, sheet, global_stocklist.reset_index())
+    
     df.index.name = 'date'
-    
     if 'date' in df: df.set_index('date')  
-    
     df.index = df.index.astype(str)
     df.sort_index(ascending=True, inplace=True)
-
+    
     try:
         if storeType == 1:
             collection = getCollection(database, CollectionKey)
-            name = global_stocklist.loc[global_stocklist['symbol'] == symbol]['name'].values[0]
-            metadata = {'last_update':now_date, 'name':name}
             df = df.reset_index()
-            writeToCollectionExtend(collection, symbol, df, metadata)
+            writeToCollectionExtend(collection, symbol, df, {})
 
         if storeType == 2:
-            df['last_update'] = now_date
             csv_dir = root_path + "/" + config.get('Paths', database)+ config.get('Paths', sheet) 
             writeToCSV(csv_dir, symbol, df)
 
@@ -236,15 +239,13 @@ def storeStock(root_path, database, sheet, symbol, df):
 def queryNews(root_path, database, sheet, symbol):
     config = getConfig(root_path)
     storeType = int(config.get('Setting', 'StoreType'))
-    lastUpdateTime = pd.Timestamp('1970-01-01')
+    lastUpdateTime = pd.Timestamp(global_stocklist.loc[symbol]['news_update'])
 
     try:
         if storeType == 1:
             collection = getCollection(database, sheet)
             queryString = { "symbol" : symbol }
             df, metadata = readFromCollectionExtend(collection, queryString)
-            if 'last_update' in metadata:
-                lastUpdateTime = pd.Timestamp(metadata['last_update'])
             if df.empty: return pd.DataFrame(), lastUpdateTime
             df = df.set_index('date')
             return df, lastUpdateTime
@@ -254,8 +255,6 @@ def queryNews(root_path, database, sheet, symbol):
             filename = dir + symbol + '.csv'
             if os.path.exists(filename) == False: return pd.DataFrame(), lastUpdateTime
             df = pd.read_csv(filename)
-            if 'last_update' in df:
-                lastUpdateTime = pd.Timestamp(df['last_update'].iloc[0])
             return df, lastUpdateTime
     
     except Exception as e:
@@ -270,6 +269,10 @@ def storeNews(root_path, database, sheet, symbol, df):
     storeType = int(global_config.get('Setting', 'StoreType'))
     now_date = datetime.datetime.now().strftime("%Y-%m-%d")
     
+    now_date = datetime.datetime.now().strftime("%Y-%m-%d")
+    global_stocklist.set_value(symbol, 'news_update', now_date)
+    storeStockList(root_path, database, sheet, global_stocklist.reset_index())
+
     df = df.drop_duplicates(subset=['uri'], keep='first')
     df.set_index(['date'], inplace=True)
     df.sort_index(ascending=True, inplace=True)
@@ -277,12 +280,10 @@ def storeNews(root_path, database, sheet, symbol, df):
     try:
         if storeType == 1:
             collection = getCollection(database, sheet)
-            metadata = {'last_update':now_date}
             df = df.reset_index()
-            writeToCollectionExtend(collection, symbol, df, metadata)
+            writeToCollectionExtend(collection, symbol, df, {})
 
         if storeType == 2:
-            df['last_update'] = now_date
             csv_dir = root_path + "/" + config.get('Paths', database) + config.get('Paths', sheet)
             writeToCSV(csv_dir, symbol, df)
     

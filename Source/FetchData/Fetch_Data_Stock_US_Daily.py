@@ -49,6 +49,10 @@ def getStocksList(root_path):
     listData.loc[len(listData)] = ['SPY', 'SPDR S&P 500 ETF Trust', 0.0, '', '']
     listData.loc[len(listData)] = ['^VIX', 'VOLATILITY S&P 500', 0.0, '', '']
     listData['symbol'] = listData['symbol'].str.strip()
+
+    listData['stock_update'] = '1970-07-01'
+    listData['news_update'] = '1970-07-01'
+    listData = listData.reset_index(drop=True)
     storeStockList(root_path, "DB_STOCK", "SHEET_US_DAILY", listData)
     return queryStockList(root_path, "DB_STOCK", "SHEET_US_DAILY")
 
@@ -185,7 +189,7 @@ def updateSingleStockData(root_path, symbol, from_date, till_date, force_check):
     return startTime, message
 
 def updateStockData_US(root_path, from_date, till_date, storeType, force_check = False):
-    symbols = getStocksList(root_path)['symbol'].values.tolist()
+    symbols = getStocksList(root_path).index
 
     pbar = tqdm(total=len(symbols))
 
