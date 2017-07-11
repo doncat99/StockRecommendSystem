@@ -181,9 +181,11 @@ def updateSingleStockData(root_path, symbol, from_date, till_date, force_check):
         stockData = stockData[~stockData.index.duplicated(keep='first')]
         storeStock(root_path, "DB_STOCK", "SHEET_US_DAILY", symbol, stockData)
     elif updateOnce:
-        stockData = stockData[~stockData.index.duplicated(keep='first')]
-        storeStock(root_path, "DB_STOCK", "SHEET_US_DAILY", symbol, stockData)
-        message = message + ", nothing updated"
+        now_date = datetime.datetime.now().strftime("%Y-%m-%d")
+        stockList = queryStockList(root_path, "DB_STOCK", "SHEET_US_DAILY")
+        if stockList[stockList.index == symbol]['stock_update'][0] != now_date:
+            stockList.set_value(symbol, 'stock_update', now_date)
+            storeStockList(root_path, "DB_STOCK", "SHEET_US_DAILY", stockList, symbol)
     elif savePublishDay == False:
         message = ""
     return startTime, message
@@ -193,7 +195,7 @@ def updateStockData_US(root_path, from_date, till_date, storeType, force_check =
 
     pbar = tqdm(total=len(symbols))
 
-    if storeType == 2:
+    if storeType == 2:# or storeType == 1:
         # count = 10
         for stock in symbols:
             startTime, message = updateSingleStockData(root_path, stock, from_date, till_date, force_check)

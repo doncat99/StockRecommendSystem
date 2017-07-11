@@ -1,4 +1,4 @@
-import os, datetime, configparser
+import os, datetime, pymongo, configparser
 import pandas as pd
 from bson import json_util
 
@@ -27,23 +27,37 @@ def getCollection(database, collection):
     db = client[database]
     return db[collection]
 
+def getStockList(root_path, database, sheet):
+    global global_stocklist
+    if global_stocklist is None:
+        print("initial Stock List...")
+        global_stocklist = queryStockList(root_path, database, sheet)
+    return global_stocklist
+
 def setStockList(df):
     global global_stocklist
+    df.set_index('symbol', inplace=True)
     global_stocklist = df
-    global_stocklist.set_index('symbol', inplace=True)
+    return global_stocklist
 
 def readFromCollection(collection, queryString=None):
     if queryString is None:
         result = collection.find()
     else:
         result = collection.find(queryString)
+    
+    df = pd.DataFrame(list(result))
+    if df.empty == False: del df['_id']
+    return df
 
-    return pd.DataFrame(list(result))
-
-def writeToCollection(collection, df):
+def writeToCollection(collection, df, id = None):
     jsonStrings = df.to_json(orient='records')
     bsonStrings = json_util.loads(jsonStrings)
-    collection.insert_many(bsonStrings, ordered=False)
+    for string in bsonStrings:
+        if id is not None:
+            id_string = ''.join([string[item] for item in id])
+            string['_id'] = id_string
+        collection.save(string)
 
 def readFromCollectionExtend(collection, queryString=None):
     if queryString is None:
@@ -69,7 +83,6 @@ def writeToCSV(csv_dir, CollectionKey, df):
 
 
 def queryStockList(root_path, database, sheet):
-    
     CollectionKey = sheet + "_LIST"
     config = getConfig(root_path)
     storeType = int(config.get('Setting', 'StoreType'))
@@ -78,7 +91,7 @@ def queryStockList(root_path, database, sheet):
         if storeType == 1:
             collection = getCollection(database, CollectionKey)
             df = readFromCollection(collection)
-            if df.empty == False: setStockList(df)
+            if df.empty == False: df = setStockList(df)
             return df
             
         if storeType == 2:
@@ -86,7 +99,7 @@ def queryStockList(root_path, database, sheet):
             filename = csv_dir + CollectionKey + '.csv'
             if os.path.exists(filename): 
                 df = pd.read_csv(filename, index_col=0)
-                setStockList(df)
+                if df.empty == False: df = setStockList(df)
                 return df
             return pd.DataFrame()
 
@@ -96,18 +109,26 @@ def queryStockList(root_path, database, sheet):
     
     return pd.DataFrame()
 
-def storeStockList(root_path, database, sheet, df):
+def storeStockList(root_path, database, sheet, df, symbol = None):
     CollectionKey = sheet + "_LIST"
     config = getConfig(root_path)
     storeType = int(config.get('Setting', 'StoreType')) 
 
-    df.index.name = 'index'
-
     try:
         if storeType == 1:
             collection = getCollection(database, CollectionKey)
-            collection.remove()
-            writeToCollection(collection, df)
+            if symbol is not None:
+                df = df[df.index == symbol].reset_index()
+            writeToCollection(collection, df, ['symbol'])
+            # try:
+            #     index_info = collection.index_information()
+            #     print("index info", index_info)
+            # except Exception as e:
+            #     print(e)
+            #     writeToCollection(collection, df)
+            #     #collection.create_index('symbol', unique=True, drop_dups=True)
+            # else:
+            #     writeToCollection(collection, df)
 
         if storeType == 2:
             csv_dir = root_path + "/" + config.get('Paths', database) + config.get('Paths', sheet) + config.get('Paths', 'CSV_SHARE')
@@ -184,7 +205,8 @@ def queryStock(root_path, database, sheet, symbol):
     CollectionKey = sheet + '_DATA'
     config = getConfig(root_path)
     storeType = int(config.get('Setting', 'StoreType'))
-    lastUpdateTime = pd.Timestamp(global_stocklist.loc[symbol]['stock_update'])
+    stockList = getStockList(root_path, database, sheet)
+    lastUpdateTime = pd.Timestamp(stockList.loc[symbol]['stock_update'])
 
     try:
         if storeType == 1:
@@ -192,7 +214,7 @@ def queryStock(root_path, database, sheet, symbol):
             queryString = { "symbol" : symbol }
             df, metadata = readFromCollectionExtend(collection, queryString)
             if df.empty: return pd.DataFrame(), lastUpdateTime
-            df = df.set_index('date')
+            df.set_index('date', inplace=True)
             return df, lastUpdateTime
             
         if storeType == 2:
@@ -215,13 +237,15 @@ def storeStock(root_path, database, sheet, symbol, df):
     storeType = int(config.get('Setting', 'StoreType'))
     
     now_date = datetime.datetime.now().strftime("%Y-%m-%d")
-    global_stocklist.set_value(symbol, 'stock_update', now_date)
-    storeStockList(root_path, database, sheet, global_stocklist.reset_index())
-    
-    df.index.name = 'date'
-    if 'date' in df: df.set_index('date')  
-    df.index = df.index.astype(str)
-    df.sort_index(ascending=True, inplace=True)
+    stockList = getStockList(root_path, database, sheet)
+    if stockList[stockList.index == symbol]['stock_update'][0] != now_date:
+        stockList.set_value(symbol, 'stock_update', now_date)
+        storeStockList(root_path, database, "SHEET_US_DAILY", stockList, symbol)
+
+    # if 'date' in df: 
+    #     df.set_index('date')  
+    #     df.index = df.index.astype(str)
+    #     df.sort_index(ascending=True, inplace=True)
     
     try:
         if storeType == 1:
@@ -239,15 +263,15 @@ def storeStock(root_path, database, sheet, symbol, df):
 def queryNews(root_path, database, sheet, symbol):
     config = getConfig(root_path)
     storeType = int(config.get('Setting', 'StoreType'))
-    lastUpdateTime = pd.Timestamp(global_stocklist.loc[symbol]['news_update'])
+    lastUpdateTime = pd.Timestamp(getStockList(root_path, database, 'SHEET_US_DAILY').loc[symbol]['news_update'])
 
     try:
         if storeType == 1:
             collection = getCollection(database, sheet)
             queryString = { "symbol" : symbol }
-            df, metadata = readFromCollectionExtend(collection, queryString)
+            df = readFromCollection(collection, queryString)
             if df.empty: return pd.DataFrame(), lastUpdateTime
-            df = df.set_index('date')
+            df.set_index('date', inplace=True)
             return df, lastUpdateTime
 
         if storeType == 2:
@@ -270,8 +294,9 @@ def storeNews(root_path, database, sheet, symbol, df):
     now_date = datetime.datetime.now().strftime("%Y-%m-%d")
     
     now_date = datetime.datetime.now().strftime("%Y-%m-%d")
-    global_stocklist.set_value(symbol, 'news_update', now_date)
-    storeStockList(root_path, database, sheet, global_stocklist.reset_index())
+    stockList = getStockList(root_path, database, 'SHEET_US_DAILY')
+    stockList.set_value(symbol, 'news_update', now_date)
+    storeStockList(root_path, database, "SHEET_US_DAILY", stockList.reset_index())
 
     df = df.drop_duplicates(subset=['uri'], keep='first')
     df.set_index(['date'], inplace=True)
@@ -281,7 +306,8 @@ def storeNews(root_path, database, sheet, symbol, df):
         if storeType == 1:
             collection = getCollection(database, sheet)
             df = df.reset_index()
-            writeToCollectionExtend(collection, symbol, df, {})
+            df['symbol'] = symbol
+            writeToCollection(collection, df, ['symbol', 'uri'])
 
         if storeType == 2:
             csv_dir = root_path + "/" + config.get('Paths', database) + config.get('Paths', sheet)
@@ -345,7 +371,7 @@ def queryTweets(root_path, database, sheet, symbol, col):
             if 'last_update' in metadata:
                 lastUpdateTime = pd.Timestamp(metadata['last_update'])
             if df.empty: return pd.DataFrame(columns=col), lastUpdateTime
-            df = df.set_index('Date')
+            df.set_index('Date')
             return df, lastUpdateTime
 
         if storeType == 2:

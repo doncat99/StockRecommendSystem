@@ -94,9 +94,8 @@ def updateNewsArticle(root_path, symbol, name, from_date, till_date, count):
         storeNews(root_path, "DB_STOCK", "SHEET_US_NEWS", symbol, df)
         return 
     
-    #print(df)
-    first_date = pd.Timestamp(df['date'].iloc[0])#.tz_localize(None)
-    last_date  = pd.Timestamp(df['date'].iloc[-1])#.tz_localize(None)
+    first_date = pd.Timestamp(df.index[0])#.tz_localize(None)
+    last_date  = pd.Timestamp(df.index[-1])#.tz_localize(None)
 
     modified = False
 
@@ -132,7 +131,7 @@ if __name__ == "__main__":
 
     stocklist = queryStockList(root_path, "DB_STOCK", "SHEET_US_DAILY")
     
-    result = stocklist[stocklist['symbol'] == symbol]
+    result = stocklist[stocklist.index == symbol]
 
     if result.empty:
         print("symbol not exist.")
