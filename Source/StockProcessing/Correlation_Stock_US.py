@@ -32,7 +32,7 @@ def get_all_stocks_correlation(root_path, dates_range):
     if df.empty == False: return df
     
     df = queryStockList(root_path, "DB_STOCK", "SHEET_US_DAILY")
-    symbols = df['symbol'].values.tolist()
+    symbols = df.index.values.tolist()
 
     pbar = tqdm(total=len(symbols))
 
@@ -72,11 +72,12 @@ def get_all_stocks_correlation(root_path, dates_range):
             pbar.set_description(str(i) + " " + str(j))
             pbar.update(1)
 
+    print("arrange matrix...")
     us_company_pairs = combinations(stockList, 2)
     df_us_company_pairs = pd.DataFrame(list(us_company_pairs))
     df_us_company_pairs.columns = ['company1', 'company2']
     df_us_company_pairs.loc[:, 'correlation'] = pd.Series(pairwise_correlations).T
-    df_us_company_pairs = df_us_company_pairs.sort_values(['correlation'], ascending=[False]).reset_index(drop=True)#.reset_index(drop=True)
+    df_us_company_pairs = df_us_company_pairs.sort_values(['correlation'], ascending=[False]).reset_index(drop=True)
 
     storeCorrelation(root_path, "DB_STOCK", "SHEET_US_RELA", df_us_company_pairs)
 
@@ -94,8 +95,9 @@ if __name__ == "__main__":
     pd.set_option('display.width',1000)
     warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
 
-    start_date = "2017-01-03"
-    end_date = datetime.datetime.now().strftime("%Y-%m-%d")
+    now_date = datetime.datetime.now()
+    start_date = (now_date - datetime.timedelta(days=90)).strftime("%Y-%m-%d")
+    end_date = now_date.strftime("%Y-%m-%d")
 
     config = configparser.ConfigParser()
     config.read(root_path + "/" + "config.ini")

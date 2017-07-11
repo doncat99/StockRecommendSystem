@@ -3,9 +3,10 @@
 
 ## Main Requirement:
 Python 3.5.2   
-TensorFlow 1.0   
+TensorFlow 1.2   
 pymongo   
 nltk   
+googletrans
 <br>
 
 ## Install
@@ -52,8 +53,8 @@ Cover stock related data fetching, storaging in either MongoDB or CSV mode (See 
     ** US News **   
     DB   : DB_STOCK   
     SHEET: SHEET_US_NEWS   
-    ITEM : symbol (stock symbol)   
-           data -> [{date, title, source, body, uri}]   
+    ITEM : symbol, date, time, title, source, uri, eng, chn
+
 
 ### Run
 cd Source/FetchData   

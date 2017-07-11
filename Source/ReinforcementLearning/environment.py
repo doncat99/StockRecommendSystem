@@ -25,11 +25,11 @@ def get_data(symbols, dates_range, update):
         data.index = pd.to_datetime(data.index)
 
         if df.empty:
-            if 'Close' in data:
-                df[symbol] = data['Close']
+            if 'close' in data:
+                df[symbol] = data['close']
         else:
-            if 'Close' in data:
-                df[symbol] = data['Close']
+            if 'close' in data:
+                df[symbol] = data['close']
     
     df = df[df.index.isin(dates_range)].fillna(0).sort_index()
 

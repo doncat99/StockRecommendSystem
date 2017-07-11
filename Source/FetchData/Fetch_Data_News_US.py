@@ -50,31 +50,40 @@ def getSingleStockNewsArticle(root_path, symbol, name, from_date, till_date, cou
             categories = True, location = False, image = False))))
     res = er.execQuery(q)
 
-    df = pd.DataFrame(columns=['date', 'title', 'source', 'body', 'uri'])
+    df = pd.DataFrame(columns=['date', 'time', 'title', 'source', 'uri', 'body_eng', 'body_chn'])
 
     if 'info' in res:
         print(symbol, res["info"])
         return df
 
-    #translator = Translator()
+    translator = Translator()
     #count = 1
-    print(res)
+    #print(res)
     for art in res["articles"]["results"]:
-        df.loc[len(df)] = [art['date'], art['title'], art['source']['title'], art['body'], art['uri']]
-        #print(res)
+        # print(res)
         # print("\n-------- " + str(count) + " --------\n")
         # print("title: ", art['title'])
         # print("source: ", art['source']['title'])
         # print("dateTime: ", art['dateTime'])
         # print("body: ")
-        # lines = art['body'].splitlines()
+        lines = art['body'].splitlines()
+        eng = [line for line in lines if len(line) > 0]
+        chn = []
+        
+        for line in eng:
+            try:
+                chn.append(translator.translate(line, src='en', dest='zh-CN').text)
+            except Exception as e:
+                chn.append(str(e))
 
         # for line in lines:
         #     if len(line) < 1: continue
         #     trans = translator.translate(line, src='en', dest='zh-CN').text
-        #     print(line + "\n\n" + trans + "\n")
+        #     transLines.append(trans)
+            #print(line + "\n\n" + trans + "\n")
         #count += 1
-    print("article", len(df))
+        df.loc[len(df)] = [art['date'], art['time'], art['title'], art['source']['title'], art['uri'], eng, chn]
+    #print("article", len(df))
     return df
     
     
@@ -86,8 +95,8 @@ def updateNewsArticle(root_path, symbol, name, from_date, till_date, count):
 
     df, lastUpdateTime = queryNews(root_path, "DB_STOCK", "SHEET_US_NEWS", symbol)
 
-    if (datetime.datetime.now() - lastUpdateTime) < datetime.timedelta(hours=24):
-        return
+    # if (datetime.datetime.now() - lastUpdateTime) < datetime.timedelta(hours=24):
+    #     return
 
     if df.empty:
         df = getSingleStockNewsArticle(root_path, symbol, name, from_date, till_date, count)

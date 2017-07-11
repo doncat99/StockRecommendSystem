@@ -134,7 +134,7 @@ def processing_stock_data(root_path, symbol, window, day_selection, week_selecti
     return startTime
 
 def process_all_stocks_data(root_path):
-    symbols = getStocksList(root_path)['symbol'].values.tolist()
+    symbols = getStocksList(root_path).index.values.tolist()
 
     pbar = tqdm(total=len(symbols))
 
