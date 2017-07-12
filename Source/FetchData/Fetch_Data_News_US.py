@@ -21,72 +21,119 @@ def getEventRegistry(root_path):
         global_eventRegistry = EventRegistry(apiKey = config.get('EventRegistry', 'KEY'))
     return global_eventRegistry
 
-def getSingleStockNewsArticle(root_path, symbol, name, from_date, till_date, count):
-    er = getEventRegistry(root_path)
+# def getSingleStockNewsArticle(root_path, symbol, name, from_date, till_date, count):
+#     er = getEventRegistry(root_path)
 
-    conceptUri = er.getConceptUri(symbol)
-    businessUri = er.getCategoryUri("Business")
-    financeUri = er.getCategoryUri("Finance")
+#     conceptUri = er.getConceptUri(symbol)
+#     businessUri = er.getCategoryUri("Business")
+#     financeUri = er.getCategoryUri("Finance")
    
-    qStr = ComplexArticleQuery(
-        CombinedQuery.AND([
-            BaseQuery(dateStart = from_date, dateEnd = till_date),
-            # CombinedQuery.OR([
-            #     BaseQuery(conceptUri = QueryItems.OR([searchUri])),
-            #     BaseQuery(keyword = name)
-            # ]),
-            BaseQuery(keyword = QueryItems.OR(["NASDAQ:"+symbol, "NYSE:"+symbol, "("+symbol+")", name])),
-            #BaseQuery(conceptUri = conceptUri),
-            BaseQuery(categoryUri = QueryItems.OR([businessUri, financeUri])),
-            BaseQuery(lang = "eng")
-        ])
-    )
-    q = QueryArticles.initWithComplexQuery(qStr)
-    q.addRequestedResult(RequestArticlesInfo(count = count, 
-    returnInfo = ReturnInfo(
-        conceptInfo = ConceptInfoFlags(lang = "eng"),
-        articleInfo = ArticleInfoFlags(
-            bodyLen = -1, duplicateList = True, concepts = True, 
-            categories = True, location = False, image = False))))
-    res = er.execQuery(q)
+#     qStr = ComplexArticleQuery(
+#         CombinedQuery.AND([
+#             BaseQuery(dateStart = from_date, dateEnd = till_date),
+#             # CombinedQuery.OR([
+#             #     BaseQuery(conceptUri = QueryItems.OR([searchUri])),
+#             #     BaseQuery(keyword = name)
+#             # ]),
+#             BaseQuery(keyword = QueryItems.OR(["NASDAQ:"+symbol, "NYSE:"+symbol, "("+symbol+")", name])),
+#             #BaseQuery(conceptUri = conceptUri),
+#             BaseQuery(categoryUri = QueryItems.OR([businessUri, financeUri])),
+#             BaseQuery(lang = "eng")
+#         ])
+#     )
+#     q = QueryArticles.initWithComplexQuery(qStr)
+#     q.addRequestedResult(RequestArticlesInfo(count = count, 
+#     returnInfo = ReturnInfo(
+#         conceptInfo = ConceptInfoFlags(lang = "eng"),
+#         articleInfo = ArticleInfoFlags(
+#             bodyLen = -1, duplicateList = True, concepts = True, 
+#             categories = True, location = False, image = False))))
+#     res = er.execQuery(q)
 
-    df = pd.DataFrame(columns=['date', 'time', 'title', 'source', 'uri', 'body_eng', 'body_chn'])
+#     df = pd.DataFrame(columns=['date', 'time', 'title', 'source', 'uri', 'body_eng', 'body_chn'])
 
-    if 'info' in res:
-        print(symbol, res["info"])
-        return df
+#     if 'info' in res:
+#         print(symbol, res["info"])
+#         return df
 
-    translator = Translator()
-    #count = 1
-    #print(res)
-    for art in res["articles"]["results"]:
-        # print(res)
-        # print("\n-------- " + str(count) + " --------\n")
-        # print("title: ", art['title'])
-        # print("source: ", art['source']['title'])
-        # print("dateTime: ", art['dateTime'])
-        # print("body: ")
-        lines = art['body'].splitlines()
-        eng = [line for line in lines if len(line) > 0]
-        chn = []
+#     translator = Translator()
+#     #count = 1
+#     #print(res)
+#     for art in res["articles"]["results"]:
+#         # print(res)
+#         # print("\n-------- " + str(count) + " --------\n")
+#         # print("title: ", art['title'])
+#         # print("source: ", art['source']['title'])
+#         # print("dateTime: ", art['dateTime'])
+#         # print("body: ")
+#         lines = art['body'].splitlines()
+#         eng = [line for line in lines if len(line) > 0]
+#         chn = []
         
-        for line in eng:
-            try:
-                chn.append(translator.translate(line, src='en', dest='zh-CN').text)
-            except Exception as e:
-                chn.append(str(e))
+#         for line in eng:
+#             try:
+#                 chn.append(translator.translate(line, src='en', dest='zh-CN').text)
+#             except Exception as e:
+#                 chn.append(str(e))
 
-        # for line in lines:
-        #     if len(line) < 1: continue
-        #     trans = translator.translate(line, src='en', dest='zh-CN').text
-        #     transLines.append(trans)
-            #print(line + "\n\n" + trans + "\n")
-        #count += 1
-        df.loc[len(df)] = [art['date'], art['time'], art['title'], art['source']['title'], art['uri'], eng, chn]
-    #print("article", len(df))
+#         # for line in lines:
+#         #     if len(line) < 1: continue
+#         #     trans = translator.translate(line, src='en', dest='zh-CN').text
+#         #     transLines.append(trans)
+#             #print(line + "\n\n" + trans + "\n")
+#         #count += 1
+#         df.loc[len(df)] = [art['date'], art['time'], art['title'], art['source']['title'], art['uri'], eng, chn]
+#     #print("article", len(df))
+#     return df
+
+def getSingleStockNewsArticle(root_path, symbol, name, from_date, till_date, count):
+    config = configparser.ConfigParser()
+    config.read(root_path + "/" + "config.ini")
+
+    url = "https://api.newsriver.io/v2/search?query=text%3Anasdaq%20" + symbol + "%20language%3Aen%20%20AND%20discoverDate%3A%5B" + from_date + "%20TO%20" + till_date + "%5D%0A&sortBy=_score&sortOrder=DESC&limit=100"
+
+    response = requests.get(url, headers={"Authorization": config.get('NewsRiver', 'KEY')})
+    jsonFile = response.json()
+
+    df = pd.DataFrame(columns=['date', 'time', 'title', 'source', 'ranking', 'sentiment', 'uri', 'url', 'body_eng', 'body_chn'])
+    translator = Translator()
+    
+    for art in jsonFile:
+        try:
+            finSentiment = art['metadata']['finSentiment']['sentiment']
+        except:
+            finSentiment = "0.0"
+        
+        try: 
+            source = art['website']['hostName']
+        except:
+            source = "N/A"
+
+        try:
+            ranking = art['website']['rankingGlobal']
+        except:
+            ranking = "N/A"
+
+        try:
+            trans = translator.translate(art['text'], src='en', dest='zh-CN').text
+        except:
+            trans = ""
+
+
+        df.loc[len(df)] = [art['discoverDate'][:10], 
+                           art['discoverDate'][11:19], 
+                           art['title'], 
+                           source, 
+                           ranking, 
+                           finSentiment,
+                           art['id'], 
+                           art['url'],
+                           art['text'], 
+                           trans
+                          ]
+
     return df
-    
-    
+
 def updateNewsArticle(root_path, symbol, name, from_date, till_date, count):
     startTime = time.time()
     message = ""
@@ -163,7 +210,7 @@ if __name__ == "__main__":
     
     name = result['name'].values[0]
     print("fetching news of stock:", symbol, name)
-    updateNewsArticle(root_path, symbol, name, "2016-06-01", now, 200)
+    updateNewsArticle(root_path, symbol, name, "2017-07-01", now, 200)
 
     # if storeType == 1:
     #     # stop database server (sync)
