@@ -175,8 +175,8 @@ def updateNewsArticle(root_path, symbol, name, from_date, till_date, count):
 
     
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("please input Stock symbol after python file")
+    if len(sys.argv) != 4:
+        print("please input Stock symbol and start date, end date after python file")
         exit()
 
     pd.set_option('precision', 3)
@@ -192,6 +192,9 @@ if __name__ == "__main__":
     if result.empty:
         print("symbol not exist.")
         exit()
+
+    start_date = str(sys.argv[2])
+    end_date = str(sys.argv[3])
 
     now = datetime.datetime.now().strftime("%Y-%m-%d")
 
@@ -210,12 +213,12 @@ if __name__ == "__main__":
     
     name = result['name'].values[0]
     print("fetching news of stock:", symbol, name)
-    updateNewsArticle(root_path, symbol, name, "2017-07-01", now, 200)
+    updateNewsArticle(root_path, symbol, name, start_date, end_date, 100)
 
     # if storeType == 1:
     #     # stop database server (sync)
     #     time.sleep(5)
     #     ShutdownServer()
     
- 
+
     
