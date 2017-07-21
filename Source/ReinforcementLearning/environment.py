@@ -45,9 +45,10 @@ class Simulator(object):
         # frame a time period as world
         self.dates_range = pd.date_range(start_date, end_date)
 
+
         # initialize cash holdings
         init_cash = 100000
-        print("init cash: ", init_cash)
+        print("Init cash: ", init_cash)
 
         #for visualization
         self.data_out = []
@@ -324,7 +325,9 @@ class Simulator(object):
 
     def has_more(self):
         if ((self.dateIdx < len(self.prices.index)) == False):
-            print("\nFinal outcome: ", self.baseline())
+            print("Final outcome as below: ")
+            print("SPY BaseLine:", self.baseline())
+            print("RF Learning:", self.port_value_for_output())
         return self.dateIdx < len(self.prices.index)
 
     def baseline(self):

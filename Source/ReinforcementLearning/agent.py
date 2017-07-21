@@ -1,6 +1,5 @@
 import numpy as np
 import theano
-import theano.tensor as T
 import lasagne
 import sys
 
@@ -8,6 +7,7 @@ verbose = False
 
 class RNN(object):
     def __init__(self, seq_len, n_feature):
+        import theano.tensor as T
         self.Input = lasagne.layers.InputLayer(shape=(None, seq_len, n_feature))
         self.buildNetwork()
         self.output = lasagne.layers.get_output(self.network)
@@ -118,9 +118,9 @@ class PolicyGradientAgent(object):
         self.states = lookback[:]
         self.choices = []
         self.rewards = []
-        self.model = LSTM(self.lookback_size, len(lookback[0]))
+        self.model = BLSTM(self.lookback_size, len(lookback[0]))
 
-        self.size_of_replay = self.batch_size*4
+        self.size_of_replay = self.batch_size*8
 
         #initialize critic network
         self.critic_agent = CriticsAgent(batch_size = self.batch_size, critic_update_cycle=self.update_cycle, target_update_cycle = self.update_target_cycle, lookback = lookback)
@@ -134,7 +134,7 @@ class PolicyGradientAgent(object):
 
     def init_query(self):
         probs = self.model.predict(self.states)
-        print("probabilities", probs)
+        if verbose: print("probabilities", probs)
         self.action = np.random.choice(3, p=probs)
         return self.action
 
@@ -169,12 +169,12 @@ class PolicyGradientAgent(object):
         probs = self.model.predict(self.states[-self.lookback_size:])
 
         if verbose: print("probabilities", probs)
-        if np.isnan(probs[0]):
-            print(self.states[-self.lookback_size:])
-            self.action = "gameover"
-            return self.action
-        else:
-            self.action = np.random.choice(3, p=probs)
+        # if np.isnan(probs[0]):
+        #     print(self.states[-self.lookback_size:])
+        #     self.action = "gameover"
+        #     return self.action
+        # else:
+        self.action = np.random.choice(3, p=probs)
 
         # update critics's experience repaly
         self.critic_agent.update_history(self.states, self.rewards)
@@ -232,10 +232,10 @@ class model(object):
         self.n_feature = n_feature
         self.model = self.buildnetwork()
 
-
     def buildnetwork(self):
         model = Sequential()
-        model.add(lstm(20, dropout_W=0.2,input_shape = (self.seq_len, self.n_feature)))
+        model.add(lstm(20, dropout_W=0.2, input_shape = (self.seq_len, self.n_feature)))
+        #model.add(LSTM(20, dropout=0.2, input_shape=(int(self.seq_len), int(self.n_feature))))
         model.add(Dense(1, activation=None))
         model.compile(loss='mean_squared_error', optimizer=Adagrad(lr=0.002,clipvalue=10), metrics=['mean_squared_error'])
 
