@@ -1,7 +1,9 @@
 import sys, os, time, datetime, warnings, configparser
 import pandas as pd
 import concurrent.futures
+import matplotlib.pyplot as plt
 from tqdm import tqdm
+
 
 from pandas.tseries.offsets import CustomBusinessMonthBegin
 from pandas.tseries.holiday import USFederalHolidayCalendar
@@ -127,18 +129,17 @@ def processing_stock_data(root_path, symbol, window, day_selection, week_selecti
     startTime = time.time()
     data = get_single_stock_data(root_path, symbol)
     if data.empty: return startTime
-    if len(data) < 100: return startTime
+    if len(data) < 200 + window: return startTime
     
     inner_processing_stock_data(symbol, data, window, day_selection, week_selection, month_selection)
 
     return startTime
 
-def process_all_stocks_data(root_path):
+def process_all_stocks_data(root_path, window = 5):
     symbols = getStocksList(root_path).index.values.tolist()
 
     pbar = tqdm(total=len(symbols))
 
-    window = 5
     day_selection = []
     week_selection = []
     month_selection = []
@@ -151,32 +152,34 @@ def process_all_stocks_data(root_path):
         month_window = []
         month_selection.append(month_window)
 
-    # startTime = time.time()
-    # for symbol in symbols:
-    #     startTime = processing_stock_data(root_path, symbol, window, day_selection, week_selection, month_selection)
-    #     outMessage = '%-*s processed in:  %.4s seconds' % (6, symbol, (time.time() - startTime))
-    #     pbar.set_description(outMessage)
-    #     pbar.update(1)
-    # print('total processing in:  %.4s seconds' % ((time.time() - startTime)))
+    startTime = time.time()
+    for symbol in symbols:
+        startTime = processing_stock_data(root_path, symbol, window, day_selection, week_selection, month_selection)
+        outMessage = '%-*s processed in:  %.4s seconds' % (6, symbol, (time.time() - startTime))
+        pbar.set_description(outMessage)
+        pbar.update(1)
+    print('total processing in:  %.4s seconds' % ((time.time() - startTime)))
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-        # Start the load operations and mark each future with its URL
-        future_to_stock = {executor.submit(processing_stock_data, root_path, symbol, window, day_selection, week_selection, month_selection): symbol for symbol in symbols}
-        for future in concurrent.futures.as_completed(future_to_stock):
-            stock = future_to_stock[future]
-            try:
-                startTime = future.result()
-            except Exception as exc:
-                startTime = time.time()
-                print('%r generated an exception: %s' % (stock, exc))
-            outMessage = '%-*s processed in:  %.4s seconds' % (6, stock, (time.time() - startTime))
-            pbar.set_description(outMessage)
-            pbar.update(1)
+    # with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+    #     # Start the load operations and mark each future with its URL
+    #     future_to_stock = {executor.submit(processing_stock_data, root_path, symbol, window, day_selection, week_selection, month_selection): symbol for symbol in symbols}
+    #     for future in concurrent.futures.as_completed(future_to_stock):
+    #         stock = future_to_stock[future]
+    #         try:
+    #             startTime = future.result()
+    #         except Exception as exc:
+    #             startTime = time.time()
+    #             print('%r generated an exception: %s' % (stock, exc))
+    #         outMessage = '%-*s processed in:  %.4s seconds' % (6, stock, (time.time() - startTime))
+    #         pbar.set_description(outMessage)
+    #         pbar.update(1)
 
     day_week_selection = []
     week_month_selection = []
     day_month_selection = []
     all_selection = []
+
+    count = []
 
     for index in range(0, window):
         day_week_selection.append(list(set(day_selection[index]) & set(week_selection[index])))
@@ -188,11 +191,18 @@ def process_all_stocks_data(root_path):
         #week_selection = list(set(week_selection) - set(all_selection))
         #month_selection = list(set(month_selection) - set(all_selection))
 
+        # sumUp = len(day_week_selection[index]) + len(week_month_selection[index]) + len(day_month_selection[index]) + len(all_selection[index])
+        # count.insert(0,sumUp)
+
         print("all_selection", len(all_selection[index]), all_selection[index])
         print("day_week_selection", len(day_week_selection[index]), day_week_selection[index])
         print("week_month_selection", len(week_month_selection[index]), week_month_selection[index])
         print("day_month_selection", len(day_month_selection[index]), day_month_selection[index])
         print("/n ------------------------ /n")
+
+    # plt.plot(range(0, len(count)), count)
+    # plt.title('A simple chirp')
+    # plt.show()
     #print("day_selection", len(day_selection), day_selection)
     #print("week_selection", len(week_selection), week_selection)
     #print("month_selection", len(month_selection), month_selection)
@@ -222,7 +232,7 @@ if __name__ == "__main__":
     #updateStockData_US(root_path, "1990-01-01", now, storeType)
     
     print("Processing data...")
-    process_all_stocks_data(root_path)
+    process_all_stocks_data(root_path, 5)
 
     # if storeType == 1:
     #     # stop database server (sync)
