@@ -3,6 +3,7 @@
 
 ## Main Requirement:
 Python 3.5.2   
+Keras 2.0.6
 TensorFlow 1.2   
 pymongo   
 nltk   
@@ -28,7 +29,7 @@ Cover stock related data fetching, storaging in either MongoDB or CSV mode (See 
 1. Stock:（NSDQ, NYSE）-> US, (HKSE) -> HK, (SSE，SZSE) -> CHN
 2. Earning: US stock market earning info.
 3. Short: US stock market short squeeze info. (Require Multi IP Routing Support)
-4. News: EventRegistry (6.4.3)
+4. News: NewsRiver 
 5. Media: Twitter Data
 
 ### Data Structure
