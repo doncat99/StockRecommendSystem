@@ -57,6 +57,8 @@ def judge_rule(symbol, dataset, window, selection, str):
     dataset['ma60'] = dataset['close'].rolling(window=60, center=False).mean()
     df = dataset[['ma5', 'ma10', 'ma20', 'ma30', 'ma60', 'kdj_k', 'kdj_d', 'kdj_j']]
 
+    if len(df) < window: return
+
     for index in range(-window, 0):
         ma5, ma10, ma20, ma30, ma60, k, d, j = df['ma5'][index], df['ma10'][index], df['ma20'][index], df['ma30'][index], df['ma60'][index], df['kdj_k'][index], df['kdj_d'][index], df['kdj_j'][index]
         fit_count = 0
@@ -129,7 +131,7 @@ def processing_stock_data(root_path, symbol, window, day_selection, week_selecti
     startTime = time.time()
     data = get_single_stock_data(root_path, symbol)
     if data.empty: return startTime
-    if len(data) < 200 + window: return startTime
+    if len(data) < 60 + window: return startTime
     
     inner_processing_stock_data(symbol, data, window, day_selection, week_selection, month_selection)
 
