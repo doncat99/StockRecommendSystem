@@ -242,7 +242,7 @@ def storeStock(root_path, database, sheet, symbol, df):
         stockList.set_value(symbol, 'stock_update', now_date)
         storeStockList(root_path, database, "SHEET_US_DAILY", stockList, symbol)
 
-    # if 'date' in df: 
+    
     #     df.set_index('date')  
     #     df.index = df.index.astype(str)
     #     df.sort_index(ascending=True, inplace=True)
@@ -251,6 +251,7 @@ def storeStock(root_path, database, sheet, symbol, df):
         if storeType == 1:
             collection = getCollection(database, CollectionKey)
             df = df.reset_index()
+            if 'date' in df: df.date = df.date.astype(str)
             writeToCollectionExtend(collection, symbol, df, {})
 
         if storeType == 2:
