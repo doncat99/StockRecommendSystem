@@ -90,9 +90,9 @@ def getSingleStockNewsArticle(root_path, symbol, name, from_date, till_date, cou
     config = configparser.ConfigParser()
     config.read(root_path + "/" + "config.ini")
 
-    url = "https://api.newsriver.io/v2/search?query=text%3Anasdaq%20" + symbol + "%20language%3Aen%20%20AND%20discoverDate%3A%5B" + from_date + "%20TO%20" + till_date + "%5D%0A&sortBy=_score&sortOrder=DESC&limit=" + str(count)
+    url = "https://api.newsriver.io/v2/search?query=title%3Anasdaq%20" + symbol + "%20language%3Aen%20%20AND%20discoverDate%3A%5B" + from_date + "%20TO%20" + till_date + "%5D%0A&sortBy=_score&sortOrder=DESC&limit=" + str(count)
 
-    response = requests.get(url, headers={"Authorization": config.get('NewsRiver', 'KEY')}, verify=False)
+    response = requests.get(url, headers={"Authorization": config.get('NewsRiver', 'KEY')})
     jsonFile = response.json()
 
     df = pd.DataFrame(columns=['date', 'time', 'title', 'source', 'ranking', 'sentiment', 'uri', 'url', 'body_eng', 'body_chn'])
@@ -119,8 +119,10 @@ def getSingleStockNewsArticle(root_path, symbol, name, from_date, till_date, cou
         except:
             trans = ""
 
-        df.loc[len(df)] = [art['publishDate'][:10], 
-                           art['publishDate'][11:19], 
+        print(art)
+
+        df.loc[len(df)] = [art['discoverDate'][:10], 
+                           art['discoverDate'][11:19], 
                            art['title'], 
                            source, 
                            ranking, 
@@ -143,34 +145,35 @@ def updateNewsArticle(root_path, symbol, name, from_date, till_date, count):
 
     # if (datetime.datetime.now() - lastUpdateTime) < datetime.timedelta(hours=24):
     #     return
-
+    
     if df.empty:
         df = getSingleStockNewsArticle(root_path, symbol, name, from_date, till_date, count)
-        storeNews(root_path, "DB_STOCK", "SHEET_US_NEWS", symbol, df)
-        return 
     
-    first_date = pd.Timestamp(df.index[0])#.tz_localize(None)
-    last_date  = pd.Timestamp(df.index[-1])#.tz_localize(None)
-
-    modified = False
-
-    # require pre download
-    if first_date > pd.Timestamp(from_date):
-        pre_df = getSingleStockNewsArticle(root_path, symbol, name, from_date, first_date.strftime("%Y-%m-%d"), count)
-        #print("pre_df", from_date, first_date.strftime("%Y-%m-%d"))
-        #print(pre_df)
-        df = pd.concat([pre_df, df])
-        modified = True
+    print(df)
+    storeNews(root_path, "DB_STOCK", "SHEET_US_NEWS", symbol, df)
     
-    if last_date < pd.Timestamp(till_date):
-        post_df = getSingleStockNewsArticle(root_path, symbol, name, last_date.strftime("%Y-%m-%d"), till_date, count)
-        #print("post_df", last_date.strftime("%Y-%m-%d"), till_date)
-        #print(post_df)
-        df = pd.concat([df, post_df])
-        modified = True
+    # first_date = pd.Timestamp(df.index[0])#.tz_localize(None)
+    # last_date  = pd.Timestamp(df.index[-1])#.tz_localize(None)
 
-    if modified:
-        storeNews(root_path, "DB_STOCK", "SHEET_US_NEWS", symbol, df)
+    # modified = False
+
+    # # require pre download
+    # if first_date > pd.Timestamp(from_date):
+    #     pre_df = getSingleStockNewsArticle(root_path, symbol, name, from_date, first_date.strftime("%Y-%m-%d"), count)
+    #     #print("pre_df", from_date, first_date.strftime("%Y-%m-%d"))
+    #     #print(pre_df)
+    #     df = pd.concat([pre_df, df])
+    #     modified = True
+    
+    # if last_date < pd.Timestamp(till_date):
+    #     post_df = getSingleStockNewsArticle(root_path, symbol, name, last_date.strftime("%Y-%m-%d"), till_date, count)
+    #     #print("post_df", last_date.strftime("%Y-%m-%d"), till_date)
+    #     #print(post_df)
+    #     df = pd.concat([df, post_df])
+    #     modified = True
+
+    # if modified:
+    #     storeNews(root_path, "DB_STOCK", "SHEET_US_NEWS", symbol, df)
 
     
 if __name__ == "__main__":
@@ -212,7 +215,7 @@ if __name__ == "__main__":
     
     name = result['name'].values[0]
     print("fetching news of stock:", symbol, name)
-    updateNewsArticle(root_path, symbol, name, start_date, end_date, 100)
+    updateNewsArticle(root_path, symbol, name, start_date, end_date, 1)
 
     # if storeType == 1:
     #     # stop database server (sync)
