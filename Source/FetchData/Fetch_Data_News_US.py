@@ -119,8 +119,6 @@ def getSingleStockNewsArticle(root_path, symbol, name, from_date, till_date, cou
         except:
             trans = ""
 
-        print(art)
-
         df.loc[len(df)] = [art['discoverDate'][:10], 
                            art['discoverDate'][11:19], 
                            art['title'], 
@@ -215,7 +213,7 @@ if __name__ == "__main__":
     
     name = result['name'].values[0]
     print("fetching news of stock:", symbol, name)
-    updateNewsArticle(root_path, symbol, name, start_date, end_date, 1)
+    updateNewsArticle(root_path, symbol, name, start_date, end_date, 100)
 
     # if storeType == 1:
     #     # stop database server (sync)
