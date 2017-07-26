@@ -90,7 +90,7 @@ def getSingleStockNewsArticle(root_path, symbol, name, from_date, till_date, cou
     config = configparser.ConfigParser()
     config.read(root_path + "/" + "config.ini")
 
-    url = "https://api.newsriver.io/v2/search?query=text%3Anasdaq%20" + symbol + "%20language%3Aen%20%20AND%20discoverDate%3A%5B" + from_date + "%20TO%20" + till_date + "%5D%0A&sortBy=_score&sortOrder=DESC&limit=100"
+    url = "https://api.newsriver.io/v2/search?query=text%3Anasdaq%20" + symbol + "%20language%3Aen%20%20AND%20discoverDate%3A%5B" + from_date + "%20TO%20" + till_date + "%5D%0A&sortBy=_score&sortOrder=DESC&limit=" + str(count)
 
     response = requests.get(url, headers={"Authorization": config.get('NewsRiver', 'KEY')})
     jsonFile = response.json()
@@ -118,7 +118,6 @@ def getSingleStockNewsArticle(root_path, symbol, name, from_date, till_date, cou
             trans = translator.translate(art['text'], src='en', dest='zh-CN').text
         except:
             trans = ""
-
 
         df.loc[len(df)] = [art['discoverDate'][:10], 
                            art['discoverDate'][11:19], 
@@ -213,7 +212,7 @@ if __name__ == "__main__":
     
     name = result['name'].values[0]
     print("fetching news of stock:", symbol, name)
-    updateNewsArticle(root_path, symbol, name, start_date, end_date, 100)
+    updateNewsArticle(root_path, symbol, name, start_date, end_date, 1)
 
     # if storeType == 1:
     #     # stop database server (sync)

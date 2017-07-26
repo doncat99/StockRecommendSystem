@@ -271,7 +271,7 @@ def queryNews(root_path, database, sheet, symbol):
             queryString = { "symbol" : symbol }
             df = readFromCollection(collection, queryString)
             if df.empty: return pd.DataFrame(), lastUpdateTime
-            df.set_index('date', inplace=True)
+            #df.set_index('date', inplace=True)
             return df, lastUpdateTime
 
         if storeType == 2:
@@ -299,8 +299,8 @@ def storeNews(root_path, database, sheet, symbol, df):
     storeStockList(root_path, database, "SHEET_US_DAILY", stockList.reset_index())
 
     df = df.drop_duplicates(subset=['uri'], keep='first')
-    df.set_index(['date'], inplace=True)
-    df.sort_index(ascending=True, inplace=True)
+    #df.set_index(['date'], inplace=True)
+    #df.sort_index(ascending=True, inplace=True)
     
     try:
         if storeType == 1:
