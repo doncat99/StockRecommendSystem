@@ -305,7 +305,7 @@ def storeNews(root_path, database, sheet, symbol, df):
     try:
         if storeType == 1:
             collection = getCollection(database, sheet)
-            df = df.reset_index()
+            #df = df.reset_index()
             df['symbol'] = symbol
             writeToCollection(collection, df, ['symbol', 'uri'])
 

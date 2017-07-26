@@ -139,15 +139,14 @@ def updateNewsArticle(root_path, symbol, name, from_date, till_date, count):
 
     if len(symbol) == 0: return startTime, message
 
-    df, lastUpdateTime = queryNews(root_path, "DB_STOCK", "SHEET_US_NEWS", symbol)
+    #df, lastUpdateTime = queryNews(root_path, "DB_STOCK", "SHEET_US_NEWS", symbol)
 
     # if (datetime.datetime.now() - lastUpdateTime) < datetime.timedelta(hours=24):
     #     return
     
-    if df.empty:
-        df = getSingleStockNewsArticle(root_path, symbol, name, from_date, till_date, count)
+    #if df.empty:
+    df = getSingleStockNewsArticle(root_path, symbol, name, from_date, till_date, count)
     
-    print(df)
     storeNews(root_path, "DB_STOCK", "SHEET_US_NEWS", symbol, df)
     
     # first_date = pd.Timestamp(df.index[0])#.tz_localize(None)
@@ -213,7 +212,7 @@ if __name__ == "__main__":
     
     name = result['name'].values[0]
     print("fetching news of stock:", symbol, name)
-    updateNewsArticle(root_path, symbol, name, start_date, end_date, 100)
+    updateNewsArticle(root_path, symbol, name, start_date, end_date, 5)
 
     # if storeType == 1:
     #     # stop database server (sync)
