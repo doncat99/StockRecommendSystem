@@ -115,7 +115,7 @@ def getSingleStockNewsArticle(root_path, symbol, name, from_date, till_date, cou
             ranking = "N/A"
 
         try:
-            trans = translator.translate(art['text'], src='en', dest='zh-CN').text
+            trans = ""#translator.translate(art['text'], src='en', dest='zh-CN').text
         except:
             trans = ""
 
