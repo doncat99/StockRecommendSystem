@@ -92,7 +92,7 @@ def getSingleStockNewsArticle(root_path, symbol, name, from_date, till_date, cou
 
     url = "https://api.newsriver.io/v2/search?query=text%3Anasdaq%20" + symbol + "%20language%3Aen%20%20AND%20discoverDate%3A%5B" + from_date + "%20TO%20" + till_date + "%5D%0A&sortBy=_score&sortOrder=DESC&limit=" + str(count)
 
-    response = requests.get(url, headers={"Authorization": config.get('NewsRiver', 'KEY')})
+    response = requests.get(url, headers={"Authorization": config.get('NewsRiver', 'KEY')}, verify=False)
     jsonFile = response.json()
 
     df = pd.DataFrame(columns=['date', 'time', 'title', 'source', 'ranking', 'sentiment', 'uri', 'url', 'body_eng', 'body_chn'])
@@ -119,8 +119,8 @@ def getSingleStockNewsArticle(root_path, symbol, name, from_date, till_date, cou
         except:
             trans = ""
 
-        df.loc[len(df)] = [art['discoverDate'][:10], 
-                           art['discoverDate'][11:19], 
+        df.loc[len(df)] = [art['publishDate'][:10], 
+                           art['publishDate'][11:19], 
                            art['title'], 
                            source, 
                            ranking, 
