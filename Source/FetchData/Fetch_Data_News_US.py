@@ -24,45 +24,6 @@ def getEventRegistry(root_path):
         global_eventRegistry = EventRegistry(apiKey = config.get('EventRegistry', 'KEY'))
     return global_eventRegistry
 
-def youdao_translator(query):
-    def md5(code):
-        md = hashlib.md5()
-        md.update(code.encode())
-        return md.hexdigest()
-    
-    def getUrlWithQueryString(url,name,param):
-        if '?' in url:
-            url= url +'&'+ name + '=' + param
-        else:
-            url = url + '?' + name + '=' + param
-        return url
-    
-    def getJson(url):
-        response = requests.get(url)
-        
-        try:
-            s = response.json()
-            if s['errorCode'] != '0': return s['errorCode']
-            return s['translation'][0]
-        except: return ''
-
-    appKey ="4ccd169a383639ab"
-    salt = str('%0d'%(time.time()*1000))
-    src = "en"
-    dest = "zh-CHS"
-    hashStr = appKey + query + salt + "BSur61YY25NQvRh4WdfMdCJ0DU5WaJqk"
-    sign = md5(hashStr)
-
-    url = 'https://openapi.youdao.com/api'
-    url = getUrlWithQueryString(url, 'q', query)
-    url = getUrlWithQueryString(url, 'salt', salt)
-    url = getUrlWithQueryString(url, 'sign', sign)
-    url = getUrlWithQueryString(url, 'from', src)
-    url = getUrlWithQueryString(url, 'appKey', appKey)
-    url = getUrlWithQueryString(url, 'to', dest)
-
-    return getJson(url)
-
 # def getSingleStockNewsArticle(root_path, symbol, name, from_date, till_date, count):
 #     er = getEventRegistry(root_path)
 
@@ -159,17 +120,61 @@ def line_translation(article):
     
     return trans
 
+def youdao_translator(query):
+    def md5(code):
+        md = hashlib.md5()
+        md.update(code.encode())
+        return md.hexdigest()
+    
+    def getUrlWithQueryString(url,name,param):
+        if '?' in url:
+            url= url +'&'+ name + '=' + param
+        else:
+            url = url + '?' + name + '=' + param
+        return url
+    
+    def getJson(url):
+        response = requests.get(url)
+        
+        try:
+            s = response.json()
+            if s['errorCode'] != '0': return s['errorCode']
+            return s['translation'][0]
+        except: return ''
+
+    appKey ="4ccd169a383639ab"
+    salt = str('%0d'%(time.time()*1000))
+    src = "en"
+    dest = "zh-CHS"
+    hashStr = appKey + query + salt + "BSur61YY25NQvRh4WdfMdCJ0DU5WaJqk"
+    sign = md5(hashStr)
+
+    url = 'https://openapi.youdao.com/api'
+    url = getUrlWithQueryString(url, 'q', query)
+    url = getUrlWithQueryString(url, 'salt', salt)
+    url = getUrlWithQueryString(url, 'sign', sign)
+    url = getUrlWithQueryString(url, 'from', src)
+    url = getUrlWithQueryString(url, 'appKey', appKey)
+    url = getUrlWithQueryString(url, 'to', dest)
+
+    time.sleep(1)
+
+    return getJson(url)
+
 def translation(article):
+    translator = Translator()
     soup = BeautifulSoup(article, 'lxml')
     paragraphs = soup.findAll('p')
     for p in paragraphs:
-        i = 0
         for content in p.contents:
-            #print(i, len(content), content.name, content)
-            if content.name == None:
-                p.contents[i].replace_with(youdao_translator(p.contents[i]))
-            i += 1
-    return str(soup)
+            if content.name == None and len(content) > 0:
+                #trans = youdao_translator(content) 
+                trans = translator.translate(content, src='en', dest='zh-CN').text
+                #print(len(content), content.name)
+                #print(content)
+                #print(trans)
+                content.replace_with(trans)
+    return str(soup.body.next)
 
 
 def getSingleStockNewsArticle(root_path, symbol, name, from_date, till_date, count):
@@ -196,7 +201,6 @@ def getSingleStockNewsArticle(root_path, symbol, name, from_date, till_date, cou
     jsonFile = response.json()
 
     df = pd.DataFrame(columns=['date', 'time', 'title', 'source', 'ranking', 'sentiment', 'uri', 'url', 'body_html', 'body_eng', 'body_chn'])
-    translator = Translator()
     
     for art in jsonFile:
         try:
@@ -215,7 +219,7 @@ def getSingleStockNewsArticle(root_path, symbol, name, from_date, till_date, cou
             ranking = "N/A"
 
         #try:
-        trans = translation(art['structuredText'])#translator.translate(art['text'], src='en', dest='zh-CN').text
+        trans = translation(art['structuredText'])#
         # except Exception as e:
         #     print(e)
         #     trans = ""
