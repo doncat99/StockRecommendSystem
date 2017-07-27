@@ -2,6 +2,7 @@
 import sys, os, time, datetime, configparser
 import pandas as pd
 from eventregistry import *
+import urllib.parse
 from googletrans import Translator
 
 cur_path = os.path.dirname(os.path.abspath(__file__))
@@ -90,9 +91,23 @@ def getSingleStockNewsArticle(root_path, symbol, name, from_date, till_date, cou
     config = configparser.ConfigParser()
     config.read(root_path + "/" + "config.ini")
 
-    url = "https://api.newsriver.io/v2/search?query=title%3Anasdaq%20" + symbol + "%20language%3Aen%20%20AND%20discoverDate%3A%5B" + from_date + "%20TO%20" + till_date + "%5D%0A&sortBy=_score&sortOrder=DESC&limit=" + str(count)
+    queryTitle = '("%s" OR "%s")' % (name, symbol)
+    queryText = '("%s" OR "%s" OR "%s" OR "%s")' % ('stock', 'nasdaq', 'market', 'business')
+    queryString = 'language:en ' + \
+                  'AND discoverDate:[' + from_date + ' TO ' + till_date + '] ' + \
+                  'AND title:' + queryTitle + ' ' #+ \
+                  'AND text:' + queryText
+                  
+    url = "https://api.newsriver.io/v2/search?query=" + urllib.parse.quote(queryString)
+        #   "language%3Aen" + "%20"
+        #   "title%3A" + symbol + \
+        #   "text%3Astock%20market%20nasdaq" + \
+        #   "&website.domainName%3Abloomberg.com" + \
+        #   "%20language%3Aen%20%20&%20discoverDate%3A%5B" + from_date + \
+        #   "%20TO%20" + till_date + \
+        #   "%5D%0A&sortBy=_score&sortOrder=DESC&limit=" + str(count)
 
-    response = requests.get(url, headers={"Authorization": config.get('NewsRiver', 'KEY')})
+    response = requests.get(url, headers={"Authorization": config.get('NewsRiver', 'KEY')}, timeout=15)
     jsonFile = response.json()
 
     df = pd.DataFrame(columns=['date', 'time', 'title', 'source', 'ranking', 'sentiment', 'uri', 'url', 'body_eng', 'body_chn'])
@@ -212,7 +227,7 @@ if __name__ == "__main__":
     
     name = result['name'].values[0]
     print("fetching news of stock:", symbol, name)
-    updateNewsArticle(root_path, symbol, name, start_date, end_date, 5)
+    updateNewsArticle(root_path, symbol, name, start_date, end_date, 100)
 
     # if storeType == 1:
     #     # stop database server (sync)
