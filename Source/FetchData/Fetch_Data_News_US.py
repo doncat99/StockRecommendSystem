@@ -3,6 +3,8 @@ import sys, os, time, datetime, configparser
 import pandas as pd
 from eventregistry import *
 import urllib.parse
+import hashlib
+from bs4 import BeautifulSoup
 from googletrans import Translator
 
 cur_path = os.path.dirname(os.path.abspath(__file__))
@@ -21,6 +23,45 @@ def getEventRegistry(root_path):
         config.read(root_path + "/" + "config.ini")
         global_eventRegistry = EventRegistry(apiKey = config.get('EventRegistry', 'KEY'))
     return global_eventRegistry
+
+def youdao_translator(query):
+    def md5(code):
+        md = hashlib.md5()
+        md.update(code.encode())
+        return md.hexdigest()
+    
+    def getUrlWithQueryString(url,name,param):
+        if '?' in url:
+            url= url +'&'+ name + '=' + param
+        else:
+            url = url + '?' + name + '=' + param
+        return url
+    
+    def getJson(url):
+        response = requests.get(url)
+        
+        try:
+            s = response.json()
+            if s['errorCode'] != '0': return s['errorCode']
+            return s['translation'][0]
+        except: return ''
+
+    appKey ="4ccd169a383639ab"
+    salt = str('%0d'%(time.time()*1000))
+    src = "en"
+    dest = "zh-CHS"
+    hashStr = appKey + query + salt + "BSur61YY25NQvRh4WdfMdCJ0DU5WaJqk"
+    sign = md5(hashStr)
+
+    url = 'https://openapi.youdao.com/api'
+    url = getUrlWithQueryString(url, 'q', query)
+    url = getUrlWithQueryString(url, 'salt', salt)
+    url = getUrlWithQueryString(url, 'sign', sign)
+    url = getUrlWithQueryString(url, 'from', src)
+    url = getUrlWithQueryString(url, 'appKey', appKey)
+    url = getUrlWithQueryString(url, 'to', dest)
+
+    return getJson(url)
 
 # def getSingleStockNewsArticle(root_path, symbol, name, from_date, till_date, count):
 #     er = getEventRegistry(root_path)
@@ -87,6 +128,50 @@ def getEventRegistry(root_path):
 #     #print("article", len(df))
 #     return df
 
+def line_translation(article):
+    import math, re
+    split = math.ceil(len(article) / 1000)
+    
+    if split == 1:
+        return youdao_translator(article)
+    
+    splitLineList = re.split('. ', article)
+    linesList = [line for line in splitLineList if len(line) > 0]
+    lineCount = len(linesList)
+    averageLine = math.ceil(lineCount / split)
+
+    print(split, lineCount, averageLine)
+    start = 0
+    end = 0
+    trans = ""
+
+    for index in range(split):
+        end += averageLine
+        if end > lineCount:
+            sublist = linesList[start:]
+        else:
+            sublist = linesList[start:end]
+            start = end
+
+        print(sublist)
+        article = "".join(sublist)
+        trans += youdao_translator(article) + " "
+    
+    return trans
+
+def translation(article):
+    soup = BeautifulSoup(article, 'lxml')
+    paragraphs = soup.findAll('p')
+    for p in paragraphs:
+        i = 0
+        for content in p.contents:
+            #print(i, len(content), content.name, content)
+            if content.name == None:
+                p.contents[i].replace_with(youdao_translator(p.contents[i]))
+            i += 1
+    return str(soup)
+
+
 def getSingleStockNewsArticle(root_path, symbol, name, from_date, till_date, count):
     config = configparser.ConfigParser()
     config.read(root_path + "/" + "config.ini")
@@ -95,7 +180,7 @@ def getSingleStockNewsArticle(root_path, symbol, name, from_date, till_date, cou
     queryText = '("%s" OR "%s" OR "%s" OR "%s")' % ('stock', 'nasdaq', 'market', 'business')
     queryString = 'language:en ' + \
                   'AND discoverDate:[' + from_date + ' TO ' + till_date + '] ' + \
-                  'AND title:' + queryTitle + ' ' #+ \
+                  'AND title:' + queryTitle + ' ' + \
                   'AND text:' + queryText
                   
     url = "https://api.newsriver.io/v2/search?query=" + urllib.parse.quote(queryString)
@@ -110,7 +195,7 @@ def getSingleStockNewsArticle(root_path, symbol, name, from_date, till_date, cou
     response = requests.get(url, headers={"Authorization": config.get('NewsRiver', 'KEY')}, timeout=15)
     jsonFile = response.json()
 
-    df = pd.DataFrame(columns=['date', 'time', 'title', 'source', 'ranking', 'sentiment', 'uri', 'url', 'body_eng', 'body_chn'])
+    df = pd.DataFrame(columns=['date', 'time', 'title', 'source', 'ranking', 'sentiment', 'uri', 'url', 'body_html', 'body_eng', 'body_chn'])
     translator = Translator()
     
     for art in jsonFile:
@@ -129,10 +214,11 @@ def getSingleStockNewsArticle(root_path, symbol, name, from_date, till_date, cou
         except:
             ranking = "N/A"
 
-        try:
-            trans = ""#translator.translate(art['text'], src='en', dest='zh-CN').text
-        except:
-            trans = ""
+        #try:
+        trans = translation(art['structuredText'])#translator.translate(art['text'], src='en', dest='zh-CN').text
+        # except Exception as e:
+        #     print(e)
+        #     trans = ""
 
         df.loc[len(df)] = [art['discoverDate'][:10], 
                            art['discoverDate'][11:19], 
@@ -142,6 +228,7 @@ def getSingleStockNewsArticle(root_path, symbol, name, from_date, till_date, cou
                            finSentiment,
                            art['id'], 
                            art['url'],
+                           art['structuredText'],
                            art['text'], 
                            trans
                           ]
@@ -227,7 +314,7 @@ if __name__ == "__main__":
     
     name = result['name'].values[0]
     print("fetching news of stock:", symbol, name)
-    updateNewsArticle(root_path, symbol, name, start_date, end_date, 100)
+    updateNewsArticle(root_path, symbol, name, start_date, end_date, 1)
 
     # if storeType == 1:
     #     # stop database server (sync)

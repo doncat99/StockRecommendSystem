@@ -54,7 +54,7 @@ Cover stock related data fetching, storaging in either MongoDB or CSV mode (See 
     ** US News **   
     DB   : DB_STOCK   
     SHEET: SHEET_US_NEWS   
-    ITEM : symbol, date, time, title, source, ranking, sentiment, uri, url, body_eng, body_chn
+    ITEM : symbol, date, time, title, source, ranking, sentiment, uri, url, body_html, body_eng, body_chn
 
 
 ### Run
