@@ -1,7 +1,7 @@
 import sys, os, datetime
 import numpy as np
 import pandas as pd
-#from stockstats import *
+from stockstats import *
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from scipy.stats import zscore
 
@@ -13,7 +13,7 @@ for _ in range(2):
     cur_path = root_path
 sys.path.append(root_path + "/" + 'Source/DataBase/')
 from DB_API import queryStock
-
+import pickle
 ###################################
 ###                             ###
 ###        Data Utility         ###
@@ -155,24 +155,31 @@ def get_single_stock_data(root_path, symbol):
     # COLUMNS = ['Date', 'Open', 'High', 'Low', 'Close', 'Volume']
     # RENAME_COLUMNS = ['date', 'open', 'high', 'low', 'close', 'volume']
 
+    COLUMNS = ['date', 'open', 'high', 'low', 'close', 'volume']
+
     # if os.path.exists(file_name) == False: 
     #     print("get stock: " + ticker + " failed")
     #     return pd.DataFrame()
 
-    # df = pd.read_csv(
-    #     file_name,
-    #     #names=COLUMNS,
-    #     skipinitialspace=True,
-    #     engine='python',
-    #     index_col=['Date'],
-    #     #usecols=COLUMNS,
-    #     parse_dates=['Date'],
-    #     #skiprows=1,
-    #     memory_map=True,
-    #     #chunksize=300,
-    # ).sort_index()
-    df, lastUpdateTime = queryStock(root_path, "DB_STOCK", "SHEET_US_DAILY", symbol)
-    df.index = pd.to_datetime(df.index)
+    file_name = root_path + "/Data/CSV/symbols/" + symbol + ".csv"
+
+    if os.path.exists(file_name) == False: return pd.DataFrame()
+    
+    df = pd.read_csv(
+        file_name,
+        #names=COLUMNS,
+        skipinitialspace=True,
+        engine='python',
+        index_col=['date'],
+        usecols=COLUMNS,
+        parse_dates=['date'],
+        #skiprows=1,
+        #memory_map=True,
+        #chunksize=300,
+    ).sort_index()
+    
+    #df, lastUpdateTime = queryStock(root_path, "DB_STOCK", "SHEET_US", "_DAILY", symbol, "daily_update")
+    #df.index = pd.to_datetime(df.index)
 
     if df.empty: 
         print("empty df", symbol)
@@ -302,13 +309,24 @@ def generate_time_series_data(paras, df, window_len):
 ###                             ###
 ###################################
 
-def get_single_stock_feature_data(paras, input_data, LabelColumnName):
+def get_single_stock_feature_data(ticker, paras, window_len, input_data, LabelColumnName):
+    
+    cashflow_file = root_path + "/Data/CSV/cashflow/" + ticker + ".csv"
+    df = pd.read_csv(cashflow_file, index_col=["index"])
+    df.set_index('date', inplace=True)
+
+    input_data = input_data.add(df, fill_value=0)
+
     start_date = pd.Timestamp(paras.start_date)
     end_date   = pd.Timestamp(paras.end_date)
     input_data = input_data.loc[(input_data.index >= start_date) & (input_data.index <= end_date)]
     input_data = input_data[input_data['volume'] > 0]
 
-    # dataset = StockDataFrame.retype(input_data)
+    if len(input_data) < window_len + 3 * (paras.pred_len + paras.valid_len) : return pd.DataFrame()
+
+    #print(ticker, input_data)#len(input_data))
+
+    dataset = StockDataFrame.retype(input_data)
     # dataset = input_data.rename(columns = {'Date':'date', 'Open':'open', 'High':'high', 'Low':'low', 'Close':'close', "Adj Close":'adj_close', 'Volume':'volume'})
 
     # dataset['last_close']  = dataset['close'].shift(1 * (paras.pred_len))
@@ -355,7 +373,7 @@ def get_single_stock_feature_data(paras, input_data, LabelColumnName):
 
     dataset["hl_perc"] = (dataset["high"]-dataset["low"]) / dataset["low"] * 100
     dataset["co_perc"] = (dataset["close"] - dataset["open"]) / dataset["open"] * 100
-    dataset["price_next_month"] = dataset["adj_close"].shift(-30)
+    #dataset["price_next_month"] = dataset["adj_close"].shift(-30)
     
     dataset['last_close']  = dataset['close'].shift(1 * (paras.pred_len))
     dataset['pred_profit'] = ((dataset['close'] - dataset['last_close']) / dataset['last_close'] * 100).shift(-1 * (paras.pred_len))
@@ -369,7 +387,8 @@ def get_single_stock_feature_data(paras, input_data, LabelColumnName):
                   #'rsi_7', 'rsi_14', 'rsi_21', 'kdjk_9', 'kdjk_14', 'wr_9', 
                   #'wr_14', 'close_-5_r', 'close_-10_r', 'close_-20_r',
                   'c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol', 
-                  'hl_perc', 'co_perc', 'price_next_month',
+                  'buy_amount', 'sell_amount', 'even_amount', 'buy_volume', 'sell_volume', 'even_volume', 'buy_max', 'buy_min', 'buy_average', 'sell_max', 'sell_min', 'sell_average', 'even_max', 'even_min', 'even_average',
+                  #'hl_perc', 'co_perc'
                 ]]
 
     # Data frame output
@@ -377,11 +396,22 @@ def get_single_stock_feature_data(paras, input_data, LabelColumnName):
     return df
 
 def get_all_stocks_feature_data(paras, window_len, LabelColumnName):
-    data_original = get_all_stocks_data(paras.root_path, paras.train_tickers)
+    ori_file = "ori_file.pkl"
+    if os.path.exists(ori_file):
+        input = open(ori_file, 'rb')
+        data_original = pickle.load(input)
+    else:
+        data_original = get_all_stocks_data(paras.root_path, paras.train_tickers)
+        output = open(ori_file, 'wb')
+        pickle.dump(data_original, output)
+
+    #data_original = get_all_stocks_data(paras.root_path, paras.train_tickers)
     data_feature = {}
     # get data
     for ticker, single_data in data_original.items():
-        df_feature = get_single_stock_feature_data(paras, single_data, LabelColumnName)
+        df_feature = get_single_stock_feature_data(ticker, paras, window_len, single_data, LabelColumnName)
+        if df_feature.empty: continue
+        df_feature = df_feature.fillna(0.0)
         data_feature[ticker] = generate_time_series_data(paras, df_feature, window_len)
     return data_feature
 

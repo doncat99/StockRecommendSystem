@@ -16,7 +16,8 @@ for _ in range(2):
     cur_path = root_path
 sys.path.append(root_path + "/" + 'Source/FetchData/')
 sys.path.append(root_path + "/" + 'Source/DataBase/')
-from Fetch_Data_Stock_US_Daily import updateStockData_US, getStocksList
+from Fetch_Data_Stock_US_Daily import updateStockData_US_Daily, getStocksList_US
+from Fetch_Data_Stock_CHN_StockList import getStocksList_CHN
 
 
 def run_lstm_classification(root_path, train_symbols, predict_symbols, need_training, need_plot_training_diagram, need_predict):
@@ -26,21 +27,23 @@ def run_lstm_classification(root_path, train_symbols, predict_symbols, need_trai
     paras.plot = need_plot_training_diagram
     # 0_index: no norm   1_index: standard norm   2_index: minmax norm   3_index: zscore norm
     paras.features = {'0_0':['frac_change', 'frac_high', 'frac_low'], 
-                      '3_0':['c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol'],
-                      '3_0':['volume']} 
+                      '0_0':['c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol'],
+                      '2_0':['buy_amount', 'sell_amount', 'even_amount'],
+                      '2_0':['buy_volume', 'sell_volume', 'even_volume'], 
+                      '2_0':['buy_max', 'buy_min', 'buy_average', 'sell_max', 'sell_min', 'sell_average', 'even_max', 'even_min', 'even_average']} 
     #paras.features = [['top', 'middle', 'bottom'], ['volume'], ['vol_stat'], ['close_-5_r', 'close_-10_r', 'close_-20_r', 'close_-60_r']]
     #paras.window_len = [2, 4, 9]
-    paras.window_len = [44]
+    paras.window_len = [120]
     paras.pred_len = 1
     paras.valid_len = 20
-    paras.start_date = '2012-01-03'
+    paras.start_date = '2016-11-01'
     paras.end_date = datetime.datetime.now().strftime("%Y-%m-%d")
     paras.verbose = 1
     
     paras.batch_size = 64
     paras.epoch = 100
     #paras.model['hidden_layers'] = [[256, 128, 64], [256, 128, 64], [256, 128, 64]]
-    paras.model['hidden_layers'] = [[256, 128, 64]]
+    paras.model['hidden_layers'] = [[240, 120, 60]]
     #paras.model['dropout'] = [[0.7, 0.5, 0.3], [0.6, 0.5, 0.4], [0.6, 0.5, 0.4]]
     paras.model['dropout'] = [[0.7, 0.5, 0.3]]
     #paras.model['activation'] = [['relu', 'relu', 'relu'], ['relu', 'relu', 'relu'], ['relu', 'relu', 'relu']]
@@ -205,6 +208,48 @@ def run_recommand_system(root_path, train_symbols, predict_symbols, need_trainin
     rs = recommand_system(paras)
     rs.run(need_training, need_predict)
 
+
+def run_xgboost_classification(root_path, train_symbols, predict_symbols, need_training, need_plot_training_diagram, need_predict):
+    paras = SP_Paras('lstm', root_path, train_symbols, predict_symbols)
+    paras.save = True
+    paras.load = False
+    paras.plot = need_plot_training_diagram
+    # 0_index: no norm   1_index: standard norm   2_index: minmax norm   3_index: zscore norm
+    paras.features = {'0_0':['frac_change', 'frac_high', 'frac_low'], 
+                      '0_0':['c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol'],
+                      '2_0':['buy_amount', 'sell_amount', 'even_amount'],
+                      '2_0':['buy_volume', 'sell_volume', 'even_volume'], 
+                      '2_0':['buy_max', 'buy_min', 'buy_average', 'sell_max', 'sell_min', 'sell_average', 'even_max', 'even_min', 'even_average']} 
+    
+    paras.window_len = [120]
+    paras.pred_len = 1
+    paras.valid_len = 20
+    paras.start_date = '2016-11-01'
+    paras.end_date = datetime.datetime.now().strftime("%Y-%m-%d")
+    paras.verbose = 1
+    
+    paras.batch_size = 64
+    paras.epoch = 100
+    
+    paras.out_class_type = 'classification'
+    paras.n_out_class = 7  # ignore for regression
+    paras.model['out_layer'] = paras.n_out_class
+    paras.model['loss'] = 'categorical_crossentropy'
+    paras.model['out_activation'] = 'softmax'
+
+    paras.hyper_opt = {"max_depth"        :hp.randint("max_depth",15),
+                       "n_estimators"     :hp.randint("n_estimators",10),  #[0,1,2,3,4,5] -> [50,]
+                       "learning_rate"    :hp.randint("learning_rate",6),  #[0,1,2,3,4,5] -> 0.05,0.06
+                       "subsample"        :hp.randint("subsample",4),#[0,1,2,3] -> [0.7,0.8,0.9,1.0]
+                       "min_child_weight" :hp.randint("min_child_weight",5), #
+        }
+
+    # run
+    xgboost_cla = xgboost_classification(paras)
+    xgboost_cla.run(need_training, need_predict)
+    return paras
+
+
 if __name__ == "__main__":
     warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
     tf.logging.set_verbosity(tf.logging.ERROR)
@@ -218,27 +263,34 @@ if __name__ == "__main__":
     config.read(root_path + "/" + "config.ini")
     storeType = int(config.get('Setting', 'StoreType'))
 
-    if storeType == 1:
-        from Start_DB_Server import StartServer, ShutdownServer
-        # start database server (async)
-        thread = StartServer(root_path)
+    # if storeType == 1:
+    #     from Start_DB_Server import StartServer, ShutdownServer
+    #     # start database server (async)
+    #     thread = StartServer(root_path)
         
-        # wait for db start, the standard procedure should listen to 
-        # the completed event of function "StartServer"
-        time.sleep(5)
+    #     # wait for db start, the standard procedure should listen to 
+    #     # the completed event of function "StartServer"
+    #     time.sleep(5)
 
-    #updateStockData_US(root_path, "1990-01-01", now, storeType)
+    #updateStockData_US_Daily(root_path, "1990-01-01", now, storeType)
 
     #paras = run_lstm_classification(root_path, predict_symbols, predict_symbols, True, False, True)
     #paras = run_dbn_classification(root_path, predict_symbols, predict_symbols, True, False, True)
     #paras = run_rf_classification(root_path, predict_symbols, predict_symbols, True, False, True)
 
     #run_recommand_system(root_path, predict_symbols, predict_symbols, True, False, True)
-    paras = run_rf_regression(root_path, predict_symbols, predict_symbols, True, False, True)
+    #paras = run_rf_regression(root_path, predict_symbols, predict_symbols, True, False, True)
     
-    if storeType == 1:
-        # stop database server (sync)
-        time.sleep(5)
-        ShutdownServer()
+    # if storeType == 1:
+    #     # stop database server (sync)
+    #     time.sleep(5)
+    #     ShutdownServer()
+
+    df = getStocksList_CHN(root_path)
+    df.index = df.index.astype(str).str.zfill(6)
+    df = df.sort_index(ascending = True)
+    symbols = df.index.values.tolist()
+    symbols = ['000001']
+    paras = run_xgboost_classification(root_path, symbols, symbols, True, False, True)
 
     backend.clear_session()

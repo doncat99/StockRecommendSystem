@@ -32,6 +32,8 @@ class SP_Global_Paras(object):
         self._feature_max = [25]
         self._window_min = 1
         self._window_max = 5
+
+        self._space = {}
         
         # ------------- OUTPUT -------------
         self._out_class_type = 'regression'
@@ -218,6 +220,13 @@ class SP_Global_Paras(object):
     @window_max.setter
     def window_max(self, value):
         self._window_max = value  
+
+    @property
+    def hyper_opt(self):
+        return self._hyper_opt
+    @hyper_opt.setter
+    def hyper_opt(self, value):
+        self._hyper_opt = value
 
     @property
     def out_class_type(self):

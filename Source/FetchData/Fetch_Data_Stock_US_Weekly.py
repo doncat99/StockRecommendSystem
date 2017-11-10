@@ -24,7 +24,7 @@ def getSingleStock(symbol, from_date, till_date):
     if len(symbol) == 0: return df, message
     for _ in range(repeat_times): 
         try:
-            data = yf.download(symbol, start=from_date, end=till_date, interval='1d')
+            data = yf.download(symbol, start=from_date, end=till_date, interval='1wk')
             #data = pdr.get_data_yahoo(symbol, start=from_date, end=till_date, interval='d')
             data = data.rename(columns = {'Date':'date', 'Open':'open', 'High':'high', 'Low':'low', 'Close':'close', "Adj Close":'adj_close', 'Volume':'volume'})
             data.index.name = 'date'
@@ -83,12 +83,12 @@ def updateSingleStockData(root_path, symbol, from_date, till_date, force_check):
     if end_date == now_date: 
         end_date = end_date - datetime.timedelta(days=1)
      
-    stockData, lastUpdateTime = queryStock(root_path, "DB_STOCK", "SHEET_US", "_DAILY", symbol, "daily_update")
+    stockData, lastUpdateTime = queryStock(root_path, "DB_STOCK", "SHEET_US", "_WEEKLY", symbol, "weekly_update")
     
     if stockData.empty:
         stockData, message = getSingleStock(symbol, from_date, till_date)
         if stockData.empty == False:
-            storeStock(root_path, "DB_STOCK", "SHEET_US", "_DAILY", symbol, stockData, "daily_update")
+            storeStock(root_path, "DB_STOCK", "SHEET_US", "_WEEKLY", symbol, stockData, "weekly_update")
             first_date = pd.Timestamp(stockData.index[0])
             to_date = (first_date - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
             if judgeNeedPreDownload(root_path, symbol, first_date, from_date, to_date):
@@ -138,18 +138,18 @@ def updateSingleStockData(root_path, symbol, from_date, till_date, force_check):
 
     if modified:
         stockData = stockData[~stockData.index.duplicated(keep='first')]
-        storeStock(root_path, "DB_STOCK", "SHEET_US", "_DAILY", symbol, stockData, "daily_update")
+        storeStock(root_path, "DB_STOCK", "SHEET_US", "_WEEKLY", symbol, stockData, "weekly_update")
     elif updateOnce:
         now_date = datetime.datetime.now().strftime("%Y-%m-%d")
         stockList = queryStockList(root_path, "DB_STOCK", "SHEET_US")
         if stockList[stockList.index == symbol]['daily_update'][0] != now_date:
-            stockList.set_value(symbol, 'daily_update', now_date)
+            stockList.set_value(symbol, 'weekly_update', now_date)
             storeStockList(root_path, "DB_STOCK", "SHEET_US", stockList, symbol)
     elif savePublishDay == False:
         message = ""
     return startTime, message
 
-def updateStockData_US_Daily(root_path, from_date, till_date, storeType, force_check = False):
+def updateStockData_US_Weekly(root_path, from_date, till_date, storeType, force_check = False):
     symbols = getStocksList_US(root_path).index
 
     pbar = tqdm(total=len(symbols))
@@ -212,7 +212,7 @@ if __name__ == "__main__":
     #     # the completed event of function "StartServer"
     #     time.sleep(5)
     
-    updateStockData_US_Daily(root_path, "2014-01-01", now, storeType)
+    updateStockData_US_Weekly(root_path, "2014-01-01", now, storeType)
 
     # if storeType == 1:
     #     # stop database server (sync)

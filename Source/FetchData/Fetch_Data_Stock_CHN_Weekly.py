@@ -20,7 +20,7 @@ def getSingleStock(symbol):
 
     for _ in range(repeat_times): 
         try:
-            data = ts.get_k_data(symbol)
+            data = ts.get_k_data(symbol, ktype='W')
             data.sort_index(ascending=True, inplace=True)
             return data, ""
         except Exception as e:
@@ -41,7 +41,7 @@ def getSingleStockByTime(symbol, from_date, till_date):
 
     for _ in range(repeat_times): 
         try:
-            data = ts.get_k_data(symbol)#, from_date, till_date)
+            data = ts.get_k_data(symbol, ktype='W')
             data.sort_index(ascending=True, inplace=True)
             return data, ""
         except Exception as e:
@@ -86,12 +86,12 @@ def updateSingleStockData(root_path, symbol, force_check):
     till_date = (datetime.datetime.now()).strftime("%Y-%m-%d")
     end_date  = pd.Timestamp(till_date)
     
-    # stockData, lastUpdateTime = queryStock(root_path, "DB_STOCK", "SHEET_CHN", "_DAILY", symbol, 'daily_update')
+    # stockData, lastUpdateTime = queryStock(root_path, "DB_STOCK", "SHEET_CHN", "_WEEKLY", symbol, 'weekly_update')
 
-    #if stockData.empty:
+    # if stockData.empty:
     stockData, message = getSingleStock(symbol)
     if stockData.empty == False:
-        storeStock(root_path, "DB_STOCK", "SHEET_CHN", "_DAILY", symbol, stockData, 'daily_update')
+        storeStock(root_path, "DB_STOCK", "SHEET_CHN", "_WEEKLY", symbol, stockData, 'weekly_update')
     return startTime, message
 
     # modified = False
@@ -114,17 +114,17 @@ def updateSingleStockData(root_path, symbol, force_check):
         
     # if modified:
     #     stockData = stockData[~stockData.index.duplicated(keep='first')]
-    #     storeStock(root_path, "DB_STOCK", "SHEET_CHN", "_DAILY", symbol, stockData, 'daily_update')
+    #     storeStock(root_path, "DB_STOCK", "SHEET_CHN", "_WEEKLY", symbol, stockData, 'weekly_update')
     # elif updateOnce:
     #     stockData = stockData[~stockData.index.duplicated(keep='first')]
-    #     storeStock(root_path, "DB_STOCK", "SHEET_CHN", "_DAILY", symbol, stockData, 'daily_update')
+    #     storeStock(root_path, "DB_STOCK", "SHEET_CHN", _Weekly", symbol, stockData, 'weekly_update')
     #     message = message + ", nothing updated"
     # else:
     #     message = ""
 
-    # return startTime, message
+    #return startTime, message
 
-def updateStockData_CHN_Daily(root_path, force_check = False):
+def updateStockData_CHN_Weekly(root_path, force_check = False):
     config = configparser.ConfigParser()
     config.read(root_path + "/" + "config.ini")
     storeType = int(config.get('Setting', 'StoreType'))   
@@ -169,22 +169,5 @@ if __name__ == "__main__":
     pd.set_option('display.width',1000)
     warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
 
-    # config = configparser.ConfigParser()
-    # config.read(root_path + "/" + "config.ini")
-    # storeType = int(config.get('Setting', 'StoreType'))
+    updateStockData_CHN_Weekly(root_path)
 
-    # if storeType == 1:
-    #     from Start_DB_Server import StartServer, ShutdownServer
-    #     # start database server (async)
-    #     thread = StartServer(root_path)
-        
-    #     # wait for db start, the standard procedure should listen to 
-    #     # the completed event of function "StartServer"
-    #     time.sleep(5)
-    
-    updateStockData_CHN_Daily(root_path)
-
-    # if storeType == 1:
-    #     # stop database server (sync)
-    #     time.sleep(5)
-    #     ShutdownServer()

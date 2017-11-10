@@ -103,6 +103,9 @@ ENV/
 # DS_Store
 .DS_Store
 
+# CSV
+.csv
+
 # data storage
 Data/
 

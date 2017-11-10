@@ -21,7 +21,7 @@ def get_data(symbols, dates_range, update):
     symbols.append('^VIX')
 
     for symbol in symbols:
-        data, lastUpdateTime = queryStock(root_path, "DB_STOCK", "SHEET_US_DAILY", symbol)
+        data, lastUpdateTime = queryStock(root_path, "DB_STOCK", "SHEET_US", "_DAILY", symbol, 'daily_update')
         data.index = pd.to_datetime(data.index)
 
         if df.empty:

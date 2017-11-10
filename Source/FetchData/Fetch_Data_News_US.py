@@ -168,8 +168,8 @@ def translation(article):
     for p in paragraphs:
         for content in p.contents:
             if content.name == None and len(content) > 0:
-                #trans = youdao_translator(content) 
-                trans = translator.translate(content, src='en', dest='zh-CN').text
+                trans = youdao_translator(content) 
+                #trans = translator.translate(content, src='en', dest='zh-CN').text
                 #print(len(content), content.name)
                 #print(content)
                 #print(trans)
@@ -219,7 +219,7 @@ def getSingleStockNewsArticle(root_path, symbol, name, from_date, till_date, cou
             ranking = "N/A"
 
         #try:
-        trans = translation(art['structuredText'])#
+        trans = translation(art['structuredText'])
         # except Exception as e:
         #     print(e)
         #     trans = ""

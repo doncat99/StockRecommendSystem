@@ -12,54 +12,57 @@ from Stock_Prediction_Base import base_model
 from Stock_Prediction_Data_Processing import reshape_input, get_all_stocks_feature_data, preprocessing_data, kmeans_claasification
 import pickle
 
-class lstm_model(base_model):
+class xgboost_model(base_model):
+    def GBM(argsDict):
+        max_depth = argsDict["max_depth"] + 5
+        n_estimators = argsDict['n_estimators'] * 5 + 50
+        learning_rate = argsDict["learning_rate"] * 0.02 + 0.05
+        subsample = argsDict["subsample"] * 0.1 + 0.7
+        min_child_weight = argsDict["min_child_weight"] + 1
+        
+        print("max_depth:" + str(max_depth))
+        print("n_estimator:" + str(n_estimators))
+        print("learning_rate:" + str(learning_rate))
+        print("subsample:" + str(subsample))
+        print("min_child_weight:" + str(min_child_weight))
+        global attr_train,label_train
+
+        gbm = xgb.XGBClassifier(nthread=4,    #进程数
+                                max_depth=max_depth,  #最大深度
+                                n_estimators=n_estimators,   #树的数量
+                                learning_rate=learning_rate, #学习率
+                                subsample=subsample,      #采样数
+                                min_child_weight=min_child_weight,   #孩子数
+                                max_delta_step = 10,  #10步不降则停止
+                                objective="binary:logistic")
+
+        metric = cross_val_score(gbm,attr_train,label_train,cv=5,scoring="roc_auc").mean()
+        print metric
+        return -metric
+
+    def best_model(hyper_opt):
+        algo = partial(tpe.suggest, n_startup_jobs=1)
+        best = fmin(GBM, hyper_opt, algo=algo, max_evals=4)
+        print("best", best)
+        return best
+        
     def build_model(self, index):
         if self.paras.load == True:
             model = self.load_training_model(self.paras.window_len[index])
             if model != None:
                 return model
 
-        print('build LSTM model...')
-        model = Sequential()
-        first = True
-        for idx in range(len(self.paras.model['hidden_layers'][index])):
-            if idx == (len(self.paras.model['hidden_layers'][index]) - 1):
-                model.add(LSTM(int(self.paras.model['hidden_layers'][index][idx]), return_sequences=False))
-                model.add(Activation(self.paras.model['activation'][index][idx]))
-                model.add(Dropout(self.paras.model['dropout'][index][idx]))
-            elif first == True:
-                model.add(LSTM(input_shape=(None, int(self.paras.n_features)),
-                               units=int(self.paras.model['hidden_layers'][index][idx]),
-                               return_sequences=True))
-                model.add(Activation(self.paras.model['activation'][index][idx]))
-                model.add(Dropout(self.paras.model['dropout'][index][idx]))
-                first = False
-            else:
-                model.add(LSTM(int(self.paras.model['hidden_layers'][index][idx]), return_sequences=True))
-                model.add(Activation(self.paras.model['activation'][index][idx]))
-                model.add(Dropout(self.paras.model['dropout'][index][idx]))
+        print('build XgBoost model...')
+        best_model()
+        model = xgb.XGBClassifier(nthread=4,    #进程数
+                            max_depth=max_depth,  #最大深度
+                            n_estimators=n_estimators,   #树的数量
+                            learning_rate=learning_rate, #学习率
+                            subsample=subsample,      #采样数
+                            min_child_weight=min_child_weight,   #孩子数
+                            max_delta_step = 10,  #10步不降则停止
+                            objective="binary:logistic")
 
-        if self.paras.model['optimizer'][index] == 'sgd':
-            optimizer = optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
-        elif self.paras.model['optimizer'][index] == 'rmsprop':
-            optimizer = optimizers.RMSprop(lr=0.001, rho=0.9, epsilon=1e-08, decay=0.0)
-        elif self.paras.model['optimizer'][index] == 'adagrad':
-            optimizer = optimizers.Adagrad(lr=0.01, epsilon=1e-08, decay=0.0)
-        elif self.paras.model['optimizer'][index] == 'adadelta':
-            optimizer = optimizers.Adadelta(lr=1.0, rho=0.95, epsilon=1e-08, decay=0.0)
-        elif self.paras.model['optimizer'][index] == 'adam':
-            optimizer = optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
-        elif self.paras.model['optimizer'][index] == 'adamax':
-            optimizer = optimizers.Adamax(lr=0.002, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
-        elif self.paras.model['optimizer'][index] == 'nadam':
-            optimizer = optimizers.Nadam(lr=0.002, beta_1=0.9, beta_2=0.999, epsilon=1e-08, schedule_decay=0.004)
-        else:
-            optimizer = keras.optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
-
-        # output layer
-        model.add(Dense(units=self.paras.model['out_layer']))
-        model.add(Activation(self.paras.model['out_activation']))
-        model.compile(loss=self.paras.model['loss'], optimizer=optimizer, metrics=['accuracy'])
         return model
 
     def save_training_model(self, model, window_len):
@@ -318,7 +321,7 @@ class rnn_lstm_classification(lstm_model):
 
     def run(self, train, predict):
         if self.check_parameters() == False:
-            raise IndexError('Parameters for LSTM is wrong, check out_class_type')
+            raise IndexError('Parameters for XgBoost is wrong, check out_class_type')
 
         ################################################################################
         self.paras.save_folder = self.get_save_directory()

@@ -2,8 +2,8 @@ import os, time, datetime, logging, warnings
 import pandas as pd
 
 from DataBase.Start_DB_Server import SetAdminUser, StartServer, ShutdownServer
-from FetchData.Fetch_Data_Stock_US_Daily import updateStockData_US
-from FetchData.Fetch_Data_Stock_CHN_Daily import updateStockData_CHN
+from FetchData.Fetch_Data_Stock_US_Daily import updateStockData_US_Daily
+from FetchData.Fetch_Data_Stock_CHN_Daily import updateStockData_CHN_Daily
 
 if __name__ == "__main__":    
     pd.set_option('precision', 3)
@@ -51,10 +51,10 @@ if __name__ == "__main__":
     now = datetime.datetime.now().strftime("%Y-%m-%d")
 
     # Fetch US Stock
-    # updateStockData_US(root_path, "1990-01-01", now)
+    # updateStockData_US_Daily(root_path, "1990-01-01", now)
 
     # Fetch CHN Stock
-    #updateStockData_CHN(root_path)
+    #updateStockData_CHN_Daily(root_path)
 
     # stop database server (sync)
     time.sleep(5)

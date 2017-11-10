@@ -6,6 +6,7 @@ Python 3.5.2
 Keras 2.0.6
 TensorFlow 1.2   
 pymongo   
+tqdm
 nltk   
 googletrans
 <br>

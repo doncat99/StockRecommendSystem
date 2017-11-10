@@ -15,7 +15,7 @@ from DB_API import queryStockList, queryStock, queryCorrelation, storeCorrelatio
 
 def get_single_stock_data(root_path, symbol, dates_range):
     
-    df, lastUpdateTime = queryStock(root_path, "DB_STOCK", "SHEET_US_DAILY", symbol)
+    df, lastUpdateTime = queryStock(root_path, "DB_STOCK", "SHEET_US", "_DAILY", symbol, "daily_update")
     if df.empty: return pd.DataFrame()
     
     df.index = pd.to_datetime(df.index)

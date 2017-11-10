@@ -9,7 +9,7 @@ global_stocklist = None
 def getConfig(root_path):
     global global_config
     if global_config is None:
-        print("initial Config...")
+        #print("initial Config...")
         global_config = configparser.ConfigParser()
         global_config.read(root_path + "/" + "config.ini")
     return global_config
@@ -18,7 +18,7 @@ def getClient():
     global global_client
     from pymongo import MongoClient
     if global_client is None: 
-        print("initial DB Client...")
+        #print("initial DB Client...")
         global_client = MongoClient('localhost', 27017)
     return global_client
 
@@ -30,7 +30,7 @@ def getCollection(database, collection):
 def getStockList(root_path, database, sheet):
     global global_stocklist
     if global_stocklist is None:
-        print("initial Stock List...")
+        #print("initial Stock List...")
         global_stocklist = queryStockList(root_path, database, sheet)
     return global_stocklist
 
@@ -119,6 +119,7 @@ def storeStockList(root_path, database, sheet, df, symbol = None):
             collection = getCollection(database, CollectionKey)
             if symbol is not None:
                 df = df[df.index == symbol].reset_index()
+
             writeToCollection(collection, df, ['symbol'])
             # try:
             #     index_info = collection.index_information()
@@ -201,12 +202,12 @@ def storePublishDay(root_path, database, sheet, symbol, date):
         print("storePublishDay Exception", e)
 
 
-def queryStock(root_path, database, sheet, symbol):
-    CollectionKey = sheet + '_DATA'
+def queryStock(root_path, database, sheet_1, sheet_2, symbol, update_key):
+    CollectionKey = sheet_1 + sheet_2 + '_DATA'
     config = getConfig(root_path)
     storeType = int(config.get('Setting', 'StoreType'))
-    stockList = getStockList(root_path, database, sheet)
-    lastUpdateTime = pd.Timestamp(stockList.loc[symbol]['stock_update'])
+    stockList = getStockList(root_path, database, sheet_1)
+    lastUpdateTime = pd.Timestamp(stockList.loc[symbol][update_key])
 
     try:
         if storeType == 1:
@@ -215,6 +216,8 @@ def queryStock(root_path, database, sheet, symbol):
             df, metadata = readFromCollectionExtend(collection, queryString)
             if df.empty: return pd.DataFrame(), lastUpdateTime
             df.set_index('date', inplace=True)
+            if 'index' in df:
+                del df['index']
             return df, lastUpdateTime
             
         if storeType == 2:
@@ -231,18 +234,18 @@ def queryStock(root_path, database, sheet, symbol):
     return pd.DataFrame(), lastUpdateTime
 
 
-def storeStock(root_path, database, sheet, symbol, df):
-    CollectionKey = sheet + '_DATA'
+def storeStock(root_path, database, sheet_1, sheet_2, symbol, df, update_key):
+    CollectionKey = sheet_1 + sheet_2 + '_DATA'
     config = getConfig(root_path)
     storeType = int(config.get('Setting', 'StoreType'))
     
     now_date = datetime.datetime.now().strftime("%Y-%m-%d")
-    stockList = getStockList(root_path, database, sheet)
-    if stockList[stockList.index == symbol]['stock_update'][0] != now_date:
-        stockList.set_value(symbol, 'stock_update', now_date)
-        storeStockList(root_path, database, "SHEET_US_DAILY", stockList, symbol)
-
+    stockList = getStockList(root_path, database, sheet_1)
     
+    if (stockList[stockList.index == symbol][update_key][0] != now_date):
+        stockList.set_value(symbol, update_key, now_date)
+        storeStockList(root_path, database, sheet_1, stockList, symbol)
+
     #     df.set_index('date')  
     #     df.index = df.index.astype(str)
     #     df.sort_index(ascending=True, inplace=True)

@@ -92,7 +92,7 @@ def parse_ticker_csv(csv_str, auto_adjust):
     return df.groupby(df.index).first()
 
 
-def download(tickers, start=None, end=None, as_panel=True,
+def download(tickers, start=None, end=None, interval='1d', as_panel=True,
              group_by='column', auto_adjust=False, progress=True,
              *args, **kwargs):
 
@@ -113,7 +113,7 @@ def download(tickers, start=None, end=None, as_panel=True,
         end = int(time.mktime(time.strptime(str(end), '%Y-%m-%d')))
 
     # iterval
-    interval = kwargs["interval"] if "interval" in kwargs else "1d"
+    #interval = kwargs["interval"] if "interval" in kwargs else "1d"
 
     # url template
     url_str = "https://query1.finance.yahoo.com/v7/finance/download/%s"
@@ -209,6 +209,81 @@ def download(tickers, start=None, end=None, as_panel=True,
         data = dfs[tickers[0]]
 
     return data
+
+def download_one(ticker, start, end, interval, auto_adjust=None, actions=None):
+    
+    tried_once = False
+    crumb, cookie = get_yahoo_crumb()
+
+    url_str = "https://query1.finance.yahoo.com/v7/finance/download/%s"
+    url_str += "?period1=%s&period2=%s&interval=%s&events=%s&crumb=%s"
+
+    actions = None if '^' in ticker else actions
+
+    if actions:
+        url = url_str % (ticker, start, end, interval, 'div', crumb)
+        res = requests.get(url, cookies={'B': cookie}).text
+        # print(res)
+        div = pd.DataFrame(columns=['action', 'value'])
+        if "error" not in res:
+            div = pd.read_csv(io.StringIO(res),
+                              index_col=0, error_bad_lines=False
+                              ).replace('null', np.nan).dropna()
+
+            if isinstance(div, pd.DataFrame):
+                div.index = pd.to_datetime(div.index)
+                div["action"] = "DIVIDEND"
+                div = div.rename(columns={'Dividends': 'value'})
+                div['value'] = div['value'].astype(float)
+
+        # download Stock Splits data
+        url = url_str % (ticker, start, end, interval, 'split', crumb)
+        res = requests.get(url, cookies={'B': cookie}).text
+        split = pd.DataFrame(columns=['action', 'value'])
+        if "error" not in res:
+            split = pd.read_csv(io.StringIO(res),
+                                index_col=0, error_bad_lines=False
+                                ).replace('null', np.nan).dropna()
+
+            if isinstance(split, pd.DataFrame):
+                split.index = pd.to_datetime(split.index)
+                split["action"] = "SPLIT"
+                split = split.rename(columns={'Stock Splits': 'value'})
+                if len(split.index) > 0:
+                    split['value'] = split.apply(
+                        lambda x: 1 / eval(x['value']), axis=1).astype(float)
+
+        if actions == 'only':
+            return pd.concat([div, split]).sort_index()
+
+    # download history
+    url = url_str % (ticker, start, end, interval, 'history', crumb)
+    res = requests.get(url, cookies={'B': cookie}).text
+    hist = pd.DataFrame(
+        columns=['Open', 'High', 'Low', 'Close', 'Adj Close', 'Volume'])
+
+    if "error" in res:
+        return pd.DataFrame()
+
+    hist = parse_ticker_csv(io.StringIO(res), auto_adjust)
+
+    if len(hist.index) > 0:
+        if actions is None:
+            return hist
+
+        hist['Dividends'] = div['value'] if len(div.index) > 0 else np.nan
+        hist['Dividends'].fillna(0, inplace=True)
+        hist['Stock Splits'] = split['value'] if len(
+            split.index) > 0 else np.nan
+        hist['Stock Splits'].fillna(1, inplace=True)
+
+        return hist
+
+    # empty len(hist.index) == 0
+    if not tried_once:
+        tried_once = True
+        get_yahoo_crumb(force=True)
+        return download_one(ticker, start, end, interval, auto_adjust, actions)
 
 
 class ProgressBar:
