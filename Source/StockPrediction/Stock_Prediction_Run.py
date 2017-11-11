@@ -3,7 +3,9 @@ from Stock_Prediction_Model_Stateless_LSTM import rnn_lstm_classification
 from Stock_Prediction_Model_DBN import dbn_classification
 from Stock_Prediction_Model_Random_Forrest import random_forrest_classification
 from Stock_Prediction_Model_Random_Forrest_1 import random_forrest_regression
+from Stock_Prediction_Model_XgBoost import xgboost_classification
 from Stock_Prediction_Recommand_System import recommand_system
+
 
 import sys, os, time, datetime, warnings, configparser
 import tensorflow as tf

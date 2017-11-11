@@ -102,7 +102,7 @@ class xgboost_model(base_model):
                 w.writerow([key, val])
 
 # Classification
-class rnn_lstm_classification(lstm_model):
+class xgboost_classification(lstm_model):
     def __init__(self, paras):
         super(rnn_lstm_classification, self).__init__(paras=paras)
 
