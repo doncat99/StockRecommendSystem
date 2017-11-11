@@ -1,19 +1,23 @@
 import os, csv
 from sklearn.model_selection import train_test_split
-from keras.layers.core import Dense, Activation, Dropout
-from keras.layers.recurrent import LSTM
 from keras.models import Sequential, load_model
-from keras.callbacks import History
-from keras import optimizers
-import matplotlib.pyplot as plt  # http://matplotlib.org/examples/pylab_examples/subplots_demo.html
+from sklearn.cross_validation import cross_val_score
+import xgboost as xgb
+
 import pandas as pd
 import numpy as np
 from Stock_Prediction_Base import base_model
 from Stock_Prediction_Data_Processing import reshape_input, get_all_stocks_feature_data, preprocessing_data, kmeans_claasification
 import pickle
+from hyperopt import fmin, tpe, partial
+
+
 
 class xgboost_model(base_model):
-    def GBM(argsDict):
+    train_x = None
+    train_y = None
+
+    def GBM(self, argsDict):
         max_depth = argsDict["max_depth"] + 5
         n_estimators = argsDict['n_estimators'] * 5 + 50
         learning_rate = argsDict["learning_rate"] * 0.02 + 0.05
@@ -25,7 +29,6 @@ class xgboost_model(base_model):
         print("learning_rate:" + str(learning_rate))
         print("subsample:" + str(subsample))
         print("min_child_weight:" + str(min_child_weight))
-        global attr_train,label_train
 
         gbm = xgb.XGBClassifier(nthread=4,    #进程数
                                 max_depth=max_depth,  #最大深度
@@ -36,33 +39,39 @@ class xgboost_model(base_model):
                                 max_delta_step = 10,  #10步不降则停止
                                 objective="binary:logistic")
 
-        metric = cross_val_score(gbm,attr_train,label_train,cv=5,scoring="roc_auc").mean()
-        print metric
-        return -metric
+        return -cross_val_score(gbm, self.train_x, self.train_y, cv=5, scoring="roc_auc").mean()
 
-    def best_model(hyper_opt):
+    def best_model(self, X_train, y_train):
+        self.train_x = X_train
+        self.train_y = y_train
         algo = partial(tpe.suggest, n_startup_jobs=1)
-        best = fmin(GBM, hyper_opt, algo=algo, max_evals=4)
+        best = fmin(self.GBM, space=self.paras.hyper_opt, algo=algo, max_evals=4)
         print("best", best)
         return best
         
-    def build_model(self, index):
+    def build_model(self, X_train, y_train, index):
         if self.paras.load == True:
             model = self.load_training_model(self.paras.window_len[index])
             if model != None:
                 return model
 
         print('build XgBoost model...')
-        best_model()
-        model = xgb.XGBClassifier(nthread=4,    #进程数
-                            max_depth=max_depth,  #最大深度
-                            n_estimators=n_estimators,   #树的数量
-                            learning_rate=learning_rate, #学习率
-                            subsample=subsample,      #采样数
-                            min_child_weight=min_child_weight,   #孩子数
-                            max_delta_step = 10,  #10步不降则停止
-                            objective="binary:logistic")
+        best = self.best_model(X_train, y_train)
 
+        max_depth = best["max_depth"] + 5
+        n_estimators = best['n_estimators'] * 5 + 50
+        learning_rate = best["learning_rate"] * 0.02 + 0.05
+        subsample = best["subsample"] * 0.1 + 0.7
+        min_child_weight = best["min_child_weight"]+1
+
+        model = xgb.XGBClassifier(nthread=4,    #进程数
+                                  max_depth=max_depth,  #最大深度
+                                  n_estimators=n_estimators,   #树的数量
+                                  learning_rate=learning_rate, #学习率
+                                  subsample=subsample,      #采样数
+                                  min_child_weight=min_child_weight,   #孩子数
+                                  max_delta_step = 10,  #10步不降则停止
+                                  objective="binary:logistic")
         return model
 
     def save_training_model(self, model, window_len):
@@ -79,32 +88,32 @@ class xgboost_model(base_model):
             return load_model(model_file)  # creates a HDF5 file 'my_model.h5'
         return None
 
-    def plot_training_curve(self, history):
-        #         %matplotlib inline
-        #         %pylab inline
-        #         pylab.rcParams['figure.figsize'] = (15, 9)   # Change the size of plots
+    # def plot_training_curve(self, history):
+    #     #         %matplotlib inline
+    #     #         %pylab inline
+    #     #         pylab.rcParams['figure.figsize'] = (15, 9)   # Change the size of plots
 
-        # LSTM training
-        f, ax = plt.subplots()
-        ax.plot(history.history['loss'])
-        #ax.plot(history.history['val_loss'])
-        ax.set_title('loss function')
-        ax.set_ylabel('mse')
-        ax.set_xlabel('epoch')
-        #ax.legend(['loss', 'val_loss'], loc='upper right')
-        ax.legend(['loss'], loc='upper right')
-        plt.show()
-        if self.paras.save == True:
-            w = csv.writer(open(self.paras.save_folder + 'training_curve_model.txt', 'w'))
-            for key, val in history.history.items():
-                w.writerow([key, val])
-            for key, val in history.params.items():
-                w.writerow([key, val])
+    #     # LSTM training
+    #     f, ax = plt.subplots()
+    #     ax.plot(history.history['loss'])
+    #     #ax.plot(history.history['val_loss'])
+    #     ax.set_title('loss function')
+    #     ax.set_ylabel('mse')
+    #     ax.set_xlabel('epoch')
+    #     #ax.legend(['loss', 'val_loss'], loc='upper right')
+    #     ax.legend(['loss'], loc='upper right')
+    #     plt.show()
+    #     if self.paras.save == True:
+    #         w = csv.writer(open(self.paras.save_folder + 'training_curve_model.txt', 'w'))
+    #         for key, val in history.history.items():
+    #             w.writerow([key, val])
+    #         for key, val in history.params.items():
+    #             w.writerow([key, val])
 
 # Classification
-class xgboost_classification(lstm_model):
+class xgboost_classification(xgboost_model):
     def __init__(self, paras):
-        super(rnn_lstm_classification, self).__init__(paras=paras)
+        super(xgboost_classification, self).__init__(paras=paras)
 
     def check_parameters(self):
         if (self.paras.out_class_type == 'classification' and self.paras.n_out_class > 1 and
@@ -146,21 +155,19 @@ class xgboost_classification(lstm_model):
         # print('Test shape X:', X_test.shape, ',y:', y_test.shape)
         return X_train, y_train, X_test, y_test
 
-
     def train_data(self, data_feature, LabelColumnName, index):
-        history = History()
-        
-        model = self.build_model(index)
         X_train, y_train, X_test, y_test = self.prepare_train_test_data(data_feature, LabelColumnName)
+
+        model = self.build_model(X_train, y_train, index)
 
         model.fit(
             X_train,
             y_train,
-            batch_size=self.paras.batch_size,
-            epochs=self.paras.epoch,
+            # batch_size=self.paras.batch_size,
+            # epochs=self.paras.epoch,
             # validation_split=self.paras.validation_split,
             # validation_data = (X_known_lately, y_known_lately),
-            callbacks=[history],
+            # callbacks=[history],
             # shuffle=True,
             verbose=self.paras.verbose
         )
