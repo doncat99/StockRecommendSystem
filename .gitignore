@@ -106,6 +106,9 @@ ENV/
 # CSV
 .csv
 
+# PKL
+.pkl
+
 # data storage
 Data/
 
