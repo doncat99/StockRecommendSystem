@@ -37,9 +37,10 @@ class xgboost_model(base_model):
                                 subsample=subsample,      #采样数
                                 min_child_weight=min_child_weight,   #孩子数
                                 max_delta_step = 10,  #10步不降则停止
-                                objective="binary:logistic")
+                                objective="multi:softmax")
+        
 
-        return -cross_val_score(gbm, self.train_x, self.train_y, cv=5, scoring="roc_auc").mean()
+        return -cross_val_score(gbm, self.train_x, self.train_y, cv=5).mean()
 
     def best_model(self, X_train, y_train):
         self.train_x = X_train
@@ -133,8 +134,8 @@ class xgboost_classification(xgboost_model):
         firstloop = 1
         for ticker, data in data_feature.items():
             #print(ticker, "n_feature", self.paras.n_features, len(data[0]))
-            X, y = preprocessing_data(self.paras, data[0], LabelColumnName, one_hot_label_proc=True)
-            X, y = reshape_input(self.paras.n_features, X, y)
+            X, y = preprocessing_data(self.paras, data[0], LabelColumnName, one_hot_label_proc=False)
+            #X, y = reshape_input(self.paras.n_features, X, y)
             X_train_temp, X_test_temp, y_train_temp, y_test_temp = train_test_split(X, y, test_size=0.2)
             # print('Train shape X:', X_train_temp.shape, ',y:', y_train_temp.shape)
             # print('Test shape X:', X_test_temp.shape, ',y:', y_test_temp.shape)
@@ -216,9 +217,9 @@ class xgboost_classification(xgboost_model):
             X_valid, y_valid   = preprocessing_data(self.paras, data[1], LabelColumnName, one_hot_label_proc=True)
             X_lately, y_lately = preprocessing_data(self.paras, data[2], LabelColumnName, one_hot_label_proc=False)
             
-            X_train, y_train   = reshape_input(self.paras.n_features, X_train, y_train)                                                                    
-            X_valid, y_valid   = reshape_input(self.paras.n_features, X_valid, y_valid)
-            X_lately, y_lately = reshape_input(self.paras.n_features, X_lately, y_lately)
+            # X_train, y_train   = reshape_input(self.paras.n_features, X_train, y_train)                                                                    
+            # X_valid, y_valid   = reshape_input(self.paras.n_features, X_valid, y_valid)
+            # X_lately, y_lately = reshape_input(self.paras.n_features, X_lately, y_lately)
 
             possibility_columns = [str(self.paras.window_len[index]) + '_' + str(idx) for idx in range(self.paras.n_out_class)]
 
