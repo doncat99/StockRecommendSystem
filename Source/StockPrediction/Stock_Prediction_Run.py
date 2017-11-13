@@ -213,7 +213,7 @@ def run_recommand_system(root_path, train_symbols, predict_symbols, need_trainin
 
 def run_xgboost_classification(root_path, train_symbols, predict_symbols, need_training, need_plot_training_diagram, need_predict):
     paras = SP_Paras('lstm', root_path, train_symbols, predict_symbols)
-    paras.save = True
+    paras.save = False
     paras.load = False
     paras.plot = need_plot_training_diagram
     # 0_index: no norm   1_index: standard norm   2_index: minmax norm   3_index: zscore norm

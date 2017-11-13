@@ -104,10 +104,10 @@ ENV/
 .DS_Store
 
 # CSV
-.csv
+*.csv
 
 # PKL
-.pkl
+*.pkl
 
 # data storage
 Data/
