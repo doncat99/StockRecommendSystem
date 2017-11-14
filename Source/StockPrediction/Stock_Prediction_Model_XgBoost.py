@@ -213,8 +213,8 @@ class xgboost_classification(xgboost_model):
                 print('stock not preparee', ticker)
                 continue
 
-            X_train, y_train   = preprocessing_data(self.paras, data[0], LabelColumnName, one_hot_label_proc=True)
-            X_valid, y_valid   = preprocessing_data(self.paras, data[1], LabelColumnName, one_hot_label_proc=True)
+            X_train, y_train   = preprocessing_data(self.paras, data[0], LabelColumnName, one_hot_label_proc=False)
+            X_valid, y_valid   = preprocessing_data(self.paras, data[1], LabelColumnName, one_hot_label_proc=False)
             X_lately, y_lately = preprocessing_data(self.paras, data[2], LabelColumnName, one_hot_label_proc=False)
             
             # X_train, y_train   = reshape_input(self.paras.n_features, X_train, y_train)                                                                    
@@ -226,23 +226,23 @@ class xgboost_classification(xgboost_model):
             print('\n ---------- ', ticker, ' ---------- \n')
             print(' ############## validation on train data ############## ')
             mse_known_train, predictions_train = self.predict(model, X_train, y_train)
-            data[3].loc[data[0].index, 'label'] = np.argmax(y_train, axis=1) #- int(self.paras.n_out_class/2)
-            data[3].loc[data[0].index, 'pred'] = np.argmax(predictions_train, axis=1) #- int(self.paras.n_out_class/2)
-            s = pd.DataFrame(predictions_train, index = data[0].index, columns=possibility_columns)
+            data[3].loc[data[0].index, 'label'] = y_train #- int(self.paras.n_out_class/2)
+            data[3].loc[data[0].index, 'pred'] = predictions_train #- int(self.paras.n_out_class/2)
+            #s = pd.DataFrame(predictions_train, index = data[0].index, columns=possibility_columns)
 
             print(' ############## validation on valid data ############## ')
             mse_known_lately, predictions_valid = self.predict(model, X_valid, y_valid)
-            data[3].loc[data[1].index, 'label'] = np.argmax(y_valid, axis=1) #- int(self.paras.n_out_class/2)
-            data[3].loc[data[1].index, 'pred'] = np.argmax(predictions_valid, axis=1) #- int(self.paras.n_out_class/2)
-            s = s.append(pd.DataFrame(predictions_valid, index = data[1].index, columns=possibility_columns))
+            data[3].loc[data[1].index, 'label'] = y_valid #- int(self.paras.n_out_class/2)
+            data[3].loc[data[1].index, 'pred'] = predictions_valid #- int(self.paras.n_out_class/2)
+            #s = s.append(pd.DataFrame(predictions_valid, index = data[1].index, columns=possibility_columns))
 
             print(' ############## validation on lately data ############## ')
             mse_lately, predictions_lately = self.predict(model, X_lately, y_lately)
             data[3].loc[data[2].index, 'label'] = np.nan#np.argmax(actual_lately, axis=1)
-            data[3].loc[data[2].index, 'pred'] = np.argmax(predictions_lately, axis=1) #- int(self.paras.n_out_class/2)
-            s = s.append(pd.DataFrame(predictions_lately, index = data[2].index, columns=possibility_columns))
+            data[3].loc[data[2].index, 'pred'] = predictions_lately #- int(self.paras.n_out_class/2)
+            #s = s.append(pd.DataFrame(predictions_lately, index = data[2].index, columns=possibility_columns))
             
-            data[3] = pd.merge(data[3], s, how='outer', left_index=True, right_index=True)
+            #data[3] = pd.merge(data[3], s, how='outer', left_index=True, right_index=True)
 
             actual_count = []
             predict_count = []
@@ -280,7 +280,7 @@ class xgboost_classification(xgboost_model):
             data[3]['pred'] = data[3]['pred'] - int(self.paras.n_out_class/2)
             
             # rewrite data frame and save / update
-            data[3] = self.save_data_frame_mse(ticker, data[3], self.paras.window_len[index], possibility_columns, mses=[mse_known_train, mse_known_lately])
+            #data[3] = self.save_data_frame_mse(ticker, data[3], self.paras.window_len[index], possibility_columns, mses=[mse_known_train, mse_known_lately])
             self.df = data[3]
 
             pd.set_option('display.max_rows', None)

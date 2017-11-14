@@ -212,7 +212,7 @@ def run_recommand_system(root_path, train_symbols, predict_symbols, need_trainin
 
 
 def run_xgboost_classification(root_path, train_symbols, predict_symbols, need_training, need_plot_training_diagram, need_predict):
-    paras = SP_Paras('lstm', root_path, train_symbols, predict_symbols)
+    paras = SP_Paras('xgboost', root_path, train_symbols, predict_symbols)
     paras.save = False
     paras.load = False
     paras.plot = need_plot_training_diagram
@@ -223,7 +223,7 @@ def run_xgboost_classification(root_path, train_symbols, predict_symbols, need_t
                       '2_0':['buy_volume', 'sell_volume', 'even_volume'], 
                       '2_0':['buy_max', 'buy_min', 'buy_average', 'sell_max', 'sell_min', 'sell_average', 'even_max', 'even_min', 'even_average']} 
     
-    paras.window_len = [120]
+    paras.window_len = [3]
     paras.pred_len = 1
     paras.valid_len = 20
     paras.start_date = '2016-11-01'
@@ -293,7 +293,7 @@ if __name__ == "__main__":
     df.index = df.index.astype(str).str.zfill(6)
     df = df.sort_index(ascending = True)
     symbols = df.index.values.tolist()
-    symbols = ['000001']
+    # symbols = ['000001']
     paras = run_xgboost_classification(root_path, symbols, symbols, True, False, True)
 
     backend.clear_session()
