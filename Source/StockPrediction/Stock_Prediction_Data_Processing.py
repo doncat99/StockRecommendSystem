@@ -388,7 +388,7 @@ def get_single_stock_feature_data(ticker, paras, window_len, input_data, LabelCo
     dataset['c_2_h'] = MinMaxScaler().fit_transform(ret(dataset['high'], dataset['close']).values.reshape(-1,1))
     dataset['h_2_l'] = MinMaxScaler().fit_transform(ret(dataset['high'], dataset['low']).values.reshape(-1,1))
     #dataset['vol']   = MinMaxScaler().fit_transform(StandardScaler().fit_transform(dataset['volume'].values.reshape(-1,1)))
-    dataset['vol']   = StandardScaler().fit_transform(dataset['volume'].values.reshape(-1, 1))
+    dataset['vol_p']   = StandardScaler().fit_transform(dataset['volume'].values.reshape(-1, 1))
 
 
     #dataset["hl_perc"] = (dataset["high"]-dataset["low"]) / dataset["low"] * 100
