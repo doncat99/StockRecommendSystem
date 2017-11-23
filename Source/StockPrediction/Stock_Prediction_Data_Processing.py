@@ -61,7 +61,7 @@ def normalization_scaler(norm, data, row_processing):
         else:
             #scaler = StandardScaler().fit(data)
             scaler =StandardScaler().fit_transform(data)
-            return scaler.transform(data)
+            return scaler
 
     elif '2_' in norm:
         if row_processing:
