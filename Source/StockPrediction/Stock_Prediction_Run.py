@@ -219,10 +219,10 @@ def run_xgboost_classification(root_path, train_symbols, predict_symbols, need_t
     paras.plot = need_plot_training_diagram
     # 0_index: no norm   1_index: standard norm   2_index: minmax norm   3_index: zscore norm
     paras.features = {#'0_0':['frac_change', 'frac_high', 'frac_low'], 
-                      '0_0':['c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol'],
+                      '0_0':['c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l'],
                       '1_0':['buy_amount', 'sell_amount', 'even_amount'],
-                      '1_0':['buy_volume', 'sell_volume', 'even_volume'], 
-                      '1_0':['buy_max', 'buy_min', 'buy_average', 'sell_max', 'sell_min', 'sell_average', 'even_max', 'even_min', 'even_average']} 
+                      '1_1':['buy_volume', 'sell_volume', 'even_volume'], 
+                      '1_2':['buy_max', 'buy_min', 'buy_average', 'sell_max', 'sell_min', 'sell_average', 'even_max', 'even_min', 'even_average']} 
     
     paras.window_len = [3]
     paras.pred_len = 1

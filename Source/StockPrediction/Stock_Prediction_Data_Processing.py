@@ -219,6 +219,7 @@ def group_by_features(features, df):
     '''
     data_group_features = {}
     data_group_columns = []
+
     for key, group in features.items():
         df_feature_col = []
         for i in group:
@@ -226,6 +227,11 @@ def group_by_features(features, df):
         for feature in df_feature_col:
             data_group_columns.append(feature)
         data_group_features[key] = df[df_feature_col]
+
+    # print("group by features")
+    # print(data_group_features)
+    # print("-"*20)
+    # print(data_group_columns)
     return data_group_features, data_group_columns
 
 
@@ -246,9 +252,13 @@ def preprocessing_data(paras, df, LabelColumnName, one_hot_label_proc, array_for
     y = np.array(df[LabelColumnName])
 
     data_group_features, data_group_columns = group_by_features(paras.features, X)
+    # print("data_group_features", data_group_features)
+    # print("data_group_columns", data_group_columns)
+
     X_normalized_T = pd.DataFrame(index=X.index, columns=data_group_columns)
 
     for key_norm, df_feature in data_group_features.items():
+        #print(key_norm, df_feature)
         df_feature_norm = normalization_scaler(key_norm, df_feature, False)
         X_normalized_T.loc[df_feature.index, df_feature.columns] = df_feature_norm
 
@@ -400,7 +410,7 @@ def get_single_stock_feature_data(ticker, paras, window_len, input_data, LabelCo
                   'buy_amount', 'sell_amount', 'even_amount', 'buy_volume', 'sell_volume', 'even_volume', 'buy_max', 'buy_min', 'buy_average', 'sell_max', 'sell_min', 'sell_average', 'even_max', 'even_min', 'even_average',
                   #'hl_perc', 'co_perc'
                 ]]
-
+                
     # Data frame output
     df[LabelColumnName], counter, center = simple_claasification(df['pred_profit'], paras.n_out_class)
     return df
