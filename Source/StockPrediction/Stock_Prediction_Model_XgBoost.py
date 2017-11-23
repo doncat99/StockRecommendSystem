@@ -20,7 +20,7 @@ class xgboost_model(base_model):
         max_depth = argsDict["max_depth"] + 5
         n_estimators = argsDict['n_estimators'] * 5 + 50
         learning_rate = argsDict["learning_rate"] * 0.02 + 0.05
-        gamma = argDict["gamma"] * 0.1
+        gamma = argsDict["gamma"] * 0.1
         subsample = argsDict["subsample"] * 0.1 + 0.7
         min_child_weight = argsDict["min_child_weight"] + 1
         
@@ -50,9 +50,6 @@ class xgboost_model(base_model):
         algo = partial(tpe.suggest, n_startup_jobs=1)
         best = fmin(self.GBM, space=self.paras.hyper_opt, algo=algo, max_evals=4)
         print("best", best)
-
-        # best {'learning_rate': 1, 'max_depth': 7, 'min_child_weight': 3, 'n_estimators': 16, 'subsample': 1}
-        # return {'learning_rate': 1, 'max_depth': 7, 'min_child_weight': 3, 'n_estimators': 16, 'subsample': 1} 
         return best
         
     def build_model(self, X_train, y_train, index):
@@ -61,16 +58,33 @@ class xgboost_model(base_model):
             if model != None:
                 return model
 
+        best = {}
+        file_name = "hyper_parameter.pkl"
+        
+        if self.paras.run_hyperopt == True:
+            print('find hyper parameters...')
+            best = self.best_model(X_train, y_train)
+            pickle.dump(best, open(file_name, "wb"))
+        else:
+            if os.path.exists(file_name):
+                best = pickle.load(open(file_name, "rb"))
+
+        if len(best) == 0:
+            max_depth = 18
+            n_estimators = 100
+            learning_rate = 0.09
+            gamma = 0.2
+            subsample = 0.8
+            min_child_weight = 2
+        else:
+            max_depth = best["max_depth"] + 5
+            n_estimators = best['n_estimators'] * 5 + 50
+            learning_rate = best["learning_rate"] * 0.02 + 0.05
+            gamma = best["gamma"] * 0.1
+            subsample = best["subsample"] * 0.1 + 0.7
+            min_child_weight = best["min_child_weight"] + 1
+
         print('build XgBoost model...')
-        best = self.best_model(X_train, y_train)
-
-        max_depth = best["max_depth"] + 5
-        n_estimators = best['n_estimators'] * 5 + 50
-        learning_rate = best["learning_rate"] * 0.02 + 0.05
-        gamma = best["gamma"] * 0.1
-        subsample = best["subsample"] * 0.1 + 0.7
-        min_child_weight = best["min_child_weight"]+1
-
         model = xgb.XGBClassifier(nthread=4,    #进程数
                                   max_depth=max_depth,  #最大深度
                                   gamma=gamma,

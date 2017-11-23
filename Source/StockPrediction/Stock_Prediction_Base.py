@@ -15,7 +15,8 @@ class SP_Global_Paras(object):
         self._model_name = name + '_model'
         self._save = False
         self._load = False
-        self._plot = True
+        self._run_hyperopt = False
+        self._plot = False
         self._verbose = 0
 
         # ------------- INPUT -------------
@@ -125,7 +126,14 @@ class SP_Global_Paras(object):
     @load.setter
     def load(self, value):
         self._load = value
-        
+    
+    @property
+    def run_hyperopt(self):
+        return self._run_hyperopt
+    @run_hyperopt.setter
+    def run_hyperopt(self, value):
+        self._run_hyperopt = value
+
     @property
     def plot(self):
         return self._plot

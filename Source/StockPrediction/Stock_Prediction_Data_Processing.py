@@ -55,9 +55,9 @@ def normalization_scaler(norm, data, row_processing):
     if '1_' in norm:
         if row_processing:
             data_T = data.transpose()
-            scaler = MinMaxScaler().fit_transform(StandardScaler().fit_transform(data))
+            scaler = MinMaxScaler().fit_transform(StandardScaler().fit_transform(data_T))
             #data_T_scale = scaler.transform(data_T)
-            return data_T_scale.transpose()
+            return scaler.transpose()
         else:
             #scaler = StandardScaler().fit(data)
             scaler =StandardScaler().fit_transform(data)
@@ -249,7 +249,7 @@ def preprocessing_data(paras, df, LabelColumnName, one_hot_label_proc, array_for
     X_normalized_T = pd.DataFrame(index=X.index, columns=data_group_columns)
 
     for key_norm, df_feature in data_group_features.items():
-        df_feature_norm = normalization_scaler(key_norm, df_feature, True)
+        df_feature_norm = normalization_scaler(key_norm, df_feature, False)
         X_normalized_T.loc[df_feature.index, df_feature.columns] = df_feature_norm
 
     if one_hot_label_proc == True:
