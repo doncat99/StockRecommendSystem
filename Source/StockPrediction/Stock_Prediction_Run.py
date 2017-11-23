@@ -217,7 +217,7 @@ def run_xgboost_classification(root_path, train_symbols, predict_symbols, need_t
     paras.load = False
     paras.plot = need_plot_training_diagram
     # 0_index: no norm   1_index: standard norm   2_index: minmax norm   3_index: zscore norm
-    paras.features = {'0_0':['frac_change', 'frac_high', 'frac_low'], 
+    paras.features = {#'0_0':['frac_change', 'frac_high', 'frac_low'], 
                       '0_0':['c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol'],
                       '2_0':['buy_amount', 'sell_amount', 'even_amount'],
                       '2_0':['buy_volume', 'sell_volume', 'even_volume'], 
@@ -242,6 +242,7 @@ def run_xgboost_classification(root_path, train_symbols, predict_symbols, need_t
     from hyperopt import hp
     paras.hyper_opt = {"max_depth"        :hp.randint("max_depth",       10),
                        "n_estimators"     :hp.randint("n_estimators",    20),  #[0,1,2,3,4,5] -> [50,]
+                       "gamma"            :hp.randint("gamma",            4),  #0-0.4
                        "learning_rate"    :hp.randint("learning_rate",    6),  #[0,1,2,3,4,5] -> 0.05,0.06
                        "subsample"        :hp.randint("subsample",        4),  #[0,1,2,3] -> [0.7,0.8,0.9,1.0]
                        "min_child_weight" :hp.randint("min_child_weight", 5), 

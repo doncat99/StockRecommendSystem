@@ -1,15 +1,16 @@
 import os, csv
-from sklearn.model_selection import train_test_split
-from keras.models import Sequential, load_model
-from sklearn.cross_validation import cross_val_score
+from sklearn.model_selection import train_test_split, cross_val_score
+#from sklearn.cross_validation import 
+from sklearn.metrics import accuracy_score
+from hyperopt import fmin, tpe, partial
 import xgboost as xgb
-
 import pandas as pd
 import numpy as np
+import pickle
+
 from Stock_Prediction_Base import base_model
 from Stock_Prediction_Data_Processing import reshape_input, get_all_stocks_feature_data, preprocessing_data, kmeans_claasification
-import pickle
-from hyperopt import fmin, tpe, partial
+
 
 class xgboost_model(base_model):
     train_x = None
@@ -19,36 +20,40 @@ class xgboost_model(base_model):
         max_depth = argsDict["max_depth"] + 5
         n_estimators = argsDict['n_estimators'] * 5 + 50
         learning_rate = argsDict["learning_rate"] * 0.02 + 0.05
+        gamma = argDict["gamma"] * 0.1
         subsample = argsDict["subsample"] * 0.1 + 0.7
         min_child_weight = argsDict["min_child_weight"] + 1
         
         print("max_depth:" + str(max_depth))
         print("n_estimator:" + str(n_estimators))
         print("learning_rate:" + str(learning_rate))
+        print("gamma:" + str(gamma))
         print("subsample:" + str(subsample))
         print("min_child_weight:" + str(min_child_weight))
 
         gbm = xgb.XGBClassifier(nthread=-1,    #进程数
                                 max_depth=max_depth,  #最大深度
+                                gamma=gamma,
                                 n_estimators=n_estimators,   #树的数量
                                 learning_rate=learning_rate, #学习率
                                 subsample=subsample,      #采样数
                                 min_child_weight=min_child_weight,   #孩子数
-                                max_delta_step = 10,  #10步不降则停止
+                                max_delta_step = 100,  #10步不降则停止
                                 objective="multi:softmax")
         
 
         return -cross_val_score(gbm, self.train_x, self.train_y, cv=5).mean()
 
     def best_model(self, X_train, y_train):
-        # self.train_x = X_train
-        # self.train_y = y_train
-        # algo = partial(tpe.suggest, n_startup_jobs=1)
-        # best = fmin(self.GBM, space=self.paras.hyper_opt, algo=algo, max_evals=4)
-        # print("best", best)
+        self.train_x = X_train
+        self.train_y = y_train
+        algo = partial(tpe.suggest, n_startup_jobs=1)
+        best = fmin(self.GBM, space=self.paras.hyper_opt, algo=algo, max_evals=4)
+        print("best", best)
 
         # best {'learning_rate': 1, 'max_depth': 7, 'min_child_weight': 3, 'n_estimators': 16, 'subsample': 1}
-        return {'learning_rate': 1, 'max_depth': 7, 'min_child_weight': 3, 'n_estimators': 16, 'subsample': 1} #best
+        # return {'learning_rate': 1, 'max_depth': 7, 'min_child_weight': 3, 'n_estimators': 16, 'subsample': 1} 
+        return best
         
     def build_model(self, X_train, y_train, index):
         if self.paras.load == True:
@@ -62,17 +67,19 @@ class xgboost_model(base_model):
         max_depth = best["max_depth"] + 5
         n_estimators = best['n_estimators'] * 5 + 50
         learning_rate = best["learning_rate"] * 0.02 + 0.05
+        gamma = best["gamma"] * 0.1
         subsample = best["subsample"] * 0.1 + 0.7
         min_child_weight = best["min_child_weight"]+1
 
         model = xgb.XGBClassifier(nthread=4,    #进程数
                                   max_depth=max_depth,  #最大深度
+                                  gamma=gamma,
                                   n_estimators=n_estimators,   #树的数量
                                   learning_rate=learning_rate, #学习率
                                   subsample=subsample,      #采样数
                                   min_child_weight=min_child_weight,   #孩子数
-                                  max_delta_step = 10,  #10步不降则停止
-                                  objective="binary:logistic")
+                                  max_delta_step = 100,  #10步不降则停止
+                                  objective="multi:softmax")
         return model
 
     def save_training_model(self, model, window_len):
@@ -91,27 +98,6 @@ class xgboost_model(base_model):
             return pickle.load(open(model_file, "rb"))
         return None
 
-    # def plot_training_curve(self, history):
-    #     #         %matplotlib inline
-    #     #         %pylab inline
-    #     #         pylab.rcParams['figure.figsize'] = (15, 9)   # Change the size of plots
-
-    #     # XgBoost training
-    #     f, ax = plt.subplots()
-    #     ax.plot(history.history['loss'])
-    #     #ax.plot(history.history['val_loss'])
-    #     ax.set_title('loss function')
-    #     ax.set_ylabel('mse')
-    #     ax.set_xlabel('epoch')
-    #     #ax.legend(['loss', 'val_loss'], loc='upper right')
-    #     ax.legend(['loss'], loc='upper right')
-    #     plt.show()
-    #     if self.paras.save == True:
-    #         w = csv.writer(open(self.paras.save_folder + 'training_curve_model.txt', 'w'))
-    #         for key, val in history.history.items():
-    #             w.writerow([key, val])
-    #         for key, val in history.params.items():
-    #             w.writerow([key, val])
 
 # Classification
 class xgboost_classification(xgboost_model):
@@ -166,12 +152,6 @@ class xgboost_classification(xgboost_model):
         model.fit(
             X_train,
             y_train,
-            # batch_size=self.paras.batch_size,
-            # epochs=self.paras.epoch,
-            # validation_split=self.paras.validation_split,
-            # validation_data = (X_known_lately, y_known_lately),
-            # callbacks=[history],
-            # shuffle=True,
             verbose=self.paras.verbose
         )
         # save model
@@ -195,8 +175,8 @@ class xgboost_classification(xgboost_model):
 
     def predict(self, model, X, y):
         predictions = model.predict(X)
-        mse_scaled = np.mean((y - predictions) ** 2)
-        return mse_scaled, predictions
+        accurancy = accuracy_score(y,predictions)
+        return accurancy, predictions
 
 
     def predict_data(self, model, data_feature, LabelColumnName, index):
@@ -222,7 +202,7 @@ class xgboost_classification(xgboost_model):
             # X_valid, y_valid   = reshape_input(self.paras.n_features, X_valid, y_valid)
             # X_lately, y_lately = reshape_input(self.paras.n_features, X_lately, y_lately)
 
-            possibility_columns = [str(self.paras.window_len[index]) + '_' + str(idx) for idx in range(self.paras.n_out_class)]
+            # possibility_columns = [str(self.paras.window_len[index]) + '_' + str(idx) for idx in range(self.paras.n_out_class)]
 
             # print('\n ---------- ', ticker, ' ---------- \n')
             # print('############## validation on train data ##############')
@@ -355,10 +335,12 @@ class xgboost_classification(xgboost_model):
             if os.path.exists(data_file):
                 input = open(data_file, 'rb')
                 data_feature = pickle.load(input)
+                input.close()
             else:
                 data_feature = get_all_stocks_feature_data(self.paras, self.paras.window_len[index], LabelColumnName)
                 output = open(data_file, 'wb')
                 pickle.dump(data_feature, output)
+                output.close()
 
             model = None
 

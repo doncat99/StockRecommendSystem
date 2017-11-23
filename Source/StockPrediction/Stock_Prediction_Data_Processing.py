@@ -3,9 +3,9 @@ import numpy as np
 import pandas as pd
 from stockstats import *
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
-from scipy.stats import zscore
-
+#from scipy.stats import zscore
 from sklearn.cluster import KMeans
+import pickle
 
 cur_path = os.path.dirname(os.path.abspath(__file__))
 for _ in range(2):
@@ -13,7 +13,7 @@ for _ in range(2):
     cur_path = root_path
 sys.path.append(root_path + "/" + 'Source/DataBase/')
 from DB_API import queryStock
-import pickle
+
 
 ###################################
 ###                             ###
@@ -55,11 +55,12 @@ def normalization_scaler(norm, data, row_processing):
     if '1_' in norm:
         if row_processing:
             data_T = data.transpose()
-            scaler = StandardScaler().fit(data_T)
-            data_T_scale = scaler.transform(data_T)
+            scaler = MinMaxScaler().fit_transform(StandardScaler().fit_transform(data))
+            #data_T_scale = scaler.transform(data_T)
             return data_T_scale.transpose()
         else:
-            scaler = StandardScaler().fit(data)
+            #scaler = StandardScaler().fit(data)
+            scaler =StandardScaler().fit_transform(data)
             return scaler.transform(data)
 
     elif '2_' in norm:
@@ -293,7 +294,7 @@ def generate_time_series_data(paras, df, window_len):
     #     df_train = df[0 : len(df) - paras.valid_len - paras.pred_len]
     # else:
     df_lately = df[-paras.pred_len:]
-    df.dropna(inplace=True)
+    df = df.dropna()
     df_valid = df[len(df) - paras.valid_len: len(df)]
     df_train = df[0:len(df) - paras.valid_len]
 
@@ -357,29 +358,38 @@ def get_single_stock_feature_data(ticker, paras, window_len, input_data, LabelCo
     # dataset.get('close_-60_r')
     # dataset = dataset[np.isfinite(dataset['close_-20_r'])]
     
-    dataset['frac_change'] = (dataset['close'] - dataset['open']) / dataset['open']
-    dataset['frac_high']   = (dataset['high'] - dataset['open'])  / dataset['open']
-    dataset['frac_low']    = (dataset['open'] - dataset['low'])   / dataset['open']
+    #dataset['frac_change'] = (dataset['close'] - dataset['open']) / dataset['open']
+    #dataset['frac_high']   = (dataset['high'] - dataset['open'])  / dataset['open']
+    #dataset['frac_low']    = (dataset['open'] - dataset['low'])   / dataset['open']
 
     ret = lambda x,y: np.log(y/x) #Log return 
-    zscore = lambda x:(x -x.mean())/x.std() # zscore
+    # zscore = lambda x:(x -x.mean())/x.std() # zscore
 
-    dataset['c_2_o'] = zscore(ret(dataset['open'], dataset['close']))
-    dataset['h_2_o'] = zscore(ret(dataset['open'], dataset['high']))
-    dataset['l_2_o'] = zscore(ret(dataset['open'], dataset['low']))
-    dataset['c_2_h'] = zscore(ret(dataset['high'], dataset['close']))
-    dataset['h_2_l'] = zscore(ret(dataset['high'], dataset['low']))
-    dataset['vol']   = zscore(dataset['volume'])
+    # dataset['c_2_o'] = zscore(ret(dataset['open'], dataset['close']))
+    # dataset['h_2_o'] = zscore(ret(dataset['open'], dataset['high']))
+    # dataset['l_2_o'] = zscore(ret(dataset['open'], dataset['low']))
+    # dataset['c_2_h'] = zscore(ret(dataset['high'], dataset['close']))
+    # dataset['h_2_l'] = zscore(ret(dataset['high'], dataset['low']))
+    # dataset['vol']   = zscore(dataset['volume'])
+    dataset['c_2_o'] = StandardScaler().fit_transform(ret(dataset['open'], dataset['close']).values.reshape(-1, 1))
+    
+    dataset['h_2_o'] = MinMaxScaler().fit_transform(ret(dataset['open'], dataset['high']).values.reshape(-1,1))
+    dataset['l_2_o'] = MinMaxScaler().fit_transform(ret(dataset['open'], dataset['low']).values.reshape(-1,1))
+    dataset['c_2_h'] = MinMaxScaler().fit_transform(ret(dataset['high'], dataset['close']).values.reshape(-1,1))
+    dataset['h_2_l'] = MinMaxScaler().fit_transform(ret(dataset['high'], dataset['low']).values.reshape(-1,1))
+    #dataset['vol']   = MinMaxScaler().fit_transform(StandardScaler().fit_transform(dataset['volume'].values.reshape(-1,1)))
+    dataset['vol']   = StandardScaler().fit_transform(dataset['volume'].values.reshape(-1, 1))
 
-    dataset["hl_perc"] = (dataset["high"]-dataset["low"]) / dataset["low"] * 100
-    dataset["co_perc"] = (dataset["close"] - dataset["open"]) / dataset["open"] * 100
+
+    #dataset["hl_perc"] = (dataset["high"]-dataset["low"]) / dataset["low"] * 100
+    #dataset["co_perc"] = (dataset["close"] - dataset["open"]) / dataset["open"] * 100
     #dataset["price_next_month"] = dataset["adj_close"].shift(-30)
     
     dataset['last_close']  = dataset['close'].shift(1 * (paras.pred_len))
     dataset['pred_profit'] = ((dataset['close'] - dataset['last_close']) / dataset['last_close'] * 100).shift(-1 * (paras.pred_len))
 
-    df = dataset[['open', 'high', 'low', 'close', 'volume', 
-                  'frac_change', 'frac_high', 'frac_low', 'pred_profit',
+    df = dataset[['open', 'high', 'low', 'close', 'volume', 'pred_profit',
+                  #'frac_change', 'frac_high', 'frac_low', 
                   #'top',  'bottom', 'middle', 'vol_stat', 'pred_profit',
                   #'close_-5_r', 'close_-10_r', 'close_-20_r', 'close_-60_r'
                   #'open_pct', 'high_pct', 'low_pct', 'close_pct', 'volume_pct',
