@@ -380,14 +380,14 @@ def get_single_stock_feature_data(ticker, paras, window_len, input_data, LabelCo
     # dataset['l_2_o'] = zscore(ret(dataset['open'], dataset['low']))
     # dataset['c_2_h'] = zscore(ret(dataset['high'], dataset['close']))
     # dataset['h_2_l'] = zscore(ret(dataset['high'], dataset['low']))
-    # dataset['vol']   = zscore(dataset['volume'])
+    # dataset['vol_p']   = zscore(dataset['volume'])
     dataset['c_2_o'] = StandardScaler().fit_transform(ret(dataset['open'], dataset['close']).values.reshape(-1, 1))
     
     dataset['h_2_o'] = MinMaxScaler().fit_transform(ret(dataset['open'], dataset['high']).values.reshape(-1,1))
     dataset['l_2_o'] = MinMaxScaler().fit_transform(ret(dataset['open'], dataset['low']).values.reshape(-1,1))
     dataset['c_2_h'] = MinMaxScaler().fit_transform(ret(dataset['high'], dataset['close']).values.reshape(-1,1))
     dataset['h_2_l'] = MinMaxScaler().fit_transform(ret(dataset['high'], dataset['low']).values.reshape(-1,1))
-    #dataset['vol']   = MinMaxScaler().fit_transform(StandardScaler().fit_transform(dataset['volume'].values.reshape(-1,1)))
+    #dataset['vol_p']   = MinMaxScaler().fit_transform(StandardScaler().fit_transform(dataset['volume'].values.reshape(-1,1)))
     dataset['vol_p']   = StandardScaler().fit_transform(dataset['volume'].values.reshape(-1, 1))
 
 
@@ -406,7 +406,7 @@ def get_single_stock_feature_data(ticker, paras, window_len, input_data, LabelCo
                   #'top_pct', 'middle_pct', 'bottom_pct', 'stock_stat'
                   #'rsi_7', 'rsi_14', 'rsi_21', 'kdjk_9', 'kdjk_14', 'wr_9', 
                   #'wr_14', 'close_-5_r', 'close_-10_r', 'close_-20_r',
-                  'c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol', 
+                  'c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol_p', 
                   'buy_amount', 'sell_amount', 'even_amount', 'buy_volume', 'sell_volume', 'even_volume', 'buy_max', 'buy_min', 'buy_average', 'sell_max', 'sell_min', 'sell_average', 'even_max', 'even_min', 'even_average',
                   #'hl_perc', 'co_perc'
                 ]]

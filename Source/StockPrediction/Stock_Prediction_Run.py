@@ -29,7 +29,7 @@ def run_lstm_classification(root_path, train_symbols, predict_symbols, need_trai
     paras.plot = need_plot_training_diagram
     # 0_index: no norm   1_index: standard norm   2_index: minmax norm   3_index: zscore norm
     paras.features = {'0_0':['frac_change', 'frac_high', 'frac_low'], 
-                      '0_0':['c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol'],
+                      '0_0':['c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol_p'],
                       '2_0':['buy_amount', 'sell_amount', 'even_amount'],
                       '2_0':['buy_volume', 'sell_volume', 'even_volume'], 
                       '2_0':['buy_max', 'buy_min', 'buy_average', 'sell_max', 'sell_min', 'sell_average', 'even_max', 'even_min', 'even_average']} 
@@ -113,7 +113,7 @@ def run_rf_classification(root_path, train_symbols, predict_symbols, need_traini
     paras.features = {#'0_0':['frac_change', 'frac_high', 'frac_low'], 
                       #'0_0':['rsi_7', 'rsi_14', 'rsi_21', 'kdjk_9', 'kdjk_14', 'wr_9', 
                       #       'wr_14', 'close_-5_r', 'close_-10_r', 'close_-20_r']
-                      '0_0':['c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol']
+                      '0_0':['c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol_p']
                       #'3_0':['volume']
                      } 
                       
@@ -156,7 +156,7 @@ def run_rf_regression(root_path, train_symbols, predict_symbols, need_training, 
     paras.features = {#'0_0':['frac_change', 'frac_high', 'frac_low'], 
                       #'0_0':['rsi_7', 'rsi_14', 'rsi_21', 'kdjk_9', 'kdjk_14', 'wr_9', 
                       #       'wr_14', 'close_-5_r', 'close_-10_r', 'close_-20_r']
-                      '0_0':['c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol']
+                      '0_0':['c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol_p']
                       #'3_0':['volume']
                      } 
                       
