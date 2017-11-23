@@ -315,6 +315,12 @@ def process_all_stocks_data(root_path, symbols, day_range, stock_memory, symbol_
 
     return db_count
 
+def get_result(filter_stock):
+    filter_stock_negative = filter_stock[(filter_stock["0-price"] < 0.0)]
+    result = [len(filter_stock_negative), len(filter_stock), 0.0]
+    result[2] = round(result[0] / result[1], 2)
+    return result
+
 def filter_cashflow(db_count):
     # filename_1 = 'cashflow_count_filter_1.csv'
     # filename_2 = 'cashflow_count_filter_2.csv'
@@ -347,25 +353,18 @@ def filter_cashflow(db_count):
     #                              (db_count["2-price"].astype(float).fillna(0.0) > 0.0) & \
     #                              (db_count["1-price"].astype(float).fillna(0.0) > 0.0) & \
     #                              (db_count["1day"].astype(float).fillna(0.0) > 0.0)]
-
-    db_count_filter_1 = db_count[(db_count["1-pect"] > 0.0)  & (db_count["2-pect"] > 0.0)  & (db_count["3-pect"] > 0.0)  & \
-                                 (db_count["1-price"] > 0.0) & (db_count["2-price"] > 0.0) & \
-                                 (db_count["2-price"] > db_count["1-price"]) & \
-                                 (db_count["1day"] > 0.0)]
-
-
-    db_count_filter_1 = db_count_filter_1.sort_values(['0-price'], ascending=[False]).reset_index(drop=True)
+    db_count_filter = db_count[(db_count["1-pect"] > 0.0)  & (db_count["2-pect"] > 0.0)  & (db_count["3-pect"] > 0.0)  & \
+                               (db_count["1-price"] > 0.0) & (db_count["2-price"] > 0.0) & \
+                               (db_count["2-price"] > db_count["1-price"]) & \
+                               (db_count["1day"] > 0.0)]
+    db_count_filter_1 = db_count_filter.sort_values(['0-price'], ascending=[False]).reset_index(drop=True)
+        
+    if len(db_count_filter_1) == 0: 
+        return 'N/A', db_count_filter_1
+        
     print(db_count_filter_1)
 
-    db_count_filter_2 = db_count_filter_1[(db_count_filter_1["0-price"] < 0.0)]
-
-    if len(db_count_filter_1) == 0: 
-        return 'N/A'
-    
-    result = [len(db_count_filter_2), len(db_count_filter_1), 0.0]
-    result[2] = round(result[0] / result[1], 2)
-
-    return result
+    return db_count_filter_1
 
 
     # db_count_filter = db_count[((db_count["3-price"].astype(float).fillna(0.0)) < 0.0) & \
@@ -386,20 +385,33 @@ def process_data(root_path, symbols, dates):
 
     my_range = range(-1, -200, -1)
     #pbar = tqdm(total=len(my_range))
-    pbar = trange(len(my_range), leave=False)
+    pbar = trange(len(my_range))
+
+    out_path = root_path + "/Data/CSV/target/"
+    if os.path.exists(out_path) == False:
+        os.mkdir(out_path)
 
     for index in my_range:
         day_range = [ dates[idx] for idx in range(index-range_len, index+1) ]
-        db_cashflow = process_all_stocks_data(root_path, symbols, day_range, stock_memory, symbol_memory, index, range_len)
-        negative = filter_cashflow(db_cashflow)
-        negative_pect[day_range[-1]] = negative
+        file_name = out_path + day_range[-1] + ".csv"
+
+        if os.path.exists(file_name):
+            stock_filter = pd.read_csv(file_name, index_col=0)
+        else:
+            db_cashflow = process_all_stocks_data(root_path, symbols, day_range, stock_memory, symbol_memory, index, range_len)
+            stock_filter = filter_cashflow(db_cashflow)
+            if stock_filter.empty == False:
+                stock_filter.to_csv(file_name)
+
+        negative_pect[day_range[-1]] = get_result(stock_filter)
+
         # outMessage = '%-*s processed in:  %.4s seconds' % (6, index, (time.time() - startTime))
-        # pbar.set_description(outMessage)
+        # pbar.set_description(outMessage)    
         pbar.update(1)
-        print(negative_pect)
 
     pbar.close()
 
+    print(negative_pect)
 
 def processing_sector_cashflow_count(root_path, symbols, dates):
     stock_info = ts.get_stock_basics()

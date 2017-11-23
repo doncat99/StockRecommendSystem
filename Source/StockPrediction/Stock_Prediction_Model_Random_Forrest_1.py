@@ -249,7 +249,7 @@ class random_forrest_regression(random_forrest_model):
     def run(self, train, predict):
         ################################################################################
         self.paras.save_folder = self.get_save_directory()
-        print('Save Directory: ', self.paras.save_folder)
+        print(' Log  Directory: ', self.paras.save_folder)
         self.paras.model_folder = self.get_model_directory()
         print('Model Directory: ', self.paras.model_folder)
         ################################################################################

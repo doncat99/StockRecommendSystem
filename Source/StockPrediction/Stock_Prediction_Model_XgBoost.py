@@ -11,8 +11,6 @@ from Stock_Prediction_Data_Processing import reshape_input, get_all_stocks_featu
 import pickle
 from hyperopt import fmin, tpe, partial
 
-
-
 class xgboost_model(base_model):
     train_x = None
     train_y = None
@@ -30,7 +28,7 @@ class xgboost_model(base_model):
         print("subsample:" + str(subsample))
         print("min_child_weight:" + str(min_child_weight))
 
-        gbm = xgb.XGBClassifier(nthread=4,    #进程数
+        gbm = xgb.XGBClassifier(nthread=-1,    #进程数
                                 max_depth=max_depth,  #最大深度
                                 n_estimators=n_estimators,   #树的数量
                                 learning_rate=learning_rate, #学习率
@@ -43,12 +41,14 @@ class xgboost_model(base_model):
         return -cross_val_score(gbm, self.train_x, self.train_y, cv=5).mean()
 
     def best_model(self, X_train, y_train):
-        self.train_x = X_train
-        self.train_y = y_train
-        algo = partial(tpe.suggest, n_startup_jobs=1)
-        best = fmin(self.GBM, space=self.paras.hyper_opt, algo=algo, max_evals=4)
-        print("best", best)
-        return best
+        # self.train_x = X_train
+        # self.train_y = y_train
+        # algo = partial(tpe.suggest, n_startup_jobs=1)
+        # best = fmin(self.GBM, space=self.paras.hyper_opt, algo=algo, max_evals=4)
+        # print("best", best)
+
+        # best {'learning_rate': 1, 'max_depth': 7, 'min_child_weight': 3, 'n_estimators': 16, 'subsample': 1}
+        return {'learning_rate': 1, 'max_depth': 7, 'min_child_weight': 3, 'n_estimators': 16, 'subsample': 1} #best
         
     def build_model(self, X_train, y_train, index):
         if self.paras.load == True:
@@ -77,16 +77,18 @@ class xgboost_model(base_model):
 
     def save_training_model(self, model, window_len):
         if self.paras.save == True:
-            print('save LSTM model...')
+            print('save XgBoost model...')
             # https://keras.io/getting-started/faq/#how-can-i-save-a-keras-model
-            model.save(self.paras.model_folder + self.get_model_name(window_len) + '.h5')  # creates a HDF5 file 'my_model.h5'
+            #model.save(self.paras.model_folder + self.get_model_name(window_len) + '.h5')  # creates a HDF5 file 'my_model.h5'
+            pickle.dump(model, open(self.paras.model_folder + self.get_model_name(window_len) + '.h5', "wb"))
 
     def load_training_model(self, window_len):
         # https://keras.io/getting-started/faq/#how-can-i-save-a-keras-model
         model_file = self.paras.model_folder + self.get_model_name(window_len) + '.h5'
         if os.path.exists(model_file):
-            print('load LSTM model...')
-            return load_model(model_file)  # creates a HDF5 file 'my_model.h5'
+            print('load XgBoost model...')
+            #return load_model(model_file)  # creates a HDF5 file 'my_model.h5'
+            return pickle.load(open(model_file, "rb"))
         return None
 
     # def plot_training_curve(self, history):
@@ -94,7 +96,7 @@ class xgboost_model(base_model):
     #     #         %pylab inline
     #     #         pylab.rcParams['figure.figsize'] = (15, 9)   # Change the size of plots
 
-    #     # LSTM training
+    #     # XgBoost training
     #     f, ax = plt.subplots()
     #     ax.plot(history.history['loss'])
     #     #ax.plot(history.history['val_loss'])
@@ -194,7 +196,6 @@ class xgboost_classification(xgboost_model):
     def predict(self, model, X, y):
         predictions = model.predict(X)
         mse_scaled = np.mean((y - predictions) ** 2)
-        print('scaled data mse: ', mse_scaled)
         return mse_scaled, predictions
 
 
@@ -210,7 +211,7 @@ class xgboost_classification(xgboost_model):
             try:
                 data = data_feature[ticker]
             except:
-                print('stock not preparee', ticker)
+                #print('stock not prepare:', ticker)
                 continue
 
             X_train, y_train   = preprocessing_data(self.paras, data[0], LabelColumnName, one_hot_label_proc=False)
@@ -223,26 +224,31 @@ class xgboost_classification(xgboost_model):
 
             possibility_columns = [str(self.paras.window_len[index]) + '_' + str(idx) for idx in range(self.paras.n_out_class)]
 
-            print('\n ---------- ', ticker, ' ---------- \n')
-            print(' ############## validation on train data ############## ')
+            # print('\n ---------- ', ticker, ' ---------- \n')
+            # print('############## validation on train data ##############')
             mse_known_train, predictions_train = self.predict(model, X_train, y_train)
+            # print('scaled data mse: ', mse_known_train)
             data[3].loc[data[0].index, 'label'] = y_train #- int(self.paras.n_out_class/2)
             data[3].loc[data[0].index, 'pred'] = predictions_train #- int(self.paras.n_out_class/2)
             #s = pd.DataFrame(predictions_train, index = data[0].index, columns=possibility_columns)
 
-            print(' ############## validation on valid data ############## ')
+            # print('############## validation on valid data ##############')
             mse_known_lately, predictions_valid = self.predict(model, X_valid, y_valid)
+            # print('scaled data mse: ', mse_known_lately)
             data[3].loc[data[1].index, 'label'] = y_valid #- int(self.paras.n_out_class/2)
             data[3].loc[data[1].index, 'pred'] = predictions_valid #- int(self.paras.n_out_class/2)
             #s = s.append(pd.DataFrame(predictions_valid, index = data[1].index, columns=possibility_columns))
 
-            print(' ############## validation on lately data ############## ')
+            # print('############## validation on lately data ##############')
             mse_lately, predictions_lately = self.predict(model, X_lately, y_lately)
+            # print('scaled data mse: ', mse_lately)
             data[3].loc[data[2].index, 'label'] = np.nan#np.argmax(actual_lately, axis=1)
             data[3].loc[data[2].index, 'pred'] = predictions_lately #- int(self.paras.n_out_class/2)
             #s = s.append(pd.DataFrame(predictions_lately, index = data[2].index, columns=possibility_columns))
             
             #data[3] = pd.merge(data[3], s, how='outer', left_index=True, right_index=True)
+            if predictions_lately[0] == 3:
+                continue
 
             actual_count = []
             predict_count = []
@@ -257,24 +263,24 @@ class xgboost_classification(xgboost_model):
                 valid_actual_count.append(len(data[4][data[4]['label'] == i]))
                 valid_predict_count.append(len(data[4][(data[4]['label'] == i) & (data[4]['label'] == data[4]['pred'])]))
 
-            print('classification counter:\n', actual_count)
-            print('classification possibility:\n', 100*np.array(actual_count)/np.sum(actual_count))
-            print('classification train predict:\n', 100*np.array(predict_count)/np.array(actual_count))
-            print('classification valid predict:\n', 100*np.array(valid_predict_count)/np.array(valid_actual_count))
+            # print('classification counter:\n', actual_count)
+            # print('classification possibility:\n', 100*np.array(actual_count)/np.sum(actual_count))
+            # print('classification train predict:\n', 100*np.array(predict_count)/np.array(actual_count))
+            # print('classification valid predict:\n', 100*np.array(valid_predict_count)/np.array(valid_actual_count))
             
-            timePeriod = [22*24, 22*12, 22*6, 22*3, 22*2, 22]
-            pred_profit = data[3]["pred_profit"]
-            pred_profit_len = len(pred_profit)
-            centers_oris = []
-            index_oris = []
-            for time in timePeriod:
-                if pred_profit_len < time: continue
-                out_labels, counters, centers_ori = kmeans_claasification(pred_profit[pred_profit_len - time : pred_profit_len], self.paras.n_out_class)
-                centers_oris.append(centers_ori)
-                index_oris.append("Days: " + str(time))
+            # timePeriod = [22*24, 22*12, 22*6, 22*3, 22*2, 22]
+            # pred_profit = data[3]["pred_profit"]
+            # pred_profit_len = len(pred_profit)
+            # centers_oris = []
+            # index_oris = []
+            # for time in timePeriod:
+            #     if pred_profit_len < time: continue
+            #     out_labels, counters, centers_ori = kmeans_claasification(pred_profit[pred_profit_len - time : pred_profit_len], self.paras.n_out_class)
+            #     centers_oris.append(centers_ori)
+            #     index_oris.append("Days: " + str(time))
             
-            df_ori = pd.DataFrame(centers_oris, index=index_oris, columns=[str(idx) for idx in range(self.paras.n_out_class)])
-            print('\nclassification centers:\n', df_ori)
+            # df_ori = pd.DataFrame(centers_oris, index=index_oris, columns=[str(idx) for idx in range(self.paras.n_out_class)])
+            # print('\nclassification centers:\n', df_ori)
 
             data[3]['label'] = data[3]['label'] - int(self.paras.n_out_class/2)
             data[3]['pred'] = data[3]['pred'] - int(self.paras.n_out_class/2)
@@ -283,9 +289,12 @@ class xgboost_classification(xgboost_model):
             #data[3] = self.save_data_frame_mse(ticker, data[3], self.paras.window_len[index], possibility_columns, mses=[mse_known_train, mse_known_lately])
             self.df = data[3]
 
+            pred_df = data[3]['pred'][-(self.paras.pred_len + self.paras.valid_len):]
+
             pd.set_option('display.max_rows', None)
-            print('\n -------------------- \n')
-            print(data[3][-(self.paras.pred_len + self.paras.valid_len):])
+            if (pred_df == 0).all() == False:
+                print('\n ---------- ', ticker, ' ---------- \n')
+                print(data[3][-(self.paras.pred_len + self.paras.valid_len):])
 
 
     ###################################
@@ -333,7 +342,7 @@ class xgboost_classification(xgboost_model):
 
         ################################################################################
         self.paras.save_folder = self.get_save_directory()
-        print('Save Directory: ', self.paras.save_folder)
+        print(' Log  Directory: ', self.paras.save_folder)
         self.paras.model_folder = self.get_model_directory()
         print('Model Directory: ', self.paras.model_folder)
         ################################################################################
@@ -343,8 +352,6 @@ class xgboost_classification(xgboost_model):
         data_file = "data_file.pkl"
 
         for index in range(len(self.paras.window_len)):
-            
-
             if os.path.exists(data_file):
                 input = open(data_file, 'rb')
                 data_feature = pickle.load(input)
@@ -354,6 +361,8 @@ class xgboost_classification(xgboost_model):
                 pickle.dump(data_feature, output)
 
             model = None
+
+            train_feature = {}
             
             if train: model = self.train_data(data_feature, LabelColumnName, index)
             

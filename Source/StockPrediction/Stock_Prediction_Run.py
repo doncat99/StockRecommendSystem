@@ -213,7 +213,7 @@ def run_recommand_system(root_path, train_symbols, predict_symbols, need_trainin
 
 def run_xgboost_classification(root_path, train_symbols, predict_symbols, need_training, need_plot_training_diagram, need_predict):
     paras = SP_Paras('xgboost', root_path, train_symbols, predict_symbols)
-    paras.save = False
+    paras.save = True
     paras.load = False
     paras.plot = need_plot_training_diagram
     # 0_index: no norm   1_index: standard norm   2_index: minmax norm   3_index: zscore norm
@@ -240,11 +240,11 @@ def run_xgboost_classification(root_path, train_symbols, predict_symbols, need_t
     paras.model['out_activation'] = 'softmax'
 
     from hyperopt import hp
-    paras.hyper_opt = {"max_depth"        :hp.randint("max_depth",       15),
+    paras.hyper_opt = {"max_depth"        :hp.randint("max_depth",       10),
                        "n_estimators"     :hp.randint("n_estimators",    20),  #[0,1,2,3,4,5] -> [50,]
                        "learning_rate"    :hp.randint("learning_rate",    6),  #[0,1,2,3,4,5] -> 0.05,0.06
-                       "subsample"        :hp.randint("subsample",        4),#[0,1,2,3] -> [0.7,0.8,0.9,1.0]
-                       "min_child_weight" :hp.randint("min_child_weight", 5), #
+                       "subsample"        :hp.randint("subsample",        4),  #[0,1,2,3] -> [0.7,0.8,0.9,1.0]
+                       "min_child_weight" :hp.randint("min_child_weight", 5), 
         }
 
     # run
@@ -254,8 +254,12 @@ def run_xgboost_classification(root_path, train_symbols, predict_symbols, need_t
 
 
 if __name__ == "__main__":
+    pd.set_option('precision', 3)
+    pd.set_option('display.width',1000)
     warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
     tf.logging.set_verbosity(tf.logging.ERROR)
+    
+    
 
     predict_symbols = ['AMD', 'WDC', 'SINA', 'WB', 'CTRP', 'NTES', 'ATVI', 'FB', 'GLUU', 'NVDA', 'NFLX', 
                        'MRVL', 'SMCI', 'JD', 'INTC', 'AMZN', 'BIDU', 'BGNE', 'QIWI', 'MOMO', 'YY']

@@ -14,6 +14,7 @@ for _ in range(2):
 sys.path.append(root_path + "/" + 'Source/DataBase/')
 from DB_API import queryStock
 import pickle
+
 ###################################
 ###                             ###
 ###        Data Utility         ###
@@ -310,7 +311,6 @@ def generate_time_series_data(paras, df, window_len):
 ###################################
 
 def get_single_stock_feature_data(ticker, paras, window_len, input_data, LabelColumnName):
-    
     cashflow_file = root_path + "/Data/CSV/cashflow/" + ticker + ".csv"
     df = pd.read_csv(cashflow_file, index_col=["index"])
     df.set_index('date', inplace=True)
@@ -395,6 +395,7 @@ def get_single_stock_feature_data(ticker, paras, window_len, input_data, LabelCo
     df[LabelColumnName], counter, center = simple_claasification(df['pred_profit'], paras.n_out_class)
     return df
 
+
 def get_all_stocks_feature_data(paras, window_len, LabelColumnName):
     ori_file = "ori_file.pkl"
     if os.path.exists(ori_file):
@@ -415,6 +416,21 @@ def get_all_stocks_feature_data(paras, window_len, LabelColumnName):
         data_feature[ticker] = generate_time_series_data(paras, df_feature, window_len)
     return data_feature
 
+
+def get_train_stocks_feature_data(para, data_feature):
+    date_files = os.listdir(root_path + "/Data/CSV/target/")
+
+    train_feature = {}
+
+    for date_file in date_files:
+        date = date_file.split('.')[0]
+        df = pd.read_csv(date_file)
+        stocks = df['symbol'].values.tolist()
+
+        
+            
+
+    # for ticker, data in data_feature.items():
 
 ###################################
 ###                             ###
