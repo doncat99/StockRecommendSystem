@@ -15,6 +15,8 @@ from Stock_Prediction_Data_Processing import reshape_input, get_all_stocks_featu
 class xgboost_model(base_model):
     train_x = None
     train_y = None
+    test_x  = None
+    test_y  = None
 
     def GBM(self, argsDict):
         max_depth = argsDict["max_depth"] + 5
@@ -41,29 +43,32 @@ class xgboost_model(base_model):
                                 max_delta_step = 100,  #10步不降则停止
                                 objective="multi:softmax")
         
+        return -cross_val_score(gbm, self.test_x, self.test_y, cv=5).mean()
 
-        return -cross_val_score(gbm, self.train_x, self.train_y, cv=5).mean()
-
-    def best_model(self, X_train, y_train):
+    def best_model(self, X_train, y_train, X_test, y_test):
         self.train_x = X_train
         self.train_y = y_train
+        self.test_x  = X_test
+        self.test_y  = y_test
+
         algo = partial(tpe.suggest, n_startup_jobs=1)
-        best = fmin(self.GBM, space=self.paras.hyper_opt, algo=algo, max_evals=4)
+        best = fmin(self.GBM, space=self.paras.hyper_opt, algo=algo, max_evals=100)
         print("best", best)
         return best
         
-    def build_model(self, X_train, y_train):
+    def build_model(self, X_train, y_train, X_test, y_test):
         if self.paras.load == True:
-            model = self.load_training_model(self.paras.window_len)
+            model = self.load_training_model()
             if model != None:
                 return model
 
         best = {}
-        file_name = "hyper_parameter.pkl"
+        #best {'gamma': 3, 'learning_rate': 5, 'max_depth': 1, 'min_child_weight': 1, 'n_estimators': 17, 'subsample': 0}
+        file_name = "hyper_parameter_xgboost.pkl"
         
         if self.paras.run_hyperopt == True:
             print('find hyper parameters...')
-            best = self.best_model(X_train, y_train)
+            best = self.best_model(X_train, y_train, X_test, y_test)
             pickle.dump(best, open(file_name, "wb"))
         else:
             if os.path.exists(file_name):
@@ -158,18 +163,19 @@ class xgboost_classification(xgboost_model):
         # print('Test shape X:', X_test.shape, ',y:', y_test.shape)
         return X_train, y_train, X_test, y_test
 
-    def train_data(self, data_feature, LabelColumnName):
+    def train_data(self, data_feature, window, LabelColumnName):
         X_train, y_train, X_test, y_test = self.prepare_train_test_data(data_feature, LabelColumnName)
 
-        model = self.build_model(X_train, y_train)
+        model = self.build_model(X_train, y_train, X_test, y_test)
 
         model.fit(
             X_train,
             y_train,
             verbose=self.paras.verbose
         )
+
         # save model
-        self.save_training_model(model, self.paras.window_len)
+        self.save_training_model(model, window)
 
         # print(' ############## validation on test data ############## ')
         mse_test, tmp = self.predict(model, X_test, y_test)
@@ -193,9 +199,9 @@ class xgboost_classification(xgboost_model):
         return accurancy, predictions
 
 
-    def predict_data(self, model, data_feature, LabelColumnName):
+    def predict_data(self, model, data_feature, window, LabelColumnName):
 
-        if model == None: model = self.load_training_model(self.paras.window_len)
+        if model == None: model = self.load_training_model(window)
 
         if model == None:
             print('predict failed, model not exist')
@@ -341,17 +347,19 @@ class xgboost_classification(xgboost_model):
         print('Model Directory: ', self.paras.model_folder)
         ################################################################################
 
+        for window in self.paras.window_len:
+            self.do_run(train, predict, window)
+
+    def do_run(self, train, predict, window):
         LabelColumnName = 'label'
-
         data_file = "data_file.pkl"
-
 
         if os.path.exists(data_file):
             input = open(data_file, 'rb')
             data_feature = pickle.load(input)
             input.close()
         else:
-            data_feature = get_all_stocks_feature_data(self.paras, self.paras.window_len, LabelColumnName)
+            data_feature = get_all_stocks_feature_data(self.paras, window, LabelColumnName)
             output = open(data_file, 'wb')
             pickle.dump(data_feature, output)
             output.close()
@@ -360,7 +368,7 @@ class xgboost_classification(xgboost_model):
 
         train_feature = {}
             
-        if train: model = self.train_data(data_feature, LabelColumnName)
+        if train: model = self.train_data(data_feature, window, LabelColumnName)
             
-        if predict: self.predict_data(model, data_feature, LabelColumnName)
+        if predict: self.predict_data(model, data_feature, window, LabelColumnName)
 

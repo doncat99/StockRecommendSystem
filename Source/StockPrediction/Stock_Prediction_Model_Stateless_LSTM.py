@@ -3,64 +3,129 @@ from sklearn.model_selection import train_test_split
 from keras.layers.core import Dense, Activation, Dropout
 from keras.layers.recurrent import LSTM
 from keras.models import Sequential, load_model
-from keras.callbacks import History
+from keras.callbacks import EarlyStopping, History
 from keras import optimizers
 import matplotlib.pyplot as plt  # http://matplotlib.org/examples/pylab_examples/subplots_demo.html
 import pandas as pd
 import numpy as np
-from Stock_Prediction_Base import base_model
-from Stock_Prediction_Data_Processing import reshape_input, get_all_stocks_feature_data, preprocessing_data, kmeans_claasification
 import pickle
 
-class lstm_model(base_model):
-    def build_model(self):
-        if self.paras.load == True:
-            model = self.load_training_model(self.paras.window_len)
-            if model != None:
-                return model
+from hyperopt import fmin, tpe, partial
 
-        print('build LSTM model...')
+from Stock_Prediction_Base import base_model
+from Stock_Prediction_Data_Processing import reshape_input, get_all_stocks_feature_data, preprocessing_data, kmeans_claasification
+
+
+class lstm_model(base_model):
+    train_x = None
+    train_y = None
+    test_x  = None
+    test_y  = None
+        
+    def lstm_model(self):
         model = Sequential()
         first = True
         for idx in range(len(self.paras.model['hidden_layers'])):
             if idx == (len(self.paras.model['hidden_layers']) - 1):
                 model.add(LSTM(int(self.paras.model['hidden_layers'][idx]), return_sequences=False))
-                model.add(Activation(self.paras.model['activation'][idx]))
-                model.add(Dropout(self.paras.model['dropout'][idx]))
+                model.add(Activation(self.paras.model['activation']))
+                model.add(Dropout(self.paras.model['dropout']))
             elif first == True:
                 model.add(LSTM(input_shape=(None, int(self.paras.n_features)),
                                units=int(self.paras.model['hidden_layers'][idx]),
                                return_sequences=True))
-                model.add(Activation(self.paras.model['activation'][idx]))
-                model.add(Dropout(self.paras.model['dropout'][idx]))
+                model.add(Activation(self.paras.model['activation']))
+                model.add(Dropout(self.paras.model['dropout']))
                 first = False
             else:
                 model.add(LSTM(int(self.paras.model['hidden_layers'][idx]), return_sequences=True))
-                model.add(Activation(self.paras.model['activation'][idx]))
-                model.add(Dropout(self.paras.model['dropout'][idx]))
+                model.add(Activation(self.paras.model['activation']))
+                model.add(Dropout(self.paras.model['dropout']))
 
         if self.paras.model['optimizer'] == 'sgd':
-            optimizer = optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
+            #optimizer = optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
+            optimizer = optimizers.SGD(lr=self.paras.model['learning_rate'], decay=1e-6, momentum=0.9, nesterov=True)
         elif self.paras.model['optimizer'] == 'rmsprop':
-            optimizer = optimizers.RMSprop(lr=0.001, rho=0.9, epsilon=1e-08, decay=0.0)
+            #optimizer = optimizers.RMSprop(lr=0.001, rho=0.9, epsilon=1e-08, decay=0.0)
+            optimizer = optimizers.RMSprop(lr=self.paras.model['learning_rate']/10, rho=0.9, epsilon=1e-08, decay=0.0)
         elif self.paras.model['optimizer'] == 'adagrad':
-            optimizer = optimizers.Adagrad(lr=0.01, epsilon=1e-08, decay=0.0)
+            #optimizer = optimizers.Adagrad(lr=0.01, epsilon=1e-08, decay=0.0)
+            optimizer = optimizers.Adagrad(lr=self.paras.model['learning_rate'], epsilon=1e-08, decay=0.0)
+        elif self.paras.model['optimizer'] == 'adam':
+            #optimizer = optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
+            optimizer = optimizers.Adam(lr=self.paras.model['learning_rate']/10, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
         elif self.paras.model['optimizer'] == 'adadelta':
             optimizer = optimizers.Adadelta(lr=1.0, rho=0.95, epsilon=1e-08, decay=0.0)
-        elif self.paras.model['optimizer'] == 'adam':
-            optimizer = optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
         elif self.paras.model['optimizer'] == 'adamax':
             optimizer = optimizers.Adamax(lr=0.002, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
         elif self.paras.model['optimizer'] == 'nadam':
             optimizer = optimizers.Nadam(lr=0.002, beta_1=0.9, beta_2=0.999, epsilon=1e-08, schedule_decay=0.004)
         else:
-            optimizer = keras.optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
+            optimizer = optimizers.Adam(lr=self.paras.model['learning_rate']/10, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
 
         # output layer
         model.add(Dense(units=self.paras.model['out_layer']))
         model.add(Activation(self.paras.model['out_activation']))
         model.compile(loss=self.paras.model['loss'], optimizer=optimizer, metrics=['accuracy'])
+
         return model
+
+    def LSTM(self, argsDict):
+        self.paras.batch_size             = argsDict["batch_size"]
+        self.paras.model['dropout']       = argsDict['dropout']
+        self.paras.model['activation']    = argsDict["activation"]
+        self.paras.model['optimizer']     = argsDict["optimizer"]
+        self.paras.model['learning_rate'] = argsDict["learning_rate"]
+
+        print(self.paras.batch_size, self.paras.model['dropout'], self.paras.model['activation'], self.paras.model['optimizer'], self.paras.model['learning_rate'])
+
+        model = self.lstm_model()
+        model.fit(self.train_x, self.train_y,
+              batch_size=self.paras.batch_size,
+              epochs=self.paras.epoch,
+              verbose=0,
+              callbacks=[EarlyStopping(monitor='loss', patience=5)])
+
+        score, mse = model.evaluate(self.test_x, self.test_y, verbose=0)
+        return -mse
+
+    def best_model(self, X_train, y_train, X_test, y_test):
+        self.train_x = X_train
+        self.train_y = y_train
+        self.test_x  = X_test
+        self.test_y  = y_test
+
+        algo = partial(tpe.suggest, n_startup_jobs=1)
+        best = fmin(self.LSTM, space=self.paras.hyper_opt, algo=algo, max_evals=100)
+        print("best", best)
+        return best
+        
+    def build_model(self, X_train, y_train, X_test, y_test):
+        if self.paras.load == True:
+            model = self.load_training_model()
+            if model != None:
+                return model
+
+        best = {}
+        file_name = "hyper_parameter_lstm.pkl"
+
+        if self.paras.run_hyperopt == True:
+            print('find hyper parameters...')
+            best = self.best_model(X_train, y_train, X_test, y_test)
+            pickle.dump(best, open(file_name, "wb"))
+        else:
+            if os.path.exists(file_name):
+                best = pickle.load(open(file_name, "rb"))
+
+        if len(best) != 0:
+            self.paras.batch_size             = self.paras.hyper_opt['batch_size_opt'][best["batch_size"]]
+            self.paras.model['dropout']       = best['dropout']
+            self.paras.model['activation']    = self.paras.hyper_opt['activation_opt'][best["activation"]]
+            self.paras.model['optimizer']     = self.paras.hyper_opt['optimizer_opt'][best["optimizer"]]
+            self.paras.model['learning_rate'] = best["learning_rate"]
+
+        print('build LSTM model...')
+        return self.lstm_model()
 
     def save_training_model(self, model, window_len):
         if self.paras.save == True:
@@ -147,8 +212,8 @@ class rnn_lstm_classification(lstm_model):
     def train_data(self, data_feature, LabelColumnName):
         history = History()
         
-        model = self.build_model()
         X_train, y_train, X_test, y_test = self.prepare_train_test_data(data_feature, LabelColumnName)
+        model = self.build_model(X_train, y_train, X_test, y_test)
 
         model.fit(
             X_train,
@@ -330,15 +395,18 @@ class rnn_lstm_classification(lstm_model):
         print('Model Directory: ', self.paras.model_folder)
         ################################################################################
 
-        LabelColumnName = 'label'
+        for window in self.paras.window_len:
+            self.do_run(train, predict, window)
 
+    def do_run(self, train, predict, window):
+        LabelColumnName = 'label'
         data_file = "data_file.pkl"
 
         if os.path.exists(data_file):
             input = open(data_file, 'rb')
             data_feature = pickle.load(input)
         else:
-            data_feature = get_all_stocks_feature_data(self.paras, self.paras.window_len, LabelColumnName)
+            data_feature = get_all_stocks_feature_data(self.paras, window, LabelColumnName)
             output = open(data_file, 'wb')
             pickle.dump(data_feature, output)
 

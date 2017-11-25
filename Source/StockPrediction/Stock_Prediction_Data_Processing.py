@@ -55,12 +55,12 @@ def normalization_scaler(norm, data, row_processing):
     if '1_' in norm:
         if row_processing:
             data_T = data.transpose()
-            scaler = MinMaxScaler().fit_transform(StandardScaler().fit_transform(data_T))
+            scaler = MinMaxScaler().fit_transform(StandardScaler().fit_transform(np.log(data+1)))
             #data_T_scale = scaler.transform(data_T)
             return scaler.transpose()
         else:
             #scaler = StandardScaler().fit(data)
-            scaler =StandardScaler().fit_transform(data)
+            scaler =MinMaxScaler().fit_transform(StandardScaler().fit_transform(np.log(data+1)))
             return scaler
 
     elif '2_' in norm:
@@ -251,16 +251,13 @@ def preprocessing_data(paras, df, LabelColumnName, one_hot_label_proc, array_for
     X = df.drop(LabelColumnName, 1)
     y = np.array(df[LabelColumnName])
 
-    data_group_features, data_group_columns = group_by_features(paras.features, X)
-    # print("data_group_features", data_group_features)
-    # print("data_group_columns", data_group_columns)
+    # data_group_features, data_group_columns = group_by_features(paras.features, X)
 
-    X_normalized_T = pd.DataFrame(index=X.index, columns=data_group_columns)
+    # X_normalized_T = pd.DataFrame(index=X.index, columns=data_group_columns)
 
-    for key_norm, df_feature in data_group_features.items():
-        #print(key_norm, df_feature)
-        df_feature_norm = normalization_scaler(key_norm, df_feature, False)
-        X_normalized_T.loc[df_feature.index, df_feature.columns] = df_feature_norm
+    # for key_norm, df_feature in data_group_features.items():
+    #     df_feature_norm = normalization_scaler(key_norm, df_feature, False)
+    #     X_normalized_T.loc[df_feature.index, df_feature.columns] = df_feature_norm
 
     if one_hot_label_proc == True:
         # generate one hot output
@@ -273,9 +270,12 @@ def preprocessing_data(paras, df, LabelColumnName, one_hot_label_proc, array_for
     # print("X_normalized_T", X_normalized_T.columns)
     # print(y_normalized_T)
 
-    if array_format: return X_normalized_T.values, y_normalized_T 
+    # if array_format: return X_normalized_T.values, y_normalized_T 
 
-    return X_normalized_T, y_normalized_T
+    # return X_normalized_T, y_normalized_T
+    if array_format: return X.values, y_normalized_T
+
+    return X, y_normalized_T
 
 
 ###################################
@@ -338,22 +338,7 @@ def get_single_stock_feature_data(ticker, paras, window_len, input_data, LabelCo
     #print(ticker, input_data)#len(input_data))
 
     dataset = StockDataFrame.retype(input_data)
-    # dataset = input_data.rename(columns = {'Date':'date', 'Open':'open', 'High':'high', 'Low':'low', 'Close':'close', "Adj Close":'adj_close', 'Volume':'volume'})
-
-    # dataset['last_close']  = dataset['close'].shift(1 * (paras.pred_len))
-    # dataset['last_volume'] = dataset['volume'].shift(1 * (paras.pred_len))
-
-    # dataset['open_pct']    = (dataset['open']     - dataset['last_close'])  / dataset['last_close']  * 100
-    # dataset['high_pct']    = (dataset['high']     - dataset['last_close'])  / dataset['last_close']  * 100
-    # dataset['low_pct']     = (dataset['low']      - dataset['last_close'])  / dataset['last_close']  * 100
-    # dataset['close_pct']   = (dataset['close']    - dataset['last_close'])  / dataset['last_close']  * 100
-    # dataset['volume_pct']  = (dataset['volume']   - dataset['last_volume']) / dataset['last_volume'] * 100   
-    
-    # dataset['top_pct']     = dataset['high_pct']  - dataset[['open_pct', 'close_pct']].max(axis=1)
-    # dataset['middle_pct']  = dataset['close_pct'] - dataset['open_pct']
-    # dataset['stock_stat']  = dataset['middle_pct'].apply(lambda x: 1 if (x>0) else -1).astype(int)
-    # dataset['middle_pct']  = dataset['middle_pct'].abs()
-    # dataset['bottom_pct']  = dataset[['open_pct', 'close_pct']].min(axis=1) - dataset['low_pct']
+    dataset.fillna(method='ffill',inplace=True)
         
     # dataset.get('rsi_7')
     # dataset.get('rsi_14')
@@ -375,26 +360,25 @@ def get_single_stock_feature_data(ticker, paras, window_len, input_data, LabelCo
     ret = lambda x,y: np.log(y/x) #Log return 
     # zscore = lambda x:(x -x.mean())/x.std() # zscore
 
-    # dataset['c_2_o'] = zscore(ret(dataset['open'], dataset['close']))
-    # dataset['h_2_o'] = zscore(ret(dataset['open'], dataset['high']))
-    # dataset['l_2_o'] = zscore(ret(dataset['open'], dataset['low']))
-    # dataset['c_2_h'] = zscore(ret(dataset['high'], dataset['close']))
-    # dataset['h_2_l'] = zscore(ret(dataset['high'], dataset['low']))
-    # dataset['vol_p']   = zscore(dataset['volume'])
-    dataset['c_2_o'] = StandardScaler().fit_transform(ret(dataset['open'], dataset['close']).values.reshape(-1, 1))
-    
-    dataset['h_2_o'] = MinMaxScaler().fit_transform(ret(dataset['open'], dataset['high']).values.reshape(-1,1))
-    dataset['l_2_o'] = MinMaxScaler().fit_transform(ret(dataset['open'], dataset['low']).values.reshape(-1,1))
-    dataset['c_2_h'] = MinMaxScaler().fit_transform(ret(dataset['high'], dataset['close']).values.reshape(-1,1))
-    dataset['h_2_l'] = MinMaxScaler().fit_transform(ret(dataset['high'], dataset['low']).values.reshape(-1,1))
-    #dataset['vol_p']   = MinMaxScaler().fit_transform(StandardScaler().fit_transform(dataset['volume'].values.reshape(-1,1)))
-    dataset['vol_p']   = StandardScaler().fit_transform(dataset['volume'].values.reshape(-1, 1))
-
+    dataset['c_2_o'] = ret(dataset['open'], dataset['close'])
+    dataset['h_2_o'] = ret(dataset['open'], dataset['high'])
+    dataset['l_2_o'] = ret(dataset['open'], dataset['low'])
+    dataset['c_2_h'] = ret(dataset['high'], dataset['close'])
+    dataset['h_2_l'] = ret(dataset['high'], dataset['low'])
+    dataset['vol_p'] = dataset['volume']
 
     #dataset["hl_perc"] = (dataset["high"]-dataset["low"]) / dataset["low"] * 100
     #dataset["co_perc"] = (dataset["close"] - dataset["open"]) / dataset["open"] * 100
     #dataset["price_next_month"] = dataset["adj_close"].shift(-30)
     
+    dataset.fillna(method='ffill', inplace=True)
+    data_group_features, data_group_columns = group_by_features(paras.features, dataset)
+    for key_norm, df_feature in data_group_features.items():
+        #df_feature.to_csv('df.csv')
+
+        df_feature_norm = normalization_scaler(key_norm, df_feature, False)
+        dataset[df_feature.columns.values]=df_feature_norm
+        #pd.DataFrame(df_feature_norm).to_csv('df_norm.csv')
     dataset['last_close']  = dataset['close'].shift(1 * (paras.pred_len))
     dataset['pred_profit'] = ((dataset['close'] - dataset['last_close']) / dataset['last_close'] * 100).shift(-1 * (paras.pred_len))
 

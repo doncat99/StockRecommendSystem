@@ -26,34 +26,52 @@ def run_lstm_classification(root_path, train_symbols, predict_symbols, need_trai
     paras = SP_Paras('lstm', root_path, train_symbols, predict_symbols)
     paras.save = True
     paras.load = False
+    paras.run_hyperopt = True
     paras.plot = need_plot_training_diagram
+
     # 0_index: no norm   1_index: standard norm   2_index: minmax norm   3_index: zscore norm
     paras.features = {#'0_0':['frac_change', 'frac_high', 'frac_low'], 
                       '0_0':['c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol_p'],
                       '1_0':['buy_amount', 'sell_amount', 'even_amount'],
                       '1_1':['buy_volume', 'sell_volume', 'even_volume'], 
                       '1_2':['buy_max', 'buy_min', 'buy_average', 'sell_max', 'sell_min', 'sell_average', 'even_max', 'even_min', 'even_average']} 
-   
-    paras.window_len = 3
+
     paras.pred_len = 1
     paras.valid_len = 20
     paras.start_date = '2016-11-01'
     paras.end_date = datetime.datetime.now().strftime("%Y-%m-%d")
     paras.verbose = 1
     
-    paras.batch_size = 64
-    paras.epoch = 100
-    paras.model['hidden_layers'] = [240, 120, 60]
-    paras.model['dropout'] = [0.7, 0.5, 0.3]
-    paras.model['activation'] = ['relu', 'relu', 'relu']
-    paras.model['optimizer'] = 'adam'
-
     paras.out_class_type = 'classification'
     paras.n_out_class = 7  # ignore for regression
+    paras.epoch = 100
+
+    paras.window_len = [3]
+    paras.batch_size = 64
+    paras.model['hidden_layers'] = [240, 120, 60]
+    paras.model['dropout'] = 0.5
+    paras.model['activation'] = 'relu'
+    paras.model['optimizer'] = 'adam'
+    paras.model['learning_rate'] = 0.01
+
+    paras.model['out_activation'] = 'softmax'
     paras.model['out_layer'] = paras.n_out_class
     paras.model['loss'] = 'categorical_crossentropy'
-    paras.model['out_activation'] = 'softmax'
 
+    from hyperopt import hp
+    paras.hyper_opt = {"batch_size_opt"   :[16, 32, 64],
+                       "activation_opt"   :['relu', 'tanh', 'sigmoid'],
+                       "optimizer_opt"    :['sgd', 'rmsprop', 'adagrad', 'adam'],
+    }
+
+    paras.hyper_opt.update({
+                       "batch_size"       :hp.choice ("batch_size"   , paras.hyper_opt['batch_size_opt'] ), 
+                       "dropout"          :hp.uniform("dropout"      , 0.3, 0.7     ), 
+                       "learning_rate"    :hp.uniform("learning_rate", 0.005, 0.02  ),  
+                       "activation"       :hp.choice ("activation"   , paras.hyper_opt['activation_opt']), 
+                       "optimizer"        :hp.choice ("optimizer"    , paras.hyper_opt['optimizer_opt']), 
+    })
+    
     # run
     lstm_cla = rnn_lstm_classification(paras)
     lstm_cla.run(need_training, need_predict)
@@ -185,7 +203,7 @@ def run_xgboost_classification(root_path, train_symbols, predict_symbols, need_t
                       '1_1':['buy_volume', 'sell_volume', 'even_volume'], 
                       '1_2':['buy_max', 'buy_min', 'buy_average', 'sell_max', 'sell_min', 'sell_average', 'even_max', 'even_min', 'even_average']} 
     
-    paras.window_len = 3
+    paras.window_len = [3, 4]
     paras.pred_len = 1
     paras.valid_len = 20
     paras.start_date = '2016-11-01'
@@ -221,8 +239,6 @@ if __name__ == "__main__":
     pd.set_option('display.width',1000)
     warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
     tf.logging.set_verbosity(tf.logging.ERROR)
-    
-    
 
     predict_symbols = ['AMD', 'WDC', 'SINA', 'WB', 'CTRP', 'NTES', 'ATVI', 'FB', 'GLUU', 'NVDA', 'NFLX', 
                        'MRVL', 'SMCI', 'JD', 'INTC', 'AMZN', 'BIDU', 'BGNE', 'QIWI', 'MOMO', 'YY']
@@ -233,15 +249,6 @@ if __name__ == "__main__":
     config.read(root_path + "/" + "config.ini")
     storeType = int(config.get('Setting', 'StoreType'))
 
-    # if storeType == 1:
-    #     from Start_DB_Server import StartServer, ShutdownServer
-    #     # start database server (async)
-    #     thread = StartServer(root_path)
-        
-    #     # wait for db start, the standard procedure should listen to 
-    #     # the completed event of function "StartServer"
-    #     time.sleep(5)
-
     #updateStockData_US_Daily(root_path, "1990-01-01", now, storeType)
 
     #paras = run_lstm_classification(root_path, predict_symbols, predict_symbols, True, False, True)
@@ -250,18 +257,13 @@ if __name__ == "__main__":
 
     #run_recommand_system(root_path, predict_symbols, predict_symbols, True, False, True)
     #paras = run_rf_regression(root_path, predict_symbols, predict_symbols, True, False, True)
-    
-    # if storeType == 1:
-    #     # stop database server (sync)
-    #     time.sleep(5)
-    #     ShutdownServer()
 
     df = getStocksList_CHN(root_path)
     df.index = df.index.astype(str).str.zfill(6)
     df = df.sort_index(ascending = True)
     symbols = df.index.values.tolist()
-    # symbols = ['000001']
-    # paras = run_xgboost_classification(root_path, symbols, symbols, True, False, True)
-    paras = run_lstm_classification(root_path, symbols, symbols, True, False, True)
+    #symbols = ['000001', '000002', '000003', '000004', '000005', '000006', '000007']
+    paras = run_xgboost_classification(root_path, symbols, symbols, True, False, True)
+    # paras = run_lstm_classification(root_path, symbols, symbols, True, False, True)
 
     backend.clear_session()
