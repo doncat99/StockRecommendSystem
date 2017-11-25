@@ -857,22 +857,22 @@ class SupervisedDBNRegression(NumPyAbstractSupervisedDBN, RegressorMixin):
 
 class dbn_model(base_model):
 
-    def build_model(self, index):
+    def build_model(self):
         if self.paras.load == True:
-            model = self.load_training_model(self.paras.window_len[index])
+            model = self.load_training_model(self.paras.window_len)
             if model != None:
                 return model
 
         print('build DBN model...')
-        model = SupervisedDBNClassification(hidden_layers_structure=self.paras.model['hidden_layers'][index],
+        model = SupervisedDBNClassification(hidden_layers_structure=self.paras.model['hidden_layers'],
                                          learning_rate_rbm=0.05,
                                          learning_rate=0.5,
                                          n_epochs_rbm=100,
                                          n_iter_backprop=self.paras.epoch,
                                          batch_size=self.paras.batch_size,
-                                         activation_function=self.paras.model['activation'][index],
+                                         activation_function=self.paras.model['activation'],
                                          #callbacks=[history],
-                                         dropout_p=self.paras.model['dropout'][index],
+                                         dropout_p=self.paras.model['dropout'],
                                          verbose=self.paras.verbose)
         return model
 
@@ -928,7 +928,7 @@ class dbn_classification(dbn_model):
         return X_train, y_train, X_test, y_test
 
 
-    def train_data(self, data_feature, LabelColumnName, index):
+    def train_data(self, data_feature, LabelColumnName):
         #history = History()
         
         X_train, Y_train, X_test, Y_test = self.prepare_train_test_data(data_feature, LabelColumnName)
@@ -936,11 +936,11 @@ class dbn_classification(dbn_model):
         # print(X_train.shape)
         # print(len(X_train), X_train)
 
-        model = self.build_model(index)
+        model = self.build_model()
         model.fit(X_train, Y_train)
 
         # save model
-        self.save_training_model(model, self.paras.window_len[index])
+        self.save_training_model(model, self.paras.window_len)
         
         print(' ############## validation on test data ############## ')
         
@@ -962,9 +962,9 @@ class dbn_classification(dbn_model):
         return df
 
 
-    def predict_data(self, model, data_feature, LabelColumnName, index):
+    def predict_data(self, model, data_feature, LabelColumnName):
 
-        if model == None: model = self.load_training_model(self.paras.window_len[index])
+        if model == None: model = self.load_training_model(self.paras.window_len)
 
         if model == None:
             print('predict failed, model not exist')
@@ -981,7 +981,7 @@ class dbn_classification(dbn_model):
             X_valid, y_valid   = preprocessing_data(self.paras, data[1], LabelColumnName, one_hot_label_proc=False)
             X_lately, y_lately = preprocessing_data(self.paras, data[2], LabelColumnName, one_hot_label_proc=False)
 
-            possibility_columns = [str(self.paras.window_len[index]) + '_' + str(idx) for idx in range(self.paras.n_out_class)]
+            possibility_columns = [str(self.paras.window_len) + '_' + str(idx) for idx in range(self.paras.n_out_class)]
 
             print('\n ---------- ', ticker, ' ---------- \n')
             print(' ############## validation on train data ############## ')
@@ -1028,7 +1028,7 @@ class dbn_classification(dbn_model):
             data[3]['pred'] = data[3]['pred'] - int(self.paras.n_out_class/2)
             
             # rewrite data frame and save / update
-            data[3] = self.save_data_frame_mse(ticker, data[3], self.paras.window_len[index], possibility_columns)
+            data[3] = self.save_data_frame_mse(ticker, data[3], self.paras.window_len, possibility_columns)
             self.df.append(data[3])
 
             pd.set_option('display.max_rows', None)
@@ -1087,15 +1087,13 @@ class dbn_classification(dbn_model):
         ################################################################################
 
         LabelColumnName = 'label'
+            
+        data_feature = get_all_stocks_feature_data(self.paras, self.paras.window_len, LabelColumnName)
 
-        for index in range(len(self.paras.window_len)):
+        model = None
             
-            data_feature = get_all_stocks_feature_data(self.paras, self.paras.window_len[index], LabelColumnName)
-
-            model = None
+        if train: model = self.train_data(data_feature, LabelColumnName)
             
-            if train: model = self.train_data(data_feature, LabelColumnName, index)
-            
-            if predict: self.predict_data(model, data_feature, LabelColumnName, index)
+        if predict: self.predict_data(model, data_feature, LabelColumnName)
 
         

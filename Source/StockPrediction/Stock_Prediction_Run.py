@@ -28,14 +28,13 @@ def run_lstm_classification(root_path, train_symbols, predict_symbols, need_trai
     paras.load = False
     paras.plot = need_plot_training_diagram
     # 0_index: no norm   1_index: standard norm   2_index: minmax norm   3_index: zscore norm
-    paras.features = {'0_0':['frac_change', 'frac_high', 'frac_low'], 
+    paras.features = {#'0_0':['frac_change', 'frac_high', 'frac_low'], 
                       '0_0':['c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol_p'],
-                      '2_0':['buy_amount', 'sell_amount', 'even_amount'],
-                      '2_0':['buy_volume', 'sell_volume', 'even_volume'], 
-                      '2_0':['buy_max', 'buy_min', 'buy_average', 'sell_max', 'sell_min', 'sell_average', 'even_max', 'even_min', 'even_average']} 
-    #paras.features = [['top', 'middle', 'bottom'], ['volume'], ['vol_stat'], ['close_-5_r', 'close_-10_r', 'close_-20_r', 'close_-60_r']]
-    #paras.window_len = [2, 4, 9]
-    paras.window_len = [120]
+                      '1_0':['buy_amount', 'sell_amount', 'even_amount'],
+                      '1_1':['buy_volume', 'sell_volume', 'even_volume'], 
+                      '1_2':['buy_max', 'buy_min', 'buy_average', 'sell_max', 'sell_min', 'sell_average', 'even_max', 'even_min', 'even_average']} 
+   
+    paras.window_len = 3
     paras.pred_len = 1
     paras.valid_len = 20
     paras.start_date = '2016-11-01'
@@ -44,14 +43,10 @@ def run_lstm_classification(root_path, train_symbols, predict_symbols, need_trai
     
     paras.batch_size = 64
     paras.epoch = 100
-    #paras.model['hidden_layers'] = [[256, 128, 64], [256, 128, 64], [256, 128, 64]]
-    paras.model['hidden_layers'] = [[240, 120, 60]]
-    #paras.model['dropout'] = [[0.7, 0.5, 0.3], [0.6, 0.5, 0.4], [0.6, 0.5, 0.4]]
-    paras.model['dropout'] = [[0.7, 0.5, 0.3]]
-    #paras.model['activation'] = [['relu', 'relu', 'relu'], ['relu', 'relu', 'relu'], ['relu', 'relu', 'relu']]
-    paras.model['activation'] = [['relu', 'relu', 'relu']]
-    #paras.model['optimizer'] = ['adam', 'adam', 'adam']
-    paras.model['optimizer'] = ['adam']
+    paras.model['hidden_layers'] = [240, 120, 60]
+    paras.model['dropout'] = [0.7, 0.5, 0.3]
+    paras.model['activation'] = ['relu', 'relu', 'relu']
+    paras.model['optimizer'] = 'adam'
 
     paras.out_class_type = 'classification'
     paras.n_out_class = 7  # ignore for regression
@@ -73,8 +68,8 @@ def run_dbn_classification(root_path, train_symbols, predict_symbols, need_train
     # 0_index: no norm   1_index: standard norm   2_index: minmax norm   3_index: zscore norm
     paras.features = {'0_0':['frac_change', 'frac_high', 'frac_low'], 
                       '3_0':['volume']} 
-    #paras.window_len = [2, 4, 9]
-    paras.window_len = [2]
+
+    paras.window_len = 2
     paras.pred_len = 1
     paras.valid_len = 20
     paras.start_date = '2016-01-03'
@@ -83,14 +78,11 @@ def run_dbn_classification(root_path, train_symbols, predict_symbols, need_train
 
     paras.batch_size = 64
     paras.epoch = 100
-    #paras.model['hidden_layers'] = [[256, 128, 64], [256, 128, 64], [256, 128, 64]]
-    paras.model['hidden_layers'] = [[256, 128, 64]]
-    #paras.model['dropout'] = [[0.7, 0.5, 0.3], [0.6, 0.5, 0.4], [0.6, 0.5, 0.4]]
-    paras.model['dropout'] = [0.2]
-    #paras.model['activation'] = [['relu', 'relu', 'relu'], ['relu', 'relu', 'relu'], ['relu', 'relu', 'relu']]
-    paras.model['activation'] = ['relu']
-    #paras.model['optimizer'] = ['adam', 'adam', 'adam']
-    paras.model['optimizer'] = ['adam']
+
+    paras.model['hidden_layers'] = [256, 128, 64]
+    paras.model['dropout'] = 0.2
+    paras.model['activation'] = 'relu'
+    paras.model['optimizer'] = 'adam'
 
     paras.out_class_type = 'classification'
     paras.n_out_class = 7  # ignore for regression
@@ -102,7 +94,6 @@ def run_dbn_classification(root_path, train_symbols, predict_symbols, need_train
     dbn_cla = dbn_classification(paras)
     dbn_cla.run(need_training, need_predict)
     return paras
-
 
 def run_rf_classification(root_path, train_symbols, predict_symbols, need_training, need_plot_training_diagram, need_predict):
     paras = SP_Paras('randomForrest', root_path, train_symbols, predict_symbols)
@@ -117,27 +108,12 @@ def run_rf_classification(root_path, train_symbols, predict_symbols, need_traini
                       #'3_0':['volume']
                      } 
                       
-    #paras.window_len = [5, 10, 20]
-    paras.window_len = [0]
+    paras.window_len = 0
     paras.pred_len = 1
     paras.valid_len = 20
     paras.start_date = '2016-01-03'
     paras.end_date = datetime.datetime.now().strftime("%Y-%m-%d")
     paras.verbose = 0
-
-    # paras.tree_min = [10, 22, 46] # times 16x = trees
-    # paras.tree_max = [12, 24, 48] # times 16x = trees
-    # paras.feature_min = np.array(paras.window_len) * paras.n_features
-    # paras.feature_max = np.array(paras.window_len) * paras.n_features
-    # paras.window_min = 1
-    # paras.window_max = 1
-
-    paras.tree_min = [1] # times 16x = trees
-    paras.tree_max = [10] # times 16x = trees
-    paras.feature_min = [1]
-    paras.feature_max = [paras.n_features]
-    paras.window_min = 44
-    paras.window_max = 44
 
     paras.out_class_type = 'classification'
     paras.n_out_class = 7  # ignore for regression
@@ -160,27 +136,12 @@ def run_rf_regression(root_path, train_symbols, predict_symbols, need_training, 
                       #'3_0':['volume']
                      } 
                       
-    #paras.window_len = [5, 10, 20]
-    paras.window_len = [0]
+    paras.window_len = 0
     paras.pred_len = 1
     paras.valid_len = 20
     paras.start_date = '2016-01-03'
     paras.end_date = datetime.datetime.now().strftime("%Y-%m-%d")
     paras.verbose = 0
-
-    # paras.tree_min = [10, 22, 46] # times 16x = trees
-    # paras.tree_max = [12, 24, 48] # times 16x = trees
-    # paras.feature_min = np.array(paras.window_len) * paras.n_features
-    # paras.feature_max = np.array(paras.window_len) * paras.n_features
-    # paras.window_min = 1
-    # paras.window_max = 1
-
-    paras.tree_min = [1] # times 16x = trees
-    paras.tree_max = [10] # times 16x = trees
-    paras.feature_min = [1]
-    paras.feature_max = [paras.n_features]
-    paras.window_min = 44
-    paras.window_max = 44
 
     paras.out_class_type = 'regression'
     paras.n_out_class = 7  # ignore for regression
@@ -195,7 +156,7 @@ def run_recommand_system(root_path, train_symbols, predict_symbols, need_trainin
     paras.save = True
     paras.load = False
     paras.plot = need_plot_training_diagram
-    paras.window_len = [3, 5, 7]
+    paras.window_len = 3
     paras.pred_len = 1
     paras.valid_len = 20
     paras.start_date = '2016-01-03'
@@ -224,7 +185,7 @@ def run_xgboost_classification(root_path, train_symbols, predict_symbols, need_t
                       '1_1':['buy_volume', 'sell_volume', 'even_volume'], 
                       '1_2':['buy_max', 'buy_min', 'buy_average', 'sell_max', 'sell_min', 'sell_average', 'even_max', 'even_min', 'even_average']} 
     
-    paras.window_len = [3]
+    paras.window_len = 3
     paras.pred_len = 1
     paras.valid_len = 20
     paras.start_date = '2016-11-01'
@@ -247,7 +208,7 @@ def run_xgboost_classification(root_path, train_symbols, predict_symbols, need_t
                        "learning_rate"    :hp.randint("learning_rate",    6),  #[0,1,2,3,4,5] -> 0.05,0.06
                        "subsample"        :hp.randint("subsample",        4),  #[0,1,2,3] -> [0.7,0.8,0.9,1.0]
                        "min_child_weight" :hp.randint("min_child_weight", 5), 
-        }
+    }
 
     # run
     xgboost_cla = xgboost_classification(paras)
@@ -300,6 +261,7 @@ if __name__ == "__main__":
     df = df.sort_index(ascending = True)
     symbols = df.index.values.tolist()
     # symbols = ['000001']
-    paras = run_xgboost_classification(root_path, symbols, symbols, True, False, True)
+    # paras = run_xgboost_classification(root_path, symbols, symbols, True, False, True)
+    paras = run_lstm_classification(root_path, symbols, symbols, True, False, True)
 
     backend.clear_session()

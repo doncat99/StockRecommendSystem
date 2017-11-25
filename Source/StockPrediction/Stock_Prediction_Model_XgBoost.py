@@ -52,9 +52,9 @@ class xgboost_model(base_model):
         print("best", best)
         return best
         
-    def build_model(self, X_train, y_train, index):
+    def build_model(self, X_train, y_train):
         if self.paras.load == True:
-            model = self.load_training_model(self.paras.window_len[index])
+            model = self.load_training_model(self.paras.window_len)
             if model != None:
                 return model
 
@@ -158,10 +158,10 @@ class xgboost_classification(xgboost_model):
         # print('Test shape X:', X_test.shape, ',y:', y_test.shape)
         return X_train, y_train, X_test, y_test
 
-    def train_data(self, data_feature, LabelColumnName, index):
+    def train_data(self, data_feature, LabelColumnName):
         X_train, y_train, X_test, y_test = self.prepare_train_test_data(data_feature, LabelColumnName)
 
-        model = self.build_model(X_train, y_train, index)
+        model = self.build_model(X_train, y_train)
 
         model.fit(
             X_train,
@@ -169,9 +169,9 @@ class xgboost_classification(xgboost_model):
             verbose=self.paras.verbose
         )
         # save model
-        self.save_training_model(model, self.paras.window_len[index])
+        self.save_training_model(model, self.paras.window_len)
 
-        print(' ############## validation on test data ############## ')
+        # print(' ############## validation on test data ############## ')
         mse_test, tmp = self.predict(model, X_test, y_test)
 
         # plot training loss/ validation loss
@@ -193,9 +193,9 @@ class xgboost_classification(xgboost_model):
         return accurancy, predictions
 
 
-    def predict_data(self, model, data_feature, LabelColumnName, index):
+    def predict_data(self, model, data_feature, LabelColumnName):
 
-        if model == None: model = self.load_training_model(self.paras.window_len[index])
+        if model == None: model = self.load_training_model(self.paras.window_len)
 
         if model == None:
             print('predict failed, model not exist')
@@ -216,7 +216,7 @@ class xgboost_classification(xgboost_model):
             # X_valid, y_valid   = reshape_input(self.paras.n_features, X_valid, y_valid)
             # X_lately, y_lately = reshape_input(self.paras.n_features, X_lately, y_lately)
 
-            # possibility_columns = [str(self.paras.window_len[index]) + '_' + str(idx) for idx in range(self.paras.n_out_class)]
+            # possibility_columns = [str(self.paras.window_len) + '_' + str(idx) for idx in range(self.paras.n_out_class)]
 
             # print('\n ---------- ', ticker, ' ---------- \n')
             # print('############## validation on train data ##############')
@@ -345,22 +345,22 @@ class xgboost_classification(xgboost_model):
 
         data_file = "data_file.pkl"
 
-        for index in range(len(self.paras.window_len)):
-            if os.path.exists(data_file):
-                input = open(data_file, 'rb')
-                data_feature = pickle.load(input)
-                input.close()
-            else:
-                data_feature = get_all_stocks_feature_data(self.paras, self.paras.window_len[index], LabelColumnName)
-                output = open(data_file, 'wb')
-                pickle.dump(data_feature, output)
-                output.close()
 
-            model = None
+        if os.path.exists(data_file):
+            input = open(data_file, 'rb')
+            data_feature = pickle.load(input)
+            input.close()
+        else:
+            data_feature = get_all_stocks_feature_data(self.paras, self.paras.window_len, LabelColumnName)
+            output = open(data_file, 'wb')
+            pickle.dump(data_feature, output)
+            output.close()
 
-            train_feature = {}
+        model = None
+
+        train_feature = {}
             
-            if train: model = self.train_data(data_feature, LabelColumnName, index)
+        if train: model = self.train_data(data_feature, LabelColumnName)
             
-            if predict: self.predict_data(model, data_feature, LabelColumnName, index)
+        if predict: self.predict_data(model, data_feature, LabelColumnName)
 

@@ -252,7 +252,7 @@ def cal_stock_data(root_path, db_count, symbol, stock_memory, symbol_memory, day
         stock_memory[symbol] = df_stock
 
     if symbol in symbol_memory:
-            df_symbol = symbol_memory[symbol]
+        df_symbol = symbol_memory[symbol]
     else:
         out_file = root_path + "/Data/CSV/cashflow/" + symbol + ".csv"
         

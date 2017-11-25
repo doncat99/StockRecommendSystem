@@ -23,7 +23,7 @@ class SP_Global_Paras(object):
         self._train_tickers = train_tickers
         self._predict_tickers = predict_tickers
         self._features = {'0_0':['ohlcv']}
-        self._window_len = [120]
+        self._window_len = 120
         self._pred_len = 10
         self._valid_len = 20
 

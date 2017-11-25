@@ -303,15 +303,15 @@ def generate_time_series_data(paras, df, window_len):
     #     df.dropna(inplace=True)
     #     df_train = df[0 : len(df) - paras.valid_len - paras.pred_len]
     # else:
-    df_lately = df[-paras.pred_len:]
-    df = df.dropna()
-    df_valid = df[len(df) - paras.valid_len: len(df)]
-    df_train = df[0:len(df) - paras.valid_len]
 
-    #print('df_train len:', len(df_train))
-    #print('df_valid len:', len(df_valid))
-    #print('df_lately len:', len(df_lately))
-    #print('df_origin len:', len(df_origin))
+    df_lately = df[-paras.pred_len:]
+    df_valid = df[-paras.valid_len-paras.pred_len : -paras.pred_len]
+    df_train = df[0:len(df) - paras.valid_len - paras.pred_len].dropna()
+
+    # print('df_train len:', (df_train))
+    # print('df_valid len:', (df_valid))
+    # print('df_lately len:', (df_lately))
+    # print('df_origin len:', len(df_origin))
     return [df_train, df_valid, df_lately, df_origin]
 
 
@@ -461,22 +461,18 @@ def get_train_stocks_feature_data(para, data_feature):
 def get_single_stock_label_possibility_data(paras, ticker):
     first = True
     df_data = pd.DataFrame()
-
-    for window in paras.window_len:
-        # file_name = paras.save_folder + ticker + '_' + str(window) + '.csv'
-        # if os.path.exists(file_name) == False: continue
         
-        #df_read_col = ['Date', 'label']
-        df_possbibilty_col = [str(window) + '_' + str(i) for i in range(paras.n_out_class)]
-        #df_read_col.extend(df_possbibilty_col)
+    #df_read_col = ['Date', 'label']
+    df_possbibilty_col = [str(paras.window_len) + '_' + str(i) for i in range(paras.n_out_class)]
+    #df_read_col.extend(df_possbibilty_col)
 
-        df = get_single_stock_data(paras.root_path, ticker)
+    df = get_single_stock_data(paras.root_path, ticker)
 
-        if first:
-            df_data = df.rename(columns={'label': 'label'})
-            first = False
-        else:
-            for col in df_possbibilty_col: df_data.loc[df.index, col] = df[col]
+    if first:
+        df_data = df.rename(columns={'label': 'label'})
+        first = False
+    else:
+        for col in df_possbibilty_col: df_data.loc[df.index, col] = df[col]
 
     return df_data
 

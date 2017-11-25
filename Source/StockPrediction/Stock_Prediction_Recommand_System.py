@@ -214,7 +214,7 @@ class recommand_system(recommand_system_model):
             data[3]['pred'] = data[3]['pred'] - int(self.paras.n_out_class/2)
             
             # rewrite data frame and save / update
-            data[3] = self.save_data_frame_mse(ticker, data[3], self.paras.window_len[index], possibility_columns, mses=[mse_known_train, mse_known_lately])
+            data[3] = self.save_data_frame_mse(ticker, data[3], self.paras.window_len, possibility_columns, mses=[mse_known_train, mse_known_lately])
             self.df = data[3]
 
             pd.set_option('display.max_rows', None)
@@ -281,9 +281,9 @@ class recommand_system(recommand_system_model):
         LabelColumnName       = 'label'
         CategoricalColumnName = ['WeekDay']
         ContinuousColumnName  = []
-        for window in self.paras.window_len:
-            for i in range(self.paras.n_out_class):
-                ContinuousColumnName.append(str(window) + '_' + str(i))
+
+        for i in range(self.paras.n_out_class):
+            ContinuousColumnName.append(str(self.paras.window_len) + '_' + str(i))
 
         data_possibility = get_all_stocks_label_possibility_data(self.paras, DropColumnName)
 
