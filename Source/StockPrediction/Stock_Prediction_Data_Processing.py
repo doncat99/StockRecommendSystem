@@ -338,8 +338,7 @@ def get_single_stock_feature_data(ticker, paras, window_len, input_data, LabelCo
     #print(ticker, input_data)#len(input_data))
 
     dataset = StockDataFrame.retype(input_data)
-    dataset.fillna(method='ffill',inplace=True)
-        
+    
     # dataset.get('rsi_7')
     # dataset.get('rsi_14')
     # dataset.get('rsi_21')
@@ -372,9 +371,12 @@ def get_single_stock_feature_data(ticker, paras, window_len, input_data, LabelCo
     #dataset["price_next_month"] = dataset["adj_close"].shift(-30)
     
     dataset.fillna(method='ffill', inplace=True)
+    dataset.dropna(inplace=True)
+
     data_group_features, data_group_columns = group_by_features(paras.features, dataset)
     for key_norm, df_feature in data_group_features.items():
         #df_feature.to_csv('df.csv')
+        
 
         df_feature_norm = normalization_scaler(key_norm, df_feature, False)
         dataset[df_feature.columns.values]=df_feature_norm

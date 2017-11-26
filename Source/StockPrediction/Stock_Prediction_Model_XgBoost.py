@@ -56,7 +56,7 @@ class xgboost_model(base_model):
         print("best", best)
         return best
         
-    def build_model(self, X_train, y_train, X_test, y_test):
+    def build_model(self, window, X_train, y_train, X_test, y_test):
         if self.paras.load == True:
             model = self.load_training_model()
             if model != None:
@@ -64,7 +64,7 @@ class xgboost_model(base_model):
 
         best = {}
         #best {'gamma': 3, 'learning_rate': 5, 'max_depth': 1, 'min_child_weight': 1, 'n_estimators': 17, 'subsample': 0}
-        file_name = "hyper_parameter_xgboost.pkl"
+        file_name = "hyper_parameter_xgboost_" + str(window) + ".pkl"
         
         if self.paras.run_hyperopt == True:
             print('find hyper parameters...')
@@ -166,7 +166,7 @@ class xgboost_classification(xgboost_model):
     def train_data(self, data_feature, window, LabelColumnName):
         X_train, y_train, X_test, y_test = self.prepare_train_test_data(data_feature, LabelColumnName)
 
-        model = self.build_model(X_train, y_train, X_test, y_test)
+        model = self.build_model(window, X_train, y_train, X_test, y_test)
 
         model.fit(
             X_train,
@@ -352,7 +352,7 @@ class xgboost_classification(xgboost_model):
 
     def do_run(self, train, predict, window):
         LabelColumnName = 'label'
-        data_file = "data_file.pkl"
+        data_file = "data_file_xgboost_" + str(window) + ".pkl"
 
         if os.path.exists(data_file):
             input = open(data_file, 'rb')

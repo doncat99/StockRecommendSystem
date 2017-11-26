@@ -203,7 +203,7 @@ def run_xgboost_classification(root_path, train_symbols, predict_symbols, need_t
                       '1_1':['buy_volume', 'sell_volume', 'even_volume'], 
                       '1_2':['buy_max', 'buy_min', 'buy_average', 'sell_max', 'sell_min', 'sell_average', 'even_max', 'even_min', 'even_average']} 
     
-    paras.window_len = [3, 4]
+    paras.window_len = [3]
     paras.pred_len = 1
     paras.valid_len = 20
     paras.start_date = '2016-11-01'
@@ -263,7 +263,7 @@ if __name__ == "__main__":
     df = df.sort_index(ascending = True)
     symbols = df.index.values.tolist()
     #symbols = ['000001', '000002', '000003', '000004', '000005', '000006', '000007']
-    paras = run_xgboost_classification(root_path, symbols, symbols, True, False, True)
-    # paras = run_lstm_classification(root_path, symbols, symbols, True, False, True)
+    # paras = run_xgboost_classification(root_path, symbols, symbols, True, False, True)
+    paras = run_lstm_classification(root_path, symbols, symbols, True, False, True)
 
     backend.clear_session()

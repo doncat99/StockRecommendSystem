@@ -100,14 +100,14 @@ class lstm_model(base_model):
         print("best", best)
         return best
         
-    def build_model(self, X_train, y_train, X_test, y_test):
+    def build_model(self, window, X_train, y_train, X_test, y_test):
         if self.paras.load == True:
             model = self.load_training_model()
             if model != None:
                 return model
 
         best = {}
-        file_name = "hyper_parameter_lstm.pkl"
+        file_name = "hyper_parameter_lstm_" + str(window) + ".pkl"
 
         if self.paras.run_hyperopt == True:
             print('find hyper parameters...')
@@ -209,11 +209,11 @@ class rnn_lstm_classification(lstm_model):
         return X_train, y_train, X_test, y_test
 
 
-    def train_data(self, data_feature, LabelColumnName):
+    def train_data(self, data_feature, window, LabelColumnName):
         history = History()
         
         X_train, y_train, X_test, y_test = self.prepare_train_test_data(data_feature, LabelColumnName)
-        model = self.build_model(X_train, y_train, X_test, y_test)
+        model = self.build_model(window, X_train, y_train, X_test, y_test)
 
         model.fit(
             X_train,
@@ -227,7 +227,7 @@ class rnn_lstm_classification(lstm_model):
             verbose=self.paras.verbose
         )
         # save model
-        self.save_training_model(model, self.paras.window_len)
+        self.save_training_model(model, window)
 
         # print(' ############## validation on test data ############## ')
         mse_test, tmp = self.predict(model, X_test, y_test)
@@ -252,9 +252,9 @@ class rnn_lstm_classification(lstm_model):
         return mse_scaled, predictions
 
 
-    def predict_data(self, model, data_feature, LabelColumnName):
+    def predict_data(self, model, data_feature, window, LabelColumnName):
 
-        if model == None: model = self.load_training_model(self.paras.window_len)
+        if model == None: model = self.load_training_model(window)
 
         if model == None:
             print('predict failed, model not exist')
@@ -275,7 +275,7 @@ class rnn_lstm_classification(lstm_model):
             X_valid, y_valid   = reshape_input(self.paras.n_features, X_valid, y_valid)
             X_lately, y_lately = reshape_input(self.paras.n_features, X_lately, y_lately)
 
-            possibility_columns = [str(self.paras.window_len) + '_' + str(idx) for idx in range(self.paras.n_out_class)]
+            possibility_columns = [str(window) + '_' + str(idx) for idx in range(self.paras.n_out_class)]
 
             # print('\n ---------- ', ticker, ' ---------- \n')
             # print(' ############## validation on train data ############## ')
@@ -337,7 +337,7 @@ class rnn_lstm_classification(lstm_model):
             data[3]['pred'] = data[3]['pred'] - int(self.paras.n_out_class/2)
             
             # rewrite data frame and save / update
-            data[3] = self.save_data_frame_mse(ticker, data[3], self.paras.window_len, possibility_columns, mses=[mse_known_train, mse_known_lately])
+            data[3] = self.save_data_frame_mse(ticker, data[3], window, possibility_columns, mses=[mse_known_train, mse_known_lately])
             self.df = data[3]
 
             pd.set_option('display.max_rows', None)
@@ -351,7 +351,7 @@ class rnn_lstm_classification(lstm_model):
     ###                             ###
     ###################################
 
-    def save_data_frame_mse(self, ticker, df, window_len, possibility_columns, mses):
+    def save_data_frame_mse(self, ticker, df, window, possibility_columns, mses):
         df['label'] = df['label']#.astype(int)
         df['pred'] = df['pred']#.astype(int)
         
@@ -370,7 +370,7 @@ class rnn_lstm_classification(lstm_model):
         model_acc = mses[1] / mses[0]
         if self.paras.save == True:
             #df.to_csv(self.paras.save_folder + ticker + ('_%.2f' % model_acc) + '_data_frame.csv')
-            df.to_csv(self.paras.save_folder + ticker + '_' + str(window_len) + ('_%.2f' % model_acc) + '.csv')
+            df.to_csv(self.paras.save_folder + ticker + '_' + str(window) + ('_%.2f' % model_acc) + '.csv')
             with open(self.paras.save_folder + 'parameters.txt', 'w') as text_file:
                 text_file.write(self.paras.__str__())
                 text_file.write(str(mses[0]) + '\n')
@@ -400,7 +400,7 @@ class rnn_lstm_classification(lstm_model):
 
     def do_run(self, train, predict, window):
         LabelColumnName = 'label'
-        data_file = "data_file.pkl"
+        data_file = "data_file._lstm_" + str(window) + ".pkl"
 
         if os.path.exists(data_file):
             input = open(data_file, 'rb')
@@ -412,7 +412,7 @@ class rnn_lstm_classification(lstm_model):
 
         model = None
             
-        if train: model = self.train_data(data_feature, LabelColumnName)
+        if train: model = self.train_data(data_feature, window, LabelColumnName)
             
-        if predict: self.predict_data(model, data_feature, LabelColumnName)
+        if predict: self.predict_data(model, data_feature, window, LabelColumnName)
 
