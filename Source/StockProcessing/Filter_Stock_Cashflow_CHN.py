@@ -322,6 +322,10 @@ def get_result(filter_stock):
     return result
 
 def filter_cashflow(db_count):
+    
+    if len(db_count) == 0:
+        return 'N/A'
+    
     # filename_1 = 'cashflow_count_filter_1.csv'
     # filename_2 = 'cashflow_count_filter_2.csv'
     # filename_3 = 'cashflow_count_filter_3.csv'
@@ -358,9 +362,6 @@ def filter_cashflow(db_count):
                                (db_count["2-price"] > db_count["1-price"]) & \
                                (db_count["1day"] > 0.0)]
     db_count_filter_1 = db_count_filter.sort_values(['0-price'], ascending=[False]).reset_index(drop=True)
-        
-    if len(db_count_filter_1) == 0: 
-        return 'N/A', db_count_filter_1
         
     print(db_count_filter_1)
 
@@ -400,7 +401,8 @@ def process_data(root_path, symbols, dates):
         else:
             db_cashflow = process_all_stocks_data(root_path, symbols, day_range, stock_memory, symbol_memory, index, range_len)
             stock_filter = filter_cashflow(db_cashflow)
-            if stock_filter.empty == False:
+
+            if len(stock_filter) > 0: 
                 stock_filter.to_csv(file_name)
 
         negative_pect[day_range[-1]] = get_result(stock_filter)

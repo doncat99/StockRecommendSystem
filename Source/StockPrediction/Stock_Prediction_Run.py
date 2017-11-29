@@ -26,7 +26,7 @@ def run_lstm_classification(root_path, train_symbols, predict_symbols, need_trai
     paras = SP_Paras('lstm', root_path, train_symbols, predict_symbols)
     paras.save = True
     paras.load = False
-    paras.run_hyperopt = True
+    paras.run_hyperopt = False
     paras.plot = need_plot_training_diagram
 
     # 0_index: no norm   1_index: standard norm   2_index: minmax norm   3_index: zscore norm
@@ -209,10 +209,8 @@ def run_xgboost_classification(root_path, train_symbols, predict_symbols, need_t
     paras.start_date = '2016-11-01'
     paras.end_date = datetime.datetime.now().strftime("%Y-%m-%d")
     paras.verbose = 1
-    
     paras.batch_size = 64
     paras.epoch = 100
-    
     paras.out_class_type = 'classification'
     paras.n_out_class = 7  # ignore for regression
     paras.model['out_layer'] = paras.n_out_class

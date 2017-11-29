@@ -26,12 +26,8 @@ class xgboost_model(base_model):
         subsample = argsDict["subsample"] * 0.1 + 0.7
         min_child_weight = argsDict["min_child_weight"] + 1
         
-        print("max_depth:" + str(max_depth))
-        print("n_estimator:" + str(n_estimators))
-        print("learning_rate:" + str(learning_rate))
-        print("gamma:" + str(gamma))
-        print("subsample:" + str(subsample))
-        print("min_child_weight:" + str(min_child_weight))
+        print("max_depth:" + str(max_depth), "n_estimator:" + str(n_estimators), "learning_rate:" + str(learning_rate), \
+              "gamma:" + str(gamma), "subsample:" + str(subsample), "min_child_weight:" + str(min_child_weight))
 
         gbm = xgb.XGBClassifier(nthread=-1,    #进程数
                                 max_depth=max_depth,  #最大深度
