@@ -316,16 +316,13 @@ def process_all_stocks_data(root_path, symbols, day_range, stock_memory, symbol_
     return db_count
 
 def get_result(filter_stock):
+    if len(db_count) == 0: return 'N/A'
     filter_stock_negative = filter_stock[(filter_stock["0-price"] < 0.0)]
     result = [len(filter_stock_negative), len(filter_stock), 0.0]
     result[2] = round(result[0] / result[1], 2)
     return result
 
 def filter_cashflow(db_count):
-    
-    if len(db_count) == 0:
-        return 'N/A'
-    
     # filename_1 = 'cashflow_count_filter_1.csv'
     # filename_2 = 'cashflow_count_filter_2.csv'
     # filename_3 = 'cashflow_count_filter_3.csv'
