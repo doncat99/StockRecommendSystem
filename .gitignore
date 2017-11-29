@@ -104,7 +104,7 @@ ENV/
 .DS_Store
 
 # vs code
-*.vscode
+.vscode/
 
 # CSV
 *.csv
