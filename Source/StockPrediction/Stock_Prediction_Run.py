@@ -29,12 +29,15 @@ def run_lstm_classification(root_path, train_symbols, predict_symbols, need_trai
     paras.run_hyperopt = False
     paras.plot = need_plot_training_diagram
 
-    # 0_index: no norm   1_index: standard norm   2_index: minmax norm   3_index: zscore norm
-    paras.features = {#'0_0':['frac_change', 'frac_high', 'frac_low'], 
-                      '0_0':['c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol_p'],
-                      '1_0':['buy_amount', 'sell_amount', 'even_amount'],
-                      '1_1':['buy_volume', 'sell_volume', 'even_volume'], 
-                      '1_2':['buy_max', 'buy_min', 'buy_average', 'sell_max', 'sell_min', 'sell_average', 'even_max', 'even_min', 'even_average']} 
+    # A_B_C format:
+    # A: require window split or not -> 0 for not, 1 for yes
+    # B: normalization method -> 0: none 1: standard 2: minmax 3: zscore
+    # C: normalization index, same normalization requires different index
+    paras.features = {'1_0_0':['week_day'],
+                      '1_0_1':['c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol_p'],
+                      '1_1_0':['buy_amount', 'sell_amount', 'even_amount'],
+                      '1_1_1':['buy_volume', 'sell_volume', 'even_volume'], 
+                      '1_1_2':['buy_max', 'buy_min', 'buy_average', 'sell_max', 'sell_min', 'sell_average', 'even_max', 'even_min', 'even_average']} 
 
     paras.pred_len = 1
     paras.valid_len = 20
@@ -197,12 +200,12 @@ def run_xgboost_classification(root_path, train_symbols, predict_symbols, need_t
     paras.run_hyperopt = True
     paras.plot = need_plot_training_diagram
     # 0_index: no norm   1_index: standard norm   2_index: minmax norm   3_index: zscore norm
-    paras.features = {#'0_0':['frac_change', 'frac_high', 'frac_low'], 
-                      '0_0':['c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol_p'],
-                      '1_0':['buy_amount', 'sell_amount', 'even_amount'],
-                      '1_1':['buy_volume', 'sell_volume', 'even_volume'], 
-                      '1_2':['buy_max', 'buy_min', 'buy_average', 'sell_max', 'sell_min', 'sell_average', 'even_max', 'even_min', 'even_average']} 
-    
+    paras.features = {'0_0_0':['week_day'],
+                      '1_0_1':['c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol_p'],
+                      '1_1_0':['buy_amount', 'sell_amount', 'even_amount'],
+                      '1_1_1':['buy_volume', 'sell_volume', 'even_volume'], 
+                      '1_1_2':['buy_max', 'buy_min', 'buy_average', 'sell_max', 'sell_min', 'sell_average', 'even_max', 'even_min', 'even_average']} 
+
     paras.window_len = [3]
     paras.pred_len = 1
     paras.valid_len = 20
@@ -260,8 +263,8 @@ if __name__ == "__main__":
     df.index = df.index.astype(str).str.zfill(6)
     df = df.sort_index(ascending = True)
     symbols = df.index.values.tolist()
-    #symbols = ['000001', '000002', '000003', '000004', '000005', '000006', '000007']
-    # paras = run_xgboost_classification(root_path, symbols, symbols, True, False, True)
-    paras = run_lstm_classification(root_path, symbols, symbols, True, False, True)
+    symbols = ['000001']
+    paras = run_xgboost_classification(root_path, symbols, symbols, True, False, True)
+    # paras = run_lstm_classification(root_path, symbols, symbols, True, False, True)
 
     backend.clear_session()

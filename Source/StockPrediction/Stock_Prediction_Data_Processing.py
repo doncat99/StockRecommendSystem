@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from stockstats import *
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
-#from scipy.stats import zscore
+from scipy.stats import zscore
 from sklearn.cluster import KMeans
 import pickle
 
@@ -52,7 +52,7 @@ def normalization_scaler(norm, data, row_processing):
     if data.size == 0:
         return data 
 
-    if '1_' in norm:
+    if '1' in norm:
         if row_processing:
             data_T = data.transpose()
             scaler = MinMaxScaler().fit_transform(StandardScaler().fit_transform(np.log(data+1)))
@@ -63,7 +63,7 @@ def normalization_scaler(norm, data, row_processing):
             scaler =MinMaxScaler().fit_transform(StandardScaler().fit_transform(np.log(data+1)))
             return scaler
 
-    elif '2_' in norm:
+    elif '2' in norm:
         if row_processing:
             data_T = data.transpose()
             scaler = MinMaxScaler().fit(data_T)
@@ -73,7 +73,7 @@ def normalization_scaler(norm, data, row_processing):
             scaler = MinMaxScaler().fit(data)
             return scaler.transform(data)
 
-    elif '3_' in norm:
+    elif '3' in norm:
         if row_processing:
             data_T = data.transpose()
             data_T.apply(zscore)
@@ -84,6 +84,12 @@ def normalization_scaler(norm, data, row_processing):
 
     else: 
         return data
+
+def one_hot_processing(data, class_count):
+    data = data.astype(int)
+    one_hot = np.zeros((len(data), class_count))
+    one_hot[np.arange(len(data)), data] = 1
+    return one_hot
 
 def simple_means(value):
     if   value < -10:    return 0
@@ -261,9 +267,7 @@ def preprocessing_data(paras, df, LabelColumnName, one_hot_label_proc, array_for
 
     if one_hot_label_proc == True:
         # generate one hot output
-        y = y.astype(int)
-        y_normalized_T = np.zeros((len(df), paras.n_out_class))
-        y_normalized_T[np.arange(len(df)), y] = 1
+        y_normalized_T = one_hot_processing(y, paras.n_out_class)
     else:
         y_normalized_T = y.astype(int) #np.repeat(float('nan'), len(y))
 
@@ -289,20 +293,19 @@ def generate_time_series_data(paras, df, window_len):
 
     if window_len > 0:
         # Generate input features for time series data
-        featureset = list(['label'])
+        featureset = ['label']
         #featuresDict = {'c': 'close', 'h': 'high', 'l': 'low', 'o': 'open', 'v': 'volume', 't': 'top_pct', 'm': 'middle_pct', 'b': 'bottom_pct', 'p': 'close_pct', 'u': 'volume_pct'}
-        for i in range(window_len-1, -1, -1):
-            for key, group in paras.features.items():
+        
+        for key, group in paras.features.items():
+            sub_key = key.split('_')
+            if sub_key[0] == '0': 
+                featureset += group
+                continue
+            for i in range(window_len-1, -1, -1):
                 for j in group:
                     df[j + '_-' + str(i) + '_d'] = df[j].shift(1 * i)
                     featureset.append(j + '_-' + str(i) + '_d')
         df = df[featureset]
-
-    #     df_lately = df[-paras.pred_len:]
-    #     df_valid = df[len(df) - paras.valid_len - paras.pred_len : len(df) - paras.pred_len]
-    #     df.dropna(inplace=True)
-    #     df_train = df[0 : len(df) - paras.valid_len - paras.pred_len]
-    # else:
 
     df_lately = df[-paras.pred_len:]
     df_valid = df[-paras.valid_len-paras.pred_len : -paras.pred_len]
@@ -366,25 +369,19 @@ def get_single_stock_feature_data(ticker, paras, window_len, input_data, LabelCo
     dataset['h_2_l'] = ret(dataset['high'], dataset['low'])
     dataset['vol_p'] = dataset['volume']
 
+    dataset.loc[dataset.index, 'week_day'] = [pd.Timestamp(day).weekday() for day in dataset.index.values]
+    #dataset['week_day'] = one_hot_processing(dataset['week_day'], 5)
+    # print(dataset['week_day'])
+
     #dataset["hl_perc"] = (dataset["high"]-dataset["low"]) / dataset["low"] * 100
     #dataset["co_perc"] = (dataset["close"] - dataset["open"]) / dataset["open"] * 100
     #dataset["price_next_month"] = dataset["adj_close"].shift(-30)
-    
-    dataset.fillna(method='ffill', inplace=True)
-    dataset.dropna(inplace=True)
 
-    data_group_features, data_group_columns = group_by_features(paras.features, dataset)
-    for key_norm, df_feature in data_group_features.items():
-        #df_feature.to_csv('df.csv')
-        
-
-        df_feature_norm = normalization_scaler(key_norm, df_feature, False)
-        dataset[df_feature.columns.values]=df_feature_norm
-        #pd.DataFrame(df_feature_norm).to_csv('df_norm.csv')
     dataset['last_close']  = dataset['close'].shift(1 * (paras.pred_len))
     dataset['pred_profit'] = ((dataset['close'] - dataset['last_close']) / dataset['last_close'] * 100).shift(-1 * (paras.pred_len))
-
-    df = dataset[['open', 'high', 'low', 'close', 'volume', 'pred_profit',
+ 
+    df = dataset[['open', 'high', 'low', 'close', 'volume', 'pred_profit', 
+                  'week_day',
                   #'frac_change', 'frac_high', 'frac_low', 
                   #'top',  'bottom', 'middle', 'vol_stat', 'pred_profit',
                   #'close_-5_r', 'close_-10_r', 'close_-20_r', 'close_-60_r'
@@ -395,8 +392,18 @@ def get_single_stock_feature_data(ticker, paras, window_len, input_data, LabelCo
                   'c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol_p', 
                   'buy_amount', 'sell_amount', 'even_amount', 'buy_volume', 'sell_volume', 'even_volume', 'buy_max', 'buy_min', 'buy_average', 'sell_max', 'sell_min', 'sell_average', 'even_max', 'even_min', 'even_average',
                   #'hl_perc', 'co_perc'
-                ]]
-                
+                ]]    
+
+    df.fillna(method='ffill', inplace=True)
+    df.dropna(inplace=True)
+
+    data_group_features, data_group_columns = group_by_features(paras.features, df)
+
+    for key, df_feature in data_group_features.items():
+        sub_key = key.split('_')
+        df_feature_norm = normalization_scaler(sub_key[1], df_feature, False)
+        df[df_feature.columns.values] = df_feature_norm
+          
     # Data frame output
     df[LabelColumnName], counter, center = simple_claasification(df['pred_profit'], paras.n_out_class)
     return df

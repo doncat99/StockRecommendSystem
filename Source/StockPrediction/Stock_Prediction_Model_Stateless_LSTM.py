@@ -400,15 +400,15 @@ class rnn_lstm_classification(lstm_model):
 
     def do_run(self, train, predict, window):
         LabelColumnName = 'label'
-        data_file = "data_file._lstm_" + str(window) + ".pkl"
+        data_file = "data_file_lstm_" + str(window) + ".pkl"
 
         if os.path.exists(data_file):
             input = open(data_file, 'rb')
             data_feature = pickle.load(input)
         else:
             data_feature = get_all_stocks_feature_data(self.paras, window, LabelColumnName)
-            output = open(data_file, 'wb')
-            pickle.dump(data_feature, output)
+            #output = open(data_file, 'wb')
+            #pickle.dump(data_feature, output)
 
         model = None
             
