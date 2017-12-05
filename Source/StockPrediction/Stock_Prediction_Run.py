@@ -21,7 +21,23 @@ sys.path.append(root_path + "/" + 'Source/DataBase/')
 from Fetch_Data_Stock_US_Daily import updateStockData_US_Daily, getStocksList_US
 from Fetch_Data_Stock_CHN_StockList import getStocksList_CHN
 
-
+def get_all_target_dict():
+    symbool_path = os.path.join(cur_path, 'DATA')
+    symbool_path = os.path.join(symbool_path, 'CSV')
+    symbool_path = os.path.join(symbool_path, 'target')
+    date_files = os.listdir(symbool_path)
+    target_dict = {}
+    for day_items in date_files:
+        filename = os.path.join(symbool_path, day_items)
+        target_df = pd.read_csv(filename, index_col='symbol')
+        target_symbol_list = (target_df.index.astype(str).str.zfill(6)).tolist()
+        for symbol in target_symbol_list:
+            if symbol in target_dict:
+                target_dict[symbol].append(day_items.split('.')[0])
+            else:
+                target_dict[symbol] = day_items.split('.')[:1]
+    return target_dict
+	
 def run_lstm_classification(root_path, train_symbols, predict_symbols, need_training, need_plot_training_diagram, need_predict):
     paras = SP_Paras('lstm', root_path, train_symbols, predict_symbols)
     paras.save = True
@@ -176,17 +192,29 @@ def run_recommand_system(root_path, train_symbols, predict_symbols, need_trainin
     paras = SP_Paras('recommandSystem', root_path, train_symbols, predict_symbols)
     paras.save = True
     paras.load = False
+    paras.run_hyperopt = True
     paras.plot = need_plot_training_diagram
-    paras.window_len = 3
+
+    # A_B_C format:
+    # A: require window split or not -> 0 for not, 1 for yes
+    # B: normalization method -> 0: none 1: standard 2: minmax 3: zscore
+    # C: normalization index, same normalization requires different index
+    paras.features = {'1_0_0':['week_day'],
+                      '1_0_1':['c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol_p'],
+                      '1_1_0':['buy_amount', 'sell_amount', 'even_amount'],
+                      '1_1_1':['buy_volume', 'sell_volume', 'even_volume'], 
+                      '1_1_2':['buy_max', 'buy_min', 'buy_average', 'sell_max', 'sell_min', 'sell_average', 'even_max', 'even_min', 'even_average']} 
+    
+    paras.window_len = [3]
     paras.pred_len = 1
     paras.valid_len = 20
-    paras.start_date = '2016-01-03'
+    paras.start_date = '2016-11-01'
     paras.end_date = datetime.datetime.now().strftime("%Y-%m-%d")
     paras.verbose = 0
+    paras.batch_size = 64
     paras.epoch = 200
-
     paras.out_class_type = 'classification'
-    paras.n_out_class = 2  # ignore for regression
+    paras.n_out_class = 7  # ignore for regression
 
     # run
     rs = recommand_system(paras)
@@ -199,7 +227,11 @@ def run_xgboost_classification(root_path, train_symbols, predict_symbols, need_t
     paras.load = False
     paras.run_hyperopt = True
     paras.plot = need_plot_training_diagram
-    # 0_index: no norm   1_index: standard norm   2_index: minmax norm   3_index: zscore norm
+    
+    # A_B_C format:
+    # A: require window split or not -> 0 for not, 1 for yes
+    # B: normalization method -> 0: none 1: standard 2: minmax 3: zscore
+    # C: normalization index, same normalization requires different index
     paras.features = {'0_0_0':['week_day'],
                       '1_0_1':['c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol_p'],
                       '1_1_0':['buy_amount', 'sell_amount', 'even_amount'],
@@ -216,9 +248,6 @@ def run_xgboost_classification(root_path, train_symbols, predict_symbols, need_t
     paras.epoch = 100
     paras.out_class_type = 'classification'
     paras.n_out_class = 7  # ignore for regression
-    paras.model['out_layer'] = paras.n_out_class
-    paras.model['loss'] = 'categorical_crossentropy'
-    paras.model['out_activation'] = 'softmax'
 
     from hyperopt import hp
     paras.hyper_opt = {"max_depth"        :hp.randint("max_depth",       10),
@@ -230,8 +259,9 @@ def run_xgboost_classification(root_path, train_symbols, predict_symbols, need_t
     }
 
     # run
+    train_symbols_dict = get_all_target_dict()
     xgboost_cla = xgboost_classification(paras)
-    xgboost_cla.run(need_training, need_predict)
+    xgboost_cla.run(need_training, need_predict, train_symbols_dict)
     return paras
 
 
@@ -262,9 +292,13 @@ if __name__ == "__main__":
     df = getStocksList_CHN(root_path)
     df.index = df.index.astype(str).str.zfill(6)
     df = df.sort_index(ascending = True)
-    symbols = df.index.values.tolist()
-    symbols = ['000001']
-    paras = run_xgboost_classification(root_path, symbols, symbols, True, False, True)
-    # paras = run_lstm_classification(root_path, symbols, symbols, True, False, True)
+    predict_symbols = df.index.values.tolist()
+
+    #symbols = ['000001', '000002', '000004', '000005', '000006', '000007']
+    #When get target symbols
+    train_symbols=get_all_target_dict().keys()
+    train_symbols=list(train_symbols)
+    #need_training, need_plot_training_diagram, need_predict
+    paras = run_xgboost_classification(root_path, train_symbols, predict_symbols, True, False, True)
 
     backend.clear_session()

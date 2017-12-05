@@ -246,7 +246,29 @@ def group_by_features(features, df):
 ###       Preprocess Data       ###
 ###                             ###
 ###################################
+def preprocessing_train_data(paras, df, LabelColumnName,ticker,train_tickers_dict, one_hot_label_proc,array_format=True):
+    day_list=train_tickers_dict[ticker]
+    index_df=np.vectorize(lambda s: s.strftime('%Y-%m-%d'))(df.index.to_pydatetime())
+    df.index=index_df
+    common_day=list(set(day_list).intersection(set(index_df)))
+    df=df.loc[common_day]
+    X = df.drop(LabelColumnName, 1)
+    y = np.array(df[LabelColumnName])
+    #print(X.head())
 
+    if one_hot_label_proc == True:
+        # generate one hot output
+        y = y.astype(int)
+        y_normalized_T = np.zeros((len(df), paras.n_out_class))
+        y_normalized_T[np.arange(len(df)), y] = 1
+    else:
+        y_normalized_T = y.astype(int)  # np.repeat(float('nan'), len(y))
+
+
+    if array_format: return X.values, y_normalized_T
+
+    return X, y_normalized_T
+	
 def preprocessing_data(paras, df, LabelColumnName, one_hot_label_proc, array_format=True):
     '''
     df: pd.DataFrame
@@ -414,10 +436,12 @@ def get_all_stocks_feature_data(paras, window_len, LabelColumnName):
     if os.path.exists(ori_file):
         input = open(ori_file, 'rb')
         data_original = pickle.load(input)
+        input.close()
     else:
         data_original = get_all_stocks_data(paras.root_path, paras.train_tickers)
         output = open(ori_file, 'wb')
         pickle.dump(data_original, output)
+        output.close()
 
     #data_original = get_all_stocks_data(paras.root_path, paras.train_tickers)
     data_feature = {}

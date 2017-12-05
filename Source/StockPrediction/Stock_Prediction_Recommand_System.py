@@ -261,15 +261,8 @@ class recommand_system(recommand_system_model):
     ###                             ###
     ###################################
 
-    def run(self, train, predict):
-        flags = tf.app.flags
-        FLAGS = flags.FLAGS
-        flags.DEFINE_string("model_dir",    "",               "Base directory for output models.")
-        flags.DEFINE_string("model_type",   "wide_n_deep",    "Valid model types: {'wide', 'deep', 'wide_n_deep'}.")
-        flags.DEFINE_integer("train_steps", self.paras.epoch, "Number of training steps.")
-        flags.DEFINE_string("train_data",   "",               "Path to the training data.")
-        flags.DEFINE_string("test_data",    "",               "path to the test data")
-        
+    def run(self, train, predict):      
+
         ################################################################################
         self.paras.save_folder  =  self.get_save_directory()
         print('Save Directory: ',  self.paras.save_folder)
@@ -277,19 +270,47 @@ class recommand_system(recommand_system_model):
         print('Model Directory: ', self.paras.model_folder)
         ################################################################################
         
+        flags = tf.app.flags
+        FLAGS = flags.FLAGS
+        flags.DEFINE_string("model_dir",    self.paras.model_folder, "Base directory for output models.")
+        flags.DEFINE_string("model_type",   "wide_n_deep",           "Valid model types: {'wide', 'deep', 'wide_n_deep'}.")
+        flags.DEFINE_integer("train_steps", self.paras.epoch,        "Number of training steps.")
+        flags.DEFINE_string("train_data",   "",                      "Path to the training data.")
+        flags.DEFINE_string("test_data",    "",                      "path to the test data")
+
+        for window in self.paras.window_len:
+            self.do_run(train, predict, window)
+
+    def do_run(self, train, predict, window):
+
+        data_file = "data_file_recommand_system_" + str(window) + ".pkl"
+
         DropColumnName        = []
         LabelColumnName       = 'label'
         CategoricalColumnName = ['WeekDay']
         ContinuousColumnName  = []
 
-        for i in range(self.paras.n_out_class):
-            ContinuousColumnName.append(str(self.paras.window_len) + '_' + str(i))
-
-        data_possibility = get_all_stocks_label_possibility_data(self.paras, DropColumnName)
+        if os.path.exists(data_file):
+            input = open(data_file, 'rb')
+            data_feature = pickle.load(input)
+            input.close()
+        else:
+            data_feature = get_all_stocks_feature_data(self.paras, window, LabelColumnName)
+            output = open(data_file, 'wb')
+            pickle.dump(data_feature, output)
+            output.close()
 
         model = None
+            
+        if train: model = self.train_data(data_feature, window, LabelColumnName, CategoricalColumnName, ContinuousColumnName, FLAGS)
+            
+        if predict: self.predict_data(model, data_feature, window, LabelColumnName)
+
+
+
         
-        # Fixme: "train" must be True by far, since save/load model functions are not yet accomplished
-        if train: model = self.train_data(data_possibility, LabelColumnName, CategoricalColumnName, ContinuousColumnName, FLAGS)
-        
-        if predict: self.predict_data(model, data_possibility, LabelColumnName)
+
+
+
+      
+

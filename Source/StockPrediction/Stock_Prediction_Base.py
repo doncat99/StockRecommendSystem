@@ -295,14 +295,14 @@ class SP_Paras(SP_Global_Paras):
                         '%%%%%%%%%% DUMP SP_Paras %%%%%%%%%%\n' + 
                         'batch_size \t' + str(self._batch_size) + '\n' +
                         'epoch \t' + str(self._epoch) + '\n' +
-                        'validation_split \t' + str(self._validation_split) + '\n' +
-                        'hidden_layers \t' + str(self._model['hidden_layers']) + '\n'
-                        'dropout \t' + str(self._model['dropout']) + '\n'
-                        'activation \t' + str(self._model['activation']) + '\n'
-                        'out_layer \t' + str(self._model['out_layer']) + '\n'
-                        'out_activation \t' + str(self._model['out_activation']) + '\n'
-                        'loss \t' + str(self._model['loss']) + '\n'
-                        'optimizer \t' + str(self._model['optimizer']) + '\n'
+                        'validation_split \t' + str(self._validation_split) + '\n' #+
+                        # 'hidden_layers \t' + str(self._model['hidden_layers']) + '\n'
+                        # 'dropout \t' + str(self._model['dropout']) + '\n'
+                        # 'activation \t' + str(self._model['activation']) + '\n'
+                        #'out_layer \t' + str(self._model['out_layer']) + '\n'
+                        # 'out_activation \t' + str(self._model['out_activation']) + '\n'
+                        # 'loss \t' + str(self._model['loss']) + '\n'
+                        # 'optimizer \t' + str(self._model['optimizer']) + '\n'
                        )
         return returnString
         

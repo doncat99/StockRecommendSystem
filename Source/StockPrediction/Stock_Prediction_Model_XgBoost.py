@@ -1,7 +1,8 @@
 import os, csv
 from sklearn.model_selection import train_test_split, cross_val_score
-#from sklearn.cross_validation import 
+from sklearn.model_selection import cross_val_predict
 from sklearn.metrics import accuracy_score
+from sklearn.metrics import recall_score
 from hyperopt import fmin, tpe, partial
 import xgboost as xgb
 import pandas as pd
@@ -9,8 +10,15 @@ import numpy as np
 import pickle
 
 from Stock_Prediction_Base import base_model
-from Stock_Prediction_Data_Processing import reshape_input, get_all_stocks_feature_data, preprocessing_data, kmeans_claasification
-
+from Stock_Prediction_Data_Processing import reshape_input, get_all_stocks_feature_data, preprocessing_data, kmeans_claasification, preprocessing_train_data,kmeans_claasification
+	
+def S_score(y_true,y_pred):
+    TP1=((y_true==y_pred)&(y_pred>3)).astype(int).sum()
+    TP2=(y_true>y_pred).astype(int).sum()
+    FP=((y_pred>y_true)&(y_true<4)).astype(int).sum()
+    TP=TP1+TP2
+    score=float(TP)/(TP+FP)
+    return score
 
 class xgboost_model(base_model):
     train_x = None
@@ -38,8 +46,11 @@ class xgboost_model(base_model):
                                 min_child_weight=min_child_weight,   #孩子数
                                 max_delta_step = 100,  #10步不降则停止
                                 objective="multi:softmax")
-        
-        return -cross_val_score(gbm, self.test_x, self.test_y, cv=5).mean()
+        predicted=cross_val_predict(gbm, self.test_x, self.test_y,cv=5)
+        scoring=recall_score( self.test_y,predicted,average='micro',labels=[4,5,6])
+        #cro=cross_val_score(gbm, self.test_x, self.test_y, cv=5,scoring=scoring).mean()
+        print('recall is ',scoring)
+        return -scoring
 
     def best_model(self, X_train, y_train, X_test, y_test):
         self.train_x = X_train
@@ -71,11 +82,11 @@ class xgboost_model(base_model):
                 best = pickle.load(open(file_name, "rb"))
 
         if len(best) == 0:
-            max_depth = 18
+            max_depth = 10
             n_estimators = 100
             learning_rate = 0.09
             gamma = 0.2
-            subsample = 0.8
+            subsample = 0.9
             min_child_weight = 2
         else:
             max_depth = best["max_depth"] + 5
@@ -85,7 +96,7 @@ class xgboost_model(base_model):
             subsample = best["subsample"] * 0.1 + 0.7
             min_child_weight = best["min_child_weight"] + 1
 
-        print('build XgBoost model...')
+        print('Get XgBoost model parameter...')
         model = xgb.XGBClassifier(nthread=4,    #进程数
                                   max_depth=max_depth,  #最大深度
                                   gamma=gamma,
@@ -120,9 +131,7 @@ class xgboost_classification(xgboost_model):
         super(xgboost_classification, self).__init__(paras=paras)
 
     def check_parameters(self):
-        if (self.paras.out_class_type == 'classification' and self.paras.n_out_class > 1 and
-                    self.paras.model['out_activation'] == 'softmax' and self.paras.model[
-            'loss'] == 'categorical_crossentropy'):
+        if self.paras.out_class_type == 'classification' and self.paras.n_out_class > 1:
             return True
         return False
 
@@ -135,13 +144,49 @@ class xgboost_classification(xgboost_model):
 
     def prepare_train_test_data(self, data_feature, LabelColumnName):
         firstloop = 1
+        print("get_data_feature")
+        #print(data_feature)
         for ticker, data in data_feature.items():
             #print(ticker, "n_feature", self.paras.n_features, len(data[0]))
+            #print("data[0]",data[0].index)
             X, y = preprocessing_data(self.paras, data[0], LabelColumnName, one_hot_label_proc=False)
+            #print(X.shape)
             #X, y = reshape_input(self.paras.n_features, X, y)
             X_train_temp, X_test_temp, y_train_temp, y_test_temp = train_test_split(X, y, test_size=0.2)
             # print('Train shape X:', X_train_temp.shape, ',y:', y_train_temp.shape)
             # print('Test shape X:', X_test_temp.shape, ',y:', y_test_temp.shape)
+
+
+            if firstloop == 1:
+                firstloop = 0
+                X_train = X_train_temp
+                X_test = X_test_temp
+                y_train = y_train_temp
+                y_test = y_test_temp
+            else:
+                X_train = np.append(X_train, X_train_temp, 0)
+                X_test = np.append(X_test, X_test_temp, 0)
+                y_train = np.append(y_train, y_train_temp, 0)
+                y_test = np.append(y_test, y_test_temp, 0)
+
+        # print('Train shape X:', X_train.shape, ',y:', y_train.shape)
+        # print('Test shape X:', X_test.shape, ',y:', y_test.shape)
+        return X_train, y_train, X_test, y_test
+    def prepare_train_data(self,data_feature,LabelColumnName,train_tickers_dict):
+        firstloop = 1
+        print("get_data_feature")
+        #print(data_feature.items())
+        for ticker, data in data_feature.items():
+            # print(ticker, "n_feature", self.paras.n_features, len(data[0]))
+            # print("data[0]",data[0].head())
+            #print("data[0]", data[0].index)
+            X, y = preprocessing_train_data(self.paras, data[0], LabelColumnName,ticker,train_tickers_dict,one_hot_label_proc=False)
+            # print(X.shape)
+            # X, y = reshape_input(self.paras.n_features, X, y)
+            X_train_temp, X_test_temp, y_train_temp, y_test_temp = train_test_split(X, y, test_size=0.2)
+            # print('Train shape X:', X_train_temp.shape, ',y:', y_train_temp.shape)
+            # print('Test shape X:', X_test_temp.shape, ',y:', y_test_temp.shape)
+
 
             if firstloop == 1:
                 firstloop = 0
@@ -159,22 +204,29 @@ class xgboost_classification(xgboost_model):
         # print('Test shape X:', X_test.shape, ',y:', y_test.shape)
         return X_train, y_train, X_test, y_test
 
-    def train_data(self, data_feature, window, LabelColumnName):
-        X_train, y_train, X_test, y_test = self.prepare_train_test_data(data_feature, LabelColumnName)
+    def train_data(self, data_feature, window, LabelColumnName,train_tickers):
+        print("Prepare Train data")
+        X_train, y_train, X_test, y_test = self.prepare_train_data(data_feature, LabelColumnName,train_tickers)
+        print("X_train",X_train.shape)
 
         model = self.build_model(window, X_train, y_train, X_test, y_test)
+        print("build XgBoost model...")
 
         model.fit(
             X_train,
             y_train,
             verbose=self.paras.verbose
         )
+        pred=model.predict(X_train)
+        pred2 = model.predict(X_test)
+        print("Filter train_data_recall is ",recall_score(y_train,pred,average='micro',labels=[4,5,6]))
+        print("Filter test_data_recall is ", recall_score(y_test,pred2,average='micro',labels=[4,5,6]))
 
         # save model
         self.save_training_model(model, window)
 
         # print(' ############## validation on test data ############## ')
-        mse_test, tmp = self.predict(model, X_test, y_test)
+        #mse_test, tmp = self.predict(model, X_test, y_test)
 
         # plot training loss/ validation loss
         if self.paras.plot:
@@ -191,8 +243,8 @@ class xgboost_classification(xgboost_model):
 
     def predict(self, model, X, y):
         predictions = model.predict(X)
-        accurancy = accuracy_score(y,predictions)
-        return accurancy, predictions
+        recall_p = S_score(y,predictions)
+        return recall_p, predictions
 
 
     def predict_data(self, model, data_feature, window, LabelColumnName):
@@ -222,8 +274,13 @@ class xgboost_classification(xgboost_model):
 
             # print('\n ---------- ', ticker, ' ---------- \n')
             # print('############## validation on train data ##############')
-            mse_known_train, predictions_train = self.predict(model, X_train, y_train)
-            # print('scaled data mse: ', mse_known_train)
+            rec_known_train, predictions_train = self.predict(model, X_train, y_train)
+            rec_known_valid, _ = self.predict(model, X_valid, y_valid)
+            print('train data recall: ', rec_known_train)
+            print('valid data recall: ', rec_known_valid)
+            #print((data[3].index))
+            index_df = np.vectorize(lambda s: s.strftime('%Y-%m-%d'))(data[3].index.to_pydatetime())
+            data[3].index=index_df
             data[3].loc[data[0].index, 'label'] = y_train #- int(self.paras.n_out_class/2)
             data[3].loc[data[0].index, 'pred'] = predictions_train #- int(self.paras.n_out_class/2)
             #s = pd.DataFrame(predictions_train, index = data[0].index, columns=possibility_columns)
@@ -231,6 +288,8 @@ class xgboost_classification(xgboost_model):
             # print('############## validation on valid data ##############')
             mse_known_lately, predictions_valid = self.predict(model, X_valid, y_valid)
             # print('scaled data mse: ', mse_known_lately)
+            index_df = np.vectorize(lambda s: s.strftime('%Y-%m-%d'))(data[1].index.to_pydatetime())
+            data[1].index = index_df
             data[3].loc[data[1].index, 'label'] = y_valid #- int(self.paras.n_out_class/2)
             data[3].loc[data[1].index, 'pred'] = predictions_valid #- int(self.paras.n_out_class/2)
             #s = s.append(pd.DataFrame(predictions_valid, index = data[1].index, columns=possibility_columns))
@@ -238,6 +297,8 @@ class xgboost_classification(xgboost_model):
             # print('############## validation on lately data ##############')
             mse_lately, predictions_lately = self.predict(model, X_lately, y_lately)
             # print('scaled data mse: ', mse_lately)
+            index_df = np.vectorize(lambda s: s.strftime('%Y-%m-%d'))(data[2].index.to_pydatetime())
+            data[2].index = index_df
             data[3].loc[data[2].index, 'label'] = np.nan#np.argmax(actual_lately, axis=1)
             data[3].loc[data[2].index, 'pred'] = predictions_lately #- int(self.paras.n_out_class/2)
             #s = s.append(pd.DataFrame(predictions_lately, index = data[2].index, columns=possibility_columns))
@@ -299,7 +360,7 @@ class xgboost_classification(xgboost_model):
     ###                             ###
     ###################################
 
-    def save_data_frame_mse(self, ticker, df, window_len, possibility_columns, mses):
+    def save_data_frame_mse(self, ticker, df, window_len, possibility_columns, mses,model):
         df['label'] = df['label']#.astype(int)
         df['pred'] = df['pred']#.astype(int)
         
@@ -320,6 +381,7 @@ class xgboost_classification(xgboost_model):
             #df.to_csv(self.paras.save_folder + ticker + ('_%.2f' % model_acc) + '_data_frame.csv')
             df.to_csv(self.paras.save_folder + ticker + '_' + str(window_len) + ('_%.2f' % model_acc) + '.csv')
             with open(self.paras.save_folder + 'parameters.txt', 'w') as text_file:
+                text_file.write(model.get_xgb_params().__str__() + '\n')
                 text_file.write(self.paras.__str__())
                 text_file.write(str(mses[0]) + '\n')
                 text_file.write(str(mses[1]) + '\n')
@@ -332,7 +394,7 @@ class xgboost_classification(xgboost_model):
     ###                             ###
     ###################################
 
-    def run(self, train, predict):
+    def run(self, train, predict, train_symbols_dict):
         if self.check_parameters() == False:
             raise IndexError('Parameters for XgBoost is wrong, check out_class_type')
 
@@ -344,9 +406,9 @@ class xgboost_classification(xgboost_model):
         ################################################################################
 
         for window in self.paras.window_len:
-            self.do_run(train, predict, window)
+            self.do_run(train, predict, window, train_symbols_dict)
 
-    def do_run(self, train, predict, window):
+    def do_run(self, train, predict, window, train_symbols_dict):
         LabelColumnName = 'label'
         data_file = "data_file_xgboost_" + str(window) + ".pkl"
 
@@ -361,10 +423,11 @@ class xgboost_classification(xgboost_model):
             output.close()
 
         model = None
+        train_tickers_dict=train_symbols_dict
 
         train_feature = {}
             
-        if train: model = self.train_data(data_feature, window, LabelColumnName)
+        if train: model = self.train_data(data_feature, window, LabelColumnName, train_tickers_dict)
             
         if predict: self.predict_data(model, data_feature, window, LabelColumnName)
 
