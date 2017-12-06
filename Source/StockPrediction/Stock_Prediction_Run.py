@@ -42,7 +42,7 @@ def run_lstm_classification(root_path, train_symbols, predict_symbols, need_trai
     paras = SP_Paras('lstm', root_path, train_symbols, predict_symbols)
     paras.save = True
     paras.load = False
-    paras.run_hyperopt = False
+    paras.run_hyperopt = True
     paras.plot = need_plot_training_diagram
 
     # A_B_C format:
@@ -63,7 +63,7 @@ def run_lstm_classification(root_path, train_symbols, predict_symbols, need_trai
     
     paras.out_class_type = 'classification'
     paras.n_out_class = 7  # ignore for regression
-    paras.epoch = 100
+    paras.epoch = 500
 
     paras.window_len = [3]
     paras.batch_size = 64
@@ -92,8 +92,9 @@ def run_lstm_classification(root_path, train_symbols, predict_symbols, need_trai
     })
     
     # run
+    train_symbols_dict = get_all_target_dict()
     lstm_cla = rnn_lstm_classification(paras)
-    lstm_cla.run(need_training, need_predict)
+    lstm_cla.run(need_training, need_predict, train_symbols_dict)
     return paras
 
 
@@ -225,7 +226,7 @@ def run_xgboost_classification(root_path, train_symbols, predict_symbols, need_t
     paras = SP_Paras('xgboost', root_path, train_symbols, predict_symbols)
     paras.save = True
     paras.load = False
-    paras.run_hyperopt = True
+    paras.run_hyperopt = False
     paras.plot = need_plot_training_diagram
     
     # A_B_C format:
@@ -298,7 +299,9 @@ if __name__ == "__main__":
     #When get target symbols
     train_symbols=get_all_target_dict().keys()
     train_symbols=list(train_symbols)
+    
     #need_training, need_plot_training_diagram, need_predict
-    paras = run_xgboost_classification(root_path, train_symbols, predict_symbols, True, False, True)
+    #paras = run_xgboost_classification(root_path, train_symbols, predict_symbols, False, False, True)
+    paras = run_lstm_classification(root_path, train_symbols, predict_symbols, True, False, True)
 
     backend.clear_session()

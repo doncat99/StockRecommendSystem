@@ -10,7 +10,7 @@ import numpy as np
 import pickle
 
 from Stock_Prediction_Base import base_model
-from Stock_Prediction_Data_Processing import reshape_input, get_all_stocks_feature_data, preprocessing_data, kmeans_claasification, preprocessing_train_data,kmeans_claasification
+from Stock_Prediction_Data_Processing import reshape_input, get_all_stocks_feature_data, preprocessing_data, kmeans_claasification, preprocessing_train_data, kmeans_claasification
 	
 def S_score(y_true,y_pred):
     TP1=((y_true==y_pred)&(y_pred>3)).astype(int).sum()
@@ -47,7 +47,7 @@ class xgboost_model(base_model):
                                 max_delta_step = 100,  #10步不降则停止
                                 objective="multi:softmax")
         predicted=cross_val_predict(gbm, self.test_x, self.test_y,cv=5)
-        scoring=recall_score( self.test_y,predicted,average='micro',labels=[4,5,6])
+        scoring=recall_score(self.test_y, predicted, average='micro', labels=[4,5,6])
         #cro=cross_val_score(gbm, self.test_x, self.test_y, cv=5,scoring=scoring).mean()
         print('recall is ',scoring)
         return -scoring
@@ -172,6 +172,7 @@ class xgboost_classification(xgboost_model):
         # print('Train shape X:', X_train.shape, ',y:', y_train.shape)
         # print('Test shape X:', X_test.shape, ',y:', y_test.shape)
         return X_train, y_train, X_test, y_test
+
     def prepare_train_data(self,data_feature,LabelColumnName,train_tickers_dict):
         firstloop = 1
         print("get_data_feature")
@@ -204,9 +205,9 @@ class xgboost_classification(xgboost_model):
         # print('Test shape X:', X_test.shape, ',y:', y_test.shape)
         return X_train, y_train, X_test, y_test
 
-    def train_data(self, data_feature, window, LabelColumnName,train_tickers):
+    def train_data(self, data_feature, window, LabelColumnName, train_tickers):
         print("Prepare Train data")
-        X_train, y_train, X_test, y_test = self.prepare_train_data(data_feature, LabelColumnName,train_tickers)
+        X_train, y_train, X_test, y_test = self.prepare_train_data(data_feature, LabelColumnName, train_tickers)
         print("X_train",X_train.shape)
 
         model = self.build_model(window, X_train, y_train, X_test, y_test)
@@ -276,11 +277,11 @@ class xgboost_classification(xgboost_model):
             # print('############## validation on train data ##############')
             rec_known_train, predictions_train = self.predict(model, X_train, y_train)
             rec_known_valid, _ = self.predict(model, X_valid, y_valid)
-            print('train data recall: ', rec_known_train)
-            print('valid data recall: ', rec_known_valid)
+
             #print((data[3].index))
-            index_df = np.vectorize(lambda s: s.strftime('%Y-%m-%d'))(data[3].index.to_pydatetime())
-            data[3].index=index_df
+            # index_df = np.vectorize(lambda s: s.strftime('%Y-%m-%d'))(data[3].index.to_pydatetime())
+            # print(data[3])
+            # data[3].index=index_df
             data[3].loc[data[0].index, 'label'] = y_train #- int(self.paras.n_out_class/2)
             data[3].loc[data[0].index, 'pred'] = predictions_train #- int(self.paras.n_out_class/2)
             #s = pd.DataFrame(predictions_train, index = data[0].index, columns=possibility_columns)
@@ -288,8 +289,8 @@ class xgboost_classification(xgboost_model):
             # print('############## validation on valid data ##############')
             mse_known_lately, predictions_valid = self.predict(model, X_valid, y_valid)
             # print('scaled data mse: ', mse_known_lately)
-            index_df = np.vectorize(lambda s: s.strftime('%Y-%m-%d'))(data[1].index.to_pydatetime())
-            data[1].index = index_df
+            # index_df = np.vectorize(lambda s: s.strftime('%Y-%m-%d'))(data[1].index.to_pydatetime())
+            # data[1].index = index_df
             data[3].loc[data[1].index, 'label'] = y_valid #- int(self.paras.n_out_class/2)
             data[3].loc[data[1].index, 'pred'] = predictions_valid #- int(self.paras.n_out_class/2)
             #s = s.append(pd.DataFrame(predictions_valid, index = data[1].index, columns=possibility_columns))
@@ -297,8 +298,8 @@ class xgboost_classification(xgboost_model):
             # print('############## validation on lately data ##############')
             mse_lately, predictions_lately = self.predict(model, X_lately, y_lately)
             # print('scaled data mse: ', mse_lately)
-            index_df = np.vectorize(lambda s: s.strftime('%Y-%m-%d'))(data[2].index.to_pydatetime())
-            data[2].index = index_df
+            # index_df = np.vectorize(lambda s: s.strftime('%Y-%m-%d'))(data[2].index.to_pydatetime())
+            # data[2].index = index_df
             data[3].loc[data[2].index, 'label'] = np.nan#np.argmax(actual_lately, axis=1)
             data[3].loc[data[2].index, 'pred'] = predictions_lately #- int(self.paras.n_out_class/2)
             #s = s.append(pd.DataFrame(predictions_lately, index = data[2].index, columns=possibility_columns))
@@ -351,6 +352,8 @@ class xgboost_classification(xgboost_model):
             pd.set_option('display.max_rows', None)
             if (pred_df == 0).all() == False:
                 print('\n ---------- ', ticker, ' ---------- \n')
+                print('train data recall: ', rec_known_train)
+                print('valid data recall: ', rec_known_valid)
                 print(data[3][-(self.paras.pred_len + self.paras.valid_len):])
 
 
@@ -423,11 +426,10 @@ class xgboost_classification(xgboost_model):
             output.close()
 
         model = None
-        train_tickers_dict=train_symbols_dict
 
         train_feature = {}
             
-        if train: model = self.train_data(data_feature, window, LabelColumnName, train_tickers_dict)
+        if train: model = self.train_data(data_feature, window, LabelColumnName, train_symbols_dict)
             
         if predict: self.predict_data(model, data_feature, window, LabelColumnName)
 

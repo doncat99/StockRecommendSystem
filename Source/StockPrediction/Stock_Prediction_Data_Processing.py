@@ -246,7 +246,7 @@ def group_by_features(features, df):
 ###       Preprocess Data       ###
 ###                             ###
 ###################################
-def preprocessing_train_data(paras, df, LabelColumnName,ticker,train_tickers_dict, one_hot_label_proc,array_format=True):
+def preprocessing_train_data(paras, df, LabelColumnName, ticker, train_tickers_dict, one_hot_label_proc, array_format=True):
     day_list=train_tickers_dict[ticker]
     index_df=np.vectorize(lambda s: s.strftime('%Y-%m-%d'))(df.index.to_pydatetime())
     df.index=index_df
@@ -256,14 +256,14 @@ def preprocessing_train_data(paras, df, LabelColumnName,ticker,train_tickers_dic
     y = np.array(df[LabelColumnName])
     #print(X.head())
 
+    # print("ticker", ticker)
+    # print(X)
+
     if one_hot_label_proc == True:
         # generate one hot output
-        y = y.astype(int)
-        y_normalized_T = np.zeros((len(df), paras.n_out_class))
-        y_normalized_T[np.arange(len(df)), y] = 1
+        y_normalized_T = one_hot_processing(y, paras.n_out_class)
     else:
         y_normalized_T = y.astype(int)  # np.repeat(float('nan'), len(y))
-
 
     if array_format: return X.values, y_normalized_T
 

@@ -13,7 +13,7 @@ import pickle
 from hyperopt import fmin, tpe, partial
 
 from Stock_Prediction_Base import base_model
-from Stock_Prediction_Data_Processing import reshape_input, get_all_stocks_feature_data, preprocessing_data, kmeans_claasification
+from Stock_Prediction_Data_Processing import reshape_input, get_all_stocks_feature_data, preprocessing_data, kmeans_claasification, preprocessing_train_data, kmeans_claasification
 
 
 class lstm_model(base_model):
@@ -208,11 +208,44 @@ class rnn_lstm_classification(lstm_model):
         # print('Test shape X:', X_test.shape, ',y:', y_test.shape)
         return X_train, y_train, X_test, y_test
 
+    def prepare_train_data(self, data_feature, LabelColumnName, train_tickers_dict):
+        firstloop = 1
+        print("get_data_feature")
+        #print(data_feature.items())
+        for ticker, data in data_feature.items():
+            # print(ticker, "n_feature", self.paras.n_features, len(data[0]))
+            # print("data[0]",data[0].head())
+            #print("data[0]", data[0].index)
+            X, y = preprocessing_train_data(self.paras, data[0], LabelColumnName, ticker, train_tickers_dict, one_hot_label_proc=True)
 
-    def train_data(self, data_feature, window, LabelColumnName):
+            if len(X) == 0 or len(y) == 0: continue
+            # print(X.shape)
+            X, y = reshape_input(self.paras.n_features, X, y)
+            X_train_temp, X_test_temp, y_train_temp, y_test_temp = train_test_split(X, y, test_size=0.2)
+            # print('Train shape X:', X_train_temp.shape, ',y:', y_train_temp.shape)
+            # print('Test shape X:', X_test_temp.shape, ',y:', y_test_temp.shape)
+
+            if firstloop == 1:
+                firstloop = 0
+                X_train = X_train_temp
+                X_test = X_test_temp
+                y_train = y_train_temp
+                y_test = y_test_temp
+            else:
+                X_train = np.append(X_train, X_train_temp, 0)
+                X_test = np.append(X_test, X_test_temp, 0)
+                y_train = np.append(y_train, y_train_temp, 0)
+                y_test = np.append(y_test, y_test_temp, 0)
+
+        # print('Train shape X:', X_train.shape, ',y:', y_train.shape)
+        # print('Test shape X:', X_test.shape, ',y:', y_test.shape)
+        return X_train, y_train, X_test, y_test
+
+    def train_data(self, data_feature, window, LabelColumnName, train_tickers):
         history = History()
         
-        X_train, y_train, X_test, y_test = self.prepare_train_test_data(data_feature, LabelColumnName)
+        #X_train, y_train, X_test, y_test = self.prepare_train_test_data(data_feature, LabelColumnName)
+        X_train, y_train, X_test, y_test = self.prepare_train_data(data_feature, LabelColumnName, train_tickers)
         model = self.build_model(window, X_train, y_train, X_test, y_test)
 
         model.fit(
@@ -384,7 +417,7 @@ class rnn_lstm_classification(lstm_model):
     ###                             ###
     ###################################
 
-    def run(self, train, predict):
+    def run(self, train, predict, train_symbols_dict):
         if self.check_parameters() == False:
             raise IndexError('Parameters for LSTM is wrong, check out_class_type')
 
@@ -396,9 +429,9 @@ class rnn_lstm_classification(lstm_model):
         ################################################################################
 
         for window in self.paras.window_len:
-            self.do_run(train, predict, window)
+            self.do_run(train, predict, window, train_symbols_dict)
 
-    def do_run(self, train, predict, window):
+    def do_run(self, train, predict, window, train_symbols_dict):
         LabelColumnName = 'label'
         data_file = "data_file_lstm_" + str(window) + ".pkl"
 
@@ -407,12 +440,12 @@ class rnn_lstm_classification(lstm_model):
             data_feature = pickle.load(input)
         else:
             data_feature = get_all_stocks_feature_data(self.paras, window, LabelColumnName)
-            #output = open(data_file, 'wb')
-            #pickle.dump(data_feature, output)
+            output = open(data_file, 'wb')
+            pickle.dump(data_feature, output)
 
         model = None
             
-        if train: model = self.train_data(data_feature, window, LabelColumnName)
+        if train: model = self.train_data(data_feature, window, LabelColumnName, train_symbols_dict)
             
         if predict: self.predict_data(model, data_feature, window, LabelColumnName)
 
