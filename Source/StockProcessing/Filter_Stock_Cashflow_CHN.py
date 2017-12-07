@@ -16,7 +16,7 @@ sys.path.append(root_path + "/" + 'Source/DataBase/')
 
 #from Fetch_Data_Stock_CHN_Daily import updateStockData_CHN_Daily
 from Fetch_Data_Stock_CHN_StockList import getStocksList_CHN
-from DB_API import queryStock
+#from DB_API import queryStock
 
 def get_single_stock_data_daily(root_path, symbol):
     '''
