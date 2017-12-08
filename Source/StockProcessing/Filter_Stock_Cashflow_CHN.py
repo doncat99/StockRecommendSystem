@@ -359,7 +359,7 @@ def filter_cashflow(db_count):
                                (db_count["1day"] > 0.0)]
     db_count_filter_1 = db_count_filter.sort_values(['0-price'], ascending=[False]).reset_index(drop=True)
         
-    print(db_count_filter_1)
+    #print(db_count_filter_1)
 
     return db_count_filter_1
 
@@ -464,14 +464,11 @@ if __name__ == "__main__":
 
     sh = ts.get_k_data("sh")
 
-    months = 1
+    months = 13
     start_date = (datetime.datetime.now() - datetime.timedelta(days=months*30)).strftime("%Y-%m-%d")
     #start_date = sh['date'][0]
 
     if update == '1':
-        #print("updating Daily data...")
-        #updateStockData_CHN_Daily(root_path)
-
         print("Updating cashflow data...")
         update_all_stocks_data(root_path, symbols, start_date)
 
