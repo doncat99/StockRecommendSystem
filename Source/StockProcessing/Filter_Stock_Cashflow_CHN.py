@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 import concurrent.futures
 import tushare as ts
-import talib
 import matplotlib.pyplot as plt
 from tqdm import tqdm, trange
 
