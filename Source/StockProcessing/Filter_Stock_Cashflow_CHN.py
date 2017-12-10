@@ -133,8 +133,12 @@ def updating_stock_tick_data(root_path, exception_df, symbol, date_list):
 
     now_date = (datetime.datetime.now()).strftime("%Y-%m-%d")
     need_update_exception = False
+    need_update_data = False
     #pbar = trange(len(date_list), leave=False)
     #for i in pbar: 
+
+    temp_list = []
+
     for date in date_list:
         #start = time.time()
         #date = date_list[i]
@@ -143,11 +147,13 @@ def updating_stock_tick_data(root_path, exception_df, symbol, date_list):
         if os.path.exists(new_file_name):
             continue
         try:
+            temp_list.append(date)
             data = ts.get_tick_data(symbol ,date=date, src ='tt')
         except:
             print("stock:", symbol, " date:", date, "get data failed")
             
         if data is not None:
+            need_update_data = True
             data.to_csv(new_file_name)
         else:
             need_update_exception = True
@@ -161,7 +167,9 @@ def updating_stock_tick_data(root_path, exception_df, symbol, date_list):
         exception_df = exception_df.groupby(["date"]).agg({'retry':'sum', 'last_update':'max'}).reset_index()
         exception_df.to_csv(exception_file)
 
-    return not need_update_exception
+    print("list", temp_list)
+    
+    return need_update_data
 
 
 def summary_stock_tick_data(root_path, df, symbol, date_list):
@@ -203,8 +211,6 @@ def parallel_processing(root_path, start_date, symbol):
     df, exception_df, date_list = get_single_stock_data_daily_date(root_path, symbol, start_date)
 
     if len(date_list) == 0: return startTime  
-
-    print(symbol, "date_list", date_list)
 
     need_update = updating_stock_tick_data(root_path, exception_df, symbol, date_list)
     
