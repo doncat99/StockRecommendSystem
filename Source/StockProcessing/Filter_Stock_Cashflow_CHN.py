@@ -464,7 +464,7 @@ if __name__ == "__main__":
 
     sh = ts.get_k_data("sh")
 
-    months = 13
+    months = 12
     start_date = (datetime.datetime.now() - datetime.timedelta(days=months*30)).strftime("%Y-%m-%d")
     #start_date = sh['date'][0]
 
