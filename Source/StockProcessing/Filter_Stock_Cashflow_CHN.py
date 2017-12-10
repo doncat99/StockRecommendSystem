@@ -204,6 +204,8 @@ def parallel_processing(root_path, start_date, symbol):
 
     if len(date_list) == 0: return startTime  
 
+    print(symbol, "date_list", date_list)
+
     need_update = updating_stock_tick_data(root_path, exception_df, symbol, date_list)
     
     if need_update: summary_stock_tick_data(root_path, df, symbol, date_list)
