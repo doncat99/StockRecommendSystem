@@ -167,8 +167,8 @@ def updating_stock_tick_data(root_path, exception_df, symbol, date_list):
         exception_df = exception_df.groupby(["date"]).agg({'retry':'sum', 'last_update':'max'}).reset_index()
         exception_df.to_csv(exception_file)
 
-    print("list", temp_list)
-    
+    if len(temp_list) > 0: print("list", temp_list)
+
     return need_update_data
 
 
