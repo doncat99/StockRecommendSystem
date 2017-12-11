@@ -365,6 +365,9 @@ def get_all_target_dict():
 
 def get_single_stock_feature_data(ticker, paras, window_len, input_data, LabelColumnName):
     cashflow_file = root_path + "/Data/CSV/cashflow/" + ticker + ".csv"
+
+    if os.path.exists(cashflow_file) == False: return pd.DataFrame()
+
     df = pd.read_csv(cashflow_file, index_col=["index"])
     df.set_index('date', inplace=True)
 
