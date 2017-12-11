@@ -10,7 +10,7 @@ import numpy as np
 import pickle
 
 from Stock_Prediction_Base import base_model
-from Stock_Prediction_Data_Processing import reshape_input, get_all_stocks_feature_data, preprocessing_data, kmeans_claasification, preprocessing_train_data, kmeans_claasification
+from Stock_Prediction_Data_Processing import reshape_input, get_all_stocks_feature_data, preprocessing_data, kmeans_claasification, get_all_target_dict, preprocessing_train_data, kmeans_claasification
 	
 def S_score(y_true,y_pred):
     TP1=((y_true==y_pred)&(y_pred>3)).astype(int).sum()
@@ -173,15 +173,20 @@ class xgboost_classification(xgboost_model):
         # print('Test shape X:', X_test.shape, ',y:', y_test.shape)
         return X_train, y_train, X_test, y_test
 
-    def prepare_train_data(self,data_feature,LabelColumnName,train_tickers_dict):
+    def prepare_train_data(self,data_feature,LabelColumnName):
         firstloop = 1
         print("get_data_feature")
         #print(data_feature.items())
+        train_tickers_dict = get_all_target_dict()
+        train_symbols = train_tickers_dict.keys()
+
         for ticker, data in data_feature.items():
             # print(ticker, "n_feature", self.paras.n_features, len(data[0]))
             # print("data[0]",data[0].head())
             #print("data[0]", data[0].index)
-            X, y = preprocessing_train_data(self.paras, data[0], LabelColumnName,ticker,train_tickers_dict,one_hot_label_proc=False)
+            if ticker not in train_symbols: continue
+
+            X, y = preprocessing_train_data(self.paras, data[0], LabelColumnName, ticker, train_tickers_dict, one_hot_label_proc=False)
             # print(X.shape)
             # X, y = reshape_input(self.paras.n_features, X, y)
             X_train_temp, X_test_temp, y_train_temp, y_test_temp = train_test_split(X, y, test_size=0.2)
@@ -205,9 +210,9 @@ class xgboost_classification(xgboost_model):
         # print('Test shape X:', X_test.shape, ',y:', y_test.shape)
         return X_train, y_train, X_test, y_test
 
-    def train_data(self, data_feature, window, LabelColumnName, train_tickers):
+    def train_data(self, data_feature, window, LabelColumnName):
         print("Prepare Train data")
-        X_train, y_train, X_test, y_test = self.prepare_train_data(data_feature, LabelColumnName, train_tickers)
+        X_train, y_train, X_test, y_test = self.prepare_train_data(data_feature, LabelColumnName)
         print("X_train",X_train.shape)
 
         model = self.build_model(window, X_train, y_train, X_test, y_test)
@@ -397,7 +402,7 @@ class xgboost_classification(xgboost_model):
     ###                             ###
     ###################################
 
-    def run(self, train, predict, train_symbols_dict):
+    def run(self, train, predict):
         if self.check_parameters() == False:
             raise IndexError('Parameters for XgBoost is wrong, check out_class_type')
 
@@ -409,9 +414,9 @@ class xgboost_classification(xgboost_model):
         ################################################################################
 
         for window in self.paras.window_len:
-            self.do_run(train, predict, window, train_symbols_dict)
+            self.do_run(train, predict, window)
 
-    def do_run(self, train, predict, window, train_symbols_dict):
+    def do_run(self, train, predict, window):
         LabelColumnName = 'label'
         data_file = "data_file_xgboost_" + str(window) + ".pkl"
 
@@ -429,7 +434,7 @@ class xgboost_classification(xgboost_model):
 
         train_feature = {}
             
-        if train: model = self.train_data(data_feature, window, LabelColumnName, train_symbols_dict)
+        if train: model = self.train_data(data_feature, window, LabelColumnName)
             
         if predict: self.predict_data(model, data_feature, window, LabelColumnName)
 

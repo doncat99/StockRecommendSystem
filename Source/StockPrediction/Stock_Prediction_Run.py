@@ -21,25 +21,15 @@ sys.path.append(root_path + "/" + 'Source/DataBase/')
 from Fetch_Data_Stock_US_Daily import updateStockData_US_Daily, getStocksList_US
 from Fetch_Data_Stock_CHN_StockList import getStocksList_CHN
 
-def get_all_target_dict():
-    symbool_path = os.path.join(cur_path, 'DATA')
-    symbool_path = os.path.join(symbool_path, 'CSV')
-    symbool_path = os.path.join(symbool_path, 'target')
-    date_files = os.listdir(symbool_path)
-    target_dict = {}
-    for day_items in date_files:
-        filename = os.path.join(symbool_path, day_items)
-        target_df = pd.read_csv(filename, index_col='symbol')
-        target_symbol_list = (target_df.index.astype(str).str.zfill(6)).tolist()
-        for symbol in target_symbol_list:
-            if symbol in target_dict:
-                target_dict[symbol].append(day_items.split('.')[0])
-            else:
-                target_dict[symbol] = day_items.split('.')[:1]
-    return target_dict
+
 	
-def run_lstm_classification(root_path, train_symbols, predict_symbols, need_training, need_plot_training_diagram, need_predict):
-    paras = SP_Paras('lstm', root_path, train_symbols, predict_symbols)
+def run_lstm_classification(root_path, need_training, need_plot_training_diagram, need_predict):
+    df = getStocksList_CHN(root_path)
+    df.index = df.index.astype(str).str.zfill(6)
+    df = df.sort_index(ascending = True)
+    predict_symbols = df.index.values.tolist()
+
+    paras = SP_Paras('lstm', root_path, predict_symbols, predict_symbols)
     paras.save = True
     paras.load = False
     paras.run_hyperopt = True
@@ -90,11 +80,12 @@ def run_lstm_classification(root_path, train_symbols, predict_symbols, need_trai
                        "activation"       :hp.choice ("activation"   , paras.hyper_opt['activation_opt']), 
                        "optimizer"        :hp.choice ("optimizer"    , paras.hyper_opt['optimizer_opt']), 
     })
+
+    #symbols = ['000001', '000002', '000004', '000005', '000006', '000007']
     
     # run
-    train_symbols_dict = get_all_target_dict()
     lstm_cla = rnn_lstm_classification(paras)
-    lstm_cla.run(need_training, need_predict, train_symbols_dict)
+    lstm_cla.run(need_training, need_predict)
     return paras
 
 
@@ -222,8 +213,13 @@ def run_recommand_system(root_path, train_symbols, predict_symbols, need_trainin
     rs.run(need_training, need_predict)
 
 
-def run_xgboost_classification(root_path, train_symbols, predict_symbols, need_training, need_plot_training_diagram, need_predict):
-    paras = SP_Paras('xgboost', root_path, train_symbols, predict_symbols)
+def run_xgboost_classification(root_path, need_training, need_plot_training_diagram, need_predict):
+    df = getStocksList_CHN(root_path)
+    df.index = df.index.astype(str).str.zfill(6)
+    df = df.sort_index(ascending = True)
+    predict_symbols = df.index.values.tolist()
+
+    paras = SP_Paras('xgboost', root_path, predict_symbols, predict_symbols)
     paras.save = True
     paras.load = False
     paras.run_hyperopt = False
@@ -260,9 +256,8 @@ def run_xgboost_classification(root_path, train_symbols, predict_symbols, need_t
     }
 
     # run
-    train_symbols_dict = get_all_target_dict()
     xgboost_cla = xgboost_classification(paras)
-    xgboost_cla.run(need_training, need_predict, train_symbols_dict)
+    xgboost_cla.run(need_training, need_predict)
     return paras
 
 
@@ -289,19 +284,9 @@ if __name__ == "__main__":
 
     #run_recommand_system(root_path, predict_symbols, predict_symbols, True, False, True)
     #paras = run_rf_regression(root_path, predict_symbols, predict_symbols, True, False, True)
-
-    df = getStocksList_CHN(root_path)
-    df.index = df.index.astype(str).str.zfill(6)
-    df = df.sort_index(ascending = True)
-    predict_symbols = df.index.values.tolist()
-
-    #symbols = ['000001', '000002', '000004', '000005', '000006', '000007']
-    #When get target symbols
-    train_symbols=get_all_target_dict().keys()
-    train_symbols=list(train_symbols)
     
     #need_training, need_plot_training_diagram, need_predict
-    #paras = run_xgboost_classification(root_path, train_symbols, predict_symbols, False, False, True)
-    paras = run_lstm_classification(root_path, train_symbols, predict_symbols, True, False, True)
+    paras = run_xgboost_classification(root_path, True, False, True)
+    # paras = run_lstm_classification(root_path, True, False, True)
 
     backend.clear_session()

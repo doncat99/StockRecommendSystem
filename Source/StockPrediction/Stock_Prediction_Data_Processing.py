@@ -345,6 +345,23 @@ def generate_time_series_data(paras, df, window_len):
 ###      Get Feature Data       ###
 ###                             ###
 ###################################
+def get_all_target_dict():
+    # symbool_path = os.path.join(cur_path, 'Data')
+    # symbool_path = os.path.join(symbool_path, 'CSV')
+    # symbool_path = os.path.join(symbool_path, 'target')
+    symbol_path = root_path + "/Data/CSV/target/"
+    date_files = os.listdir(symbol_path)
+    target_dict = {}
+    for day_items in date_files:
+        filename = os.path.join(symbol_path, day_items)
+        target_df = pd.read_csv(filename, index_col='symbol')
+        target_symbol_list = (target_df.index.astype(str).str.zfill(6)).tolist()
+        for symbol in target_symbol_list:
+            if symbol in target_dict:
+                target_dict[symbol].append(day_items.split('.')[0])
+            else:
+                target_dict[symbol] = day_items.split('.')[:1]
+    return target_dict
 
 def get_single_stock_feature_data(ticker, paras, window_len, input_data, LabelColumnName):
     cashflow_file = root_path + "/Data/CSV/cashflow/" + ticker + ".csv"
@@ -439,9 +456,9 @@ def get_all_stocks_feature_data(paras, window_len, LabelColumnName):
         input.close()
     else:
         data_original = get_all_stocks_data(paras.root_path, paras.train_tickers)
-        output = open(ori_file, 'wb')
-        pickle.dump(data_original, output)
-        output.close()
+        #output = open(ori_file, 'wb')
+        #pickle.dump(data_original, output)
+        #output.close()
 
     #data_original = get_all_stocks_data(paras.root_path, paras.train_tickers)
     data_feature = {}

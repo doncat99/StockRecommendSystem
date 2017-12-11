@@ -13,7 +13,7 @@ import pickle
 from hyperopt import fmin, tpe, partial
 
 from Stock_Prediction_Base import base_model
-from Stock_Prediction_Data_Processing import reshape_input, get_all_stocks_feature_data, preprocessing_data, kmeans_claasification, preprocessing_train_data, kmeans_claasification
+from Stock_Prediction_Data_Processing import reshape_input, get_all_stocks_feature_data, preprocessing_data, kmeans_claasification, get_all_target_dict, preprocessing_train_data, kmeans_claasification
 
 
 class lstm_model(base_model):
@@ -208,14 +208,20 @@ class rnn_lstm_classification(lstm_model):
         # print('Test shape X:', X_test.shape, ',y:', y_test.shape)
         return X_train, y_train, X_test, y_test
 
-    def prepare_train_data(self, data_feature, LabelColumnName, train_tickers_dict):
+    def prepare_train_data(self, data_feature, LabelColumnName):
         firstloop = 1
         print("get_data_feature")
         #print(data_feature.items())
+
+        train_tickers_dict = get_all_target_dict()
+        train_symbols = train_tickers_dict.keys()
+
         for ticker, data in data_feature.items():
             # print(ticker, "n_feature", self.paras.n_features, len(data[0]))
             # print("data[0]",data[0].head())
             #print("data[0]", data[0].index)
+            if ticker not in train_symbols: continue
+
             X, y = preprocessing_train_data(self.paras, data[0], LabelColumnName, ticker, train_tickers_dict, one_hot_label_proc=True)
 
             if len(X) == 0 or len(y) == 0: continue
@@ -241,11 +247,11 @@ class rnn_lstm_classification(lstm_model):
         # print('Test shape X:', X_test.shape, ',y:', y_test.shape)
         return X_train, y_train, X_test, y_test
 
-    def train_data(self, data_feature, window, LabelColumnName, train_tickers):
+    def train_data(self, data_feature, window, LabelColumnName):
         history = History()
         
         #X_train, y_train, X_test, y_test = self.prepare_train_test_data(data_feature, LabelColumnName)
-        X_train, y_train, X_test, y_test = self.prepare_train_data(data_feature, LabelColumnName, train_tickers)
+        X_train, y_train, X_test, y_test = self.prepare_train_data(data_feature, LabelColumnName)
         model = self.build_model(window, X_train, y_train, X_test, y_test)
 
         model.fit(
@@ -383,7 +389,6 @@ class rnn_lstm_classification(lstm_model):
     ###       Save Data Output      ###
     ###                             ###
     ###################################
-
     def save_data_frame_mse(self, ticker, df, window, possibility_columns, mses):
         df['label'] = df['label']#.astype(int)
         df['pred'] = df['pred']#.astype(int)
@@ -417,7 +422,7 @@ class rnn_lstm_classification(lstm_model):
     ###                             ###
     ###################################
 
-    def run(self, train, predict, train_symbols_dict):
+    def run(self, train, predict):
         if self.check_parameters() == False:
             raise IndexError('Parameters for LSTM is wrong, check out_class_type')
 
@@ -429,9 +434,9 @@ class rnn_lstm_classification(lstm_model):
         ################################################################################
 
         for window in self.paras.window_len:
-            self.do_run(train, predict, window, train_symbols_dict)
+            self.do_run(train, predict, window)
 
-    def do_run(self, train, predict, window, train_symbols_dict):
+    def do_run(self, train, predict, window):
         LabelColumnName = 'label'
         data_file = "data_file_lstm_" + str(window) + ".pkl"
 
@@ -440,12 +445,12 @@ class rnn_lstm_classification(lstm_model):
             data_feature = pickle.load(input)
         else:
             data_feature = get_all_stocks_feature_data(self.paras, window, LabelColumnName)
-            output = open(data_file, 'wb')
-            pickle.dump(data_feature, output)
+            #output = open(data_file, 'wb')
+            #pickle.dump(data_feature, output)
 
         model = None
             
-        if train: model = self.train_data(data_feature, window, LabelColumnName, train_symbols_dict)
+        if train: model = self.train_data(data_feature, window, LabelColumnName)
             
         if predict: self.predict_data(model, data_feature, window, LabelColumnName)
 

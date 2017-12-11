@@ -273,7 +273,7 @@ class SP_Global_Paras(object):
 
 class SP_Paras(SP_Global_Paras):
     
-    def __init__(self, name, root_path, train_tickers, predict_tickers):
+    def __init__(self, name, root_path, train_tickers = [], predict_tickers = []):
         super(SP_Paras, self).__init__(name, root_path = root_path, train_tickers = train_tickers, predict_tickers = predict_tickers)
 
         # ------------- LSTM -------------
