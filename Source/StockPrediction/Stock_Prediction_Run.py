@@ -222,7 +222,7 @@ def run_xgboost_classification(root_path, need_training, need_plot_training_diag
     paras = SP_Paras('xgboost', root_path, predict_symbols, predict_symbols)
     paras.save = True
     paras.load = False
-    paras.run_hyperopt = False
+    paras.run_hyperopt = True
     paras.plot = need_plot_training_diagram
     
     # A_B_C format:
@@ -242,7 +242,7 @@ def run_xgboost_classification(root_path, need_training, need_plot_training_diag
     paras.end_date = datetime.datetime.now().strftime("%Y-%m-%d")
     paras.verbose = 1
     paras.batch_size = 64
-    paras.epoch = 100
+    paras.epoch = 5000
     paras.out_class_type = 'classification'
     paras.n_out_class = 7  # ignore for regression
 
@@ -287,6 +287,6 @@ if __name__ == "__main__":
     
     #need_training, need_plot_training_diagram, need_predict
     # paras = run_xgboost_classification(root_path, False, False, True)
-    paras = run_lstm_classification(root_path, False, False, True)
+    paras = run_lstm_classification(root_path, True, False, True)
 
     backend.clear_session()
