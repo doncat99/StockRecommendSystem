@@ -32,7 +32,7 @@ def run_lstm_classification(root_path, need_training, need_plot_training_diagram
     paras = SP_Paras('lstm', root_path, predict_symbols, predict_symbols)
     paras.save = True
     paras.load = False
-    paras.run_hyperopt = False
+    paras.run_hyperopt = True
     paras.plot = need_plot_training_diagram
 
     # A_B_C format:
@@ -53,7 +53,7 @@ def run_lstm_classification(root_path, need_training, need_plot_training_diagram
     
     paras.out_class_type = 'classification'
     paras.n_out_class = 7  # ignore for regression
-    paras.epoch = 100
+    paras.epoch = 5000
 
     paras.window_len = [3]
     paras.batch_size = 64
