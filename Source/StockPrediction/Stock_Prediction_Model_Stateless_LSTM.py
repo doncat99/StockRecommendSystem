@@ -222,7 +222,7 @@ class rnn_lstm_classification(lstm_model):
             #print("data[0]", data[0].index)
             if ticker not in train_symbols: continue
 
-            X, y = preprocessing_train_data(self.paras, data[0], LabelColumnName, ticker, train_tickers_dict, one_hot_label_proc=True)
+            X, y = preprocessing_train_data(self.paras, data[0].copy(), LabelColumnName, ticker, train_tickers_dict, one_hot_label_proc=True)
 
             if len(X) == 0 or len(y) == 0: continue
             # print(X.shape)
@@ -443,10 +443,12 @@ class rnn_lstm_classification(lstm_model):
         if os.path.exists(data_file):
             input = open(data_file, 'rb')
             data_feature = pickle.load(input)
+            input.close()
         else:
             data_feature = get_all_stocks_feature_data(self.paras, window, LabelColumnName)
-            #output = open(data_file, 'wb')
-            #pickle.dump(data_feature, output)
+            output = open(data_file, 'wb')
+            pickle.dump(data_feature, output)
+            output.close()
 
         model = None
             

@@ -173,7 +173,7 @@ class xgboost_classification(xgboost_model):
         # print('Test shape X:', X_test.shape, ',y:', y_test.shape)
         return X_train, y_train, X_test, y_test
 
-    def prepare_train_data(self,data_feature,LabelColumnName):
+    def prepare_train_data(self, data_feature, LabelColumnName):
         firstloop = 1
         print("get_data_feature")
         #print(data_feature.items())
@@ -186,7 +186,7 @@ class xgboost_classification(xgboost_model):
             #print("data[0]", data[0].index)
             if ticker not in train_symbols: continue
 
-            X, y = preprocessing_train_data(self.paras, data[0], LabelColumnName, ticker, train_tickers_dict, one_hot_label_proc=False)
+            X, y = preprocessing_train_data(self.paras, data[0].copy(), LabelColumnName, ticker, train_tickers_dict, one_hot_label_proc=False)
             # print(X.shape)
             # X, y = reshape_input(self.paras.n_features, X, y)
             X_train_temp, X_test_temp, y_train_temp, y_test_temp = train_test_split(X, y, test_size=0.2)
@@ -267,6 +267,14 @@ class xgboost_classification(xgboost_model):
             except:
                 #print('stock not prepare:', ticker)
                 continue
+
+            # print(ticker, len(data[0]), len(data[1]), len(data[2]), len(data[3]))
+
+            # print(data[3])
+
+            # print("$"*40)
+
+            # print(data[0])
 
             X_train, y_train   = preprocessing_data(self.paras, data[0], LabelColumnName, one_hot_label_proc=False)
             X_valid, y_valid   = preprocessing_data(self.paras, data[1], LabelColumnName, one_hot_label_proc=False)
