@@ -1,0 +1,1 @@
+cp -avx ./predict_out.txt ../../../../../
