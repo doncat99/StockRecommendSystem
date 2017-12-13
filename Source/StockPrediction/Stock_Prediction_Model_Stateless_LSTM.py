@@ -102,7 +102,7 @@ class lstm_model(base_model):
         
     def build_model(self, window, X_train, y_train, X_test, y_test):
         if self.paras.load == True:
-            model = self.load_training_model()
+            model = self.load_training_model(window)
             if model != None:
                 return model
 
@@ -299,6 +299,8 @@ class rnn_lstm_classification(lstm_model):
             print('predict failed, model not exist')
             return
 
+        filename = open("./predict_out.txt", 'w')
+
         for ticker in self.paras.predict_tickers:
             try:
                 data = data_feature[ticker]
@@ -380,8 +382,11 @@ class rnn_lstm_classification(lstm_model):
             self.df = data[3]
 
             pd.set_option('display.max_rows', None)
-            print('\n ---------- ', ticker, ' ---------- \n')
-            print(data[3][-(self.paras.pred_len + self.paras.valid_len):])
+            print('\n ---------- ', ticker, ' ---------- \n', file = filename)
+            print(data[3][-(self.paras.pred_len + self.paras.valid_len):], file = filename, flush = True)
+
+            # print('\n ---------- ', ticker, ' ---------- \n')
+            # print(data[3][-(self.paras.pred_len + self.paras.valid_len):])
 
 
     ###################################

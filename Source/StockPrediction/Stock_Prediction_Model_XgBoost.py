@@ -261,6 +261,8 @@ class xgboost_classification(xgboost_model):
             print('predict failed, model not exist')
             return
 
+        filename = open("./predict_out.txt", 'w')
+
         for ticker in self.paras.predict_tickers:
             try:
                 data = data_feature[ticker]
@@ -364,10 +366,10 @@ class xgboost_classification(xgboost_model):
 
             pd.set_option('display.max_rows', None)
             if (pred_df == 0).all() == False:
-                print('\n ---------- ', ticker, ' ---------- \n')
-                print('train data recall: ', rec_known_train)
-                print('valid data recall: ', rec_known_valid)
-                print(data[3][-(self.paras.pred_len + self.paras.valid_len):])
+                print('\n ---------- ', ticker, ' ---------- \n', file = filename)
+                # print('train data recall: ', rec_known_train)
+                # print('valid data recall: ', rec_known_valid)
+                print(data[3][-(self.paras.pred_len + self.paras.valid_len):], file = filename, flush = True)
 
 
     ###################################

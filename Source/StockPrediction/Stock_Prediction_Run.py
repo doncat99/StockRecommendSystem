@@ -31,8 +31,8 @@ def run_lstm_classification(root_path, need_training, need_plot_training_diagram
 
     paras = SP_Paras('lstm', root_path, predict_symbols, predict_symbols)
     paras.save = True
-    paras.load = False
-    paras.run_hyperopt = True
+    paras.load = True
+    paras.run_hyperopt = False
     paras.plot = need_plot_training_diagram
 
     # A_B_C format:
@@ -53,7 +53,7 @@ def run_lstm_classification(root_path, need_training, need_plot_training_diagram
     
     paras.out_class_type = 'classification'
     paras.n_out_class = 7  # ignore for regression
-    paras.epoch = 5000
+    paras.epoch = 5
 
     paras.window_len = [3]
     paras.batch_size = 64
@@ -286,7 +286,7 @@ if __name__ == "__main__":
     #paras = run_rf_regression(root_path, predict_symbols, predict_symbols, True, False, True)
     
     #need_training, need_plot_training_diagram, need_predict
-    # paras = run_xgboost_classification(root_path, False, False, True)
-    paras = run_lstm_classification(root_path, True, False, True)
+    paras = run_xgboost_classification(root_path, True, False, True)
+    # paras = run_lstm_classification(root_path, True, False, True)
 
     backend.clear_session()
