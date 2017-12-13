@@ -1,1 +1,1 @@
-cp -avx ./predict_out.txt ../../../../../
+cp -avx ./predict_out.txt ../../../../../home/jupyter/
