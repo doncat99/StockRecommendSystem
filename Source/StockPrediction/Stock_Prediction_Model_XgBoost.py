@@ -17,8 +17,12 @@ def S_score(y_true,y_pred):
     TP2=(y_true>y_pred).astype(int).sum()
     FP=((y_pred>y_true)&(y_true<4)).astype(int).sum()
     TP=TP1+TP2
-    score=float(TP)/(TP+FP)
-    return score
+    try:
+        score=float(TP)/(TP+FP)
+        return score
+    except:
+        print('divided error')
+        return 0
 
 class xgboost_model(base_model):
     train_x = None
@@ -45,7 +49,8 @@ class xgboost_model(base_model):
                                 subsample=subsample,      #采样数
                                 min_child_weight=min_child_weight,   #孩子数
                                 max_delta_step = 100,  #10步不降则停止
-                                # tree_method = "gpu_exact",
+                                tree_method = "gpu_hist",
+                                predictor = "gpu_predictor",
                                 objective="multi:softmax")
         predicted=cross_val_predict(gbm, self.test_x, self.test_y,cv=5)
         scoring=recall_score(self.test_y, predicted, average='micro', labels=[4,5,6])
@@ -106,7 +111,8 @@ class xgboost_model(base_model):
                                   subsample=subsample,      #采样数
                                   min_child_weight=min_child_weight,   #孩子数
                                   max_delta_step = 100,  #10步不降则停止
-                                #   tree_method = "gpu_exact",
+                                  tree_method = "gpu_hist",
+                                  predictor = "gpu_predictor",
                                   objective="multi:softmax")
         return model
 
