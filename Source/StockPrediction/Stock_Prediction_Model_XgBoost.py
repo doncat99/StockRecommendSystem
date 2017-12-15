@@ -250,8 +250,8 @@ class xgboost_classification(xgboost_model):
 
     def train_data(self, data_feature, window, LabelColumnName):
         print("Prepare Train data")
-        # X_train, y_train, X_test, y_test = self.prepare_train_data(data_feature, LabelColumnName)
-        X_train, y_train, X_test, y_test = self.prepare_train_test_data(data_feature, LabelColumnName) 
+        X_train, y_train, X_test, y_test = self.prepare_train_data(data_feature, LabelColumnName)
+        # X_train, y_train, X_test, y_test = self.prepare_train_test_data(data_feature, LabelColumnName) 
         print("X_train",X_train.shape)
 
         model = self.build_model(window, X_train, y_train, X_test, y_test)
