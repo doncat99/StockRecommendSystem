@@ -1,7 +1,7 @@
 import os, csv
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.model_selection import cross_val_predict
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
 from hyperopt import fmin, tpe, partial
 import xgboost as xgb
@@ -17,12 +17,18 @@ def S_score(y_true,y_pred):
     TP2=(y_true>y_pred).astype(int).sum()
     FP=((y_pred>y_true)&(y_true<4)).astype(int).sum()
     TP=TP1+TP2
-    try:
+    if (TP+FP)==0:
+        return 0
+    else:
         score=float(TP)/(TP+FP)
         return score
-    except:
-        print('divided error')
-        return 0
+
+def Xg_iter_precision(y_preds,dtrain):
+    #print(y_preds)
+    y_true=dtrain.get_label()
+    score=precision_score(y_true,y_preds,average='micro',labels=[4,5,6])
+    #print('score is ',score)
+    return 'precision_4_5_6',score
 
 class xgboost_model(base_model):
     train_x = None
@@ -31,32 +37,44 @@ class xgboost_model(base_model):
     test_y  = None
 
     def GBM(self, argsDict):
-        max_depth = argsDict["max_depth"] + 5
-        n_estimators = argsDict['n_estimators'] * 5 + 50
-        learning_rate = argsDict["learning_rate"] * 0.02 + 0.05
-        gamma = argsDict["gamma"] * 0.1
-        subsample = argsDict["subsample"] * 0.1 + 0.7
-        min_child_weight = argsDict["min_child_weight"] + 1
+        max_depth = argsDict["max_depth"] + 10
+        subsample = argsDict["subsample"] * 0.1 + 0.5
+        #n_estimators = argsDict['n_estimators'] * 5 + 50
+        learning_rate = argsDict["learning_rate"] * 0.02 + 0.12
+        #gamma = argsDict["gamma"] * 0.1
+        #min_child_weight = argsDict["min_child_weight"] + 1
         
         print("max_depth:" + str(max_depth), "n_estimator:" + str(n_estimators), "learning_rate:" + str(learning_rate), \
               "gamma:" + str(gamma), "subsample:" + str(subsample), "min_child_weight:" + str(min_child_weight))
+        params={
+            "max_depth":max_depth,
+            #"gamma":gamma,
+             'subsample' : subsample,
+            'learning_rate' : learning_rate,
+            #'subsample' : subsample,
+            #'min_child_weight': min_child_weight,
+            'objective': "multi:softmax",
+            'num_class': 7 ,
+            "eval_metric":'merror',
+            'silent':True,
+            'tree_method': "gpu_hist",
+            'predictor' : "gpu_predictor",
 
-        gbm = xgb.XGBClassifier(nthread=-1,    #进程数
-                                max_depth=max_depth,  #最大深度
-                                gamma=gamma,
-                                n_estimators=n_estimators,   #树的数量
-                                learning_rate=learning_rate, #学习率
-                                subsample=subsample,      #采样数
-                                min_child_weight=min_child_weight,   #孩子数
-                                max_delta_step = 100,  #10步不降则停止
-                                tree_method = "gpu_hist",
-                                predictor = "gpu_predictor",
-                                objective="multi:softmax")
-        predicted=cross_val_predict(gbm, self.test_x, self.test_y,cv=5)
-        scoring=recall_score(self.test_y, predicted, average='micro', labels=[4,5,6])
-        #cro=cross_val_score(gbm, self.test_x, self.test_y, cv=5,scoring=scoring).mean()
-        print('recall is ',scoring)
-        return -scoring
+        }
+        num_round=1
+        xg_train=xgb.DMatrix(self.train_x,label=self.train_y)
+        xg_test=xgb.DMatrix(self.test_x,label=self.test_y)
+        watchlist=[(xg_train,"train"),(xg_test,'test')]
+        model=xgb.train(params,xg_train,num_round,watchlist,feval=Xg_iter_precision)
+        cov_res=xgb.cv(params,xg_train,num_round,nfold=5,feval=Xg_iter_precision)
+        #print(cov_res.head())
+        cov_rec=cov_res.tail(1)['test-precision_4_5_6-mean'].values
+        predicted=model.predict(xg_test)
+
+        scoring=precision_score( self.test_y,predicted,average='micro',labels=[4,5,6])
+        print('precision is ',scoring)
+        print('cv_precision_4_5_6',cov_rec[0])
+        return -cov_rec[0]
 
     def best_model(self, X_train, y_train, X_test, y_test):
         self.train_x = X_train
@@ -65,13 +83,13 @@ class xgboost_model(base_model):
         self.test_y  = y_test
 
         algo = partial(tpe.suggest, n_startup_jobs=1)
-        best = fmin(self.GBM, space=self.paras.hyper_opt, algo=algo, max_evals=100)
+        best = fmin(self.GBM, space=self.paras.hyper_opt, algo=algo, max_evals=20)
         print("best", best)
         return best
         
     def build_model(self, window, X_train, y_train, X_test, y_test):
         if self.paras.load == True:
-            model = self.load_training_model()
+            model = self.load_training_model(window)
             if model != None:
                 return model
 
@@ -89,31 +107,40 @@ class xgboost_model(base_model):
 
         if len(best) == 0:
             max_depth = 10
-            n_estimators = 100
+            #n_estimators = 100
             learning_rate = 0.09
-            gamma = 0.2
+            #gamma = 0.2
             subsample = 0.9
-            min_child_weight = 2
+            #min_child_weight = 2
         else:
             max_depth = best["max_depth"] + 5
-            n_estimators = best['n_estimators'] * 5 + 50
+            #n_estimators = best['n_estimators'] * 5 + 50
             learning_rate = best["learning_rate"] * 0.02 + 0.05
-            gamma = best["gamma"] * 0.1
+            #gamma = best["gamma"] * 0.1
             subsample = best["subsample"] * 0.1 + 0.7
-            min_child_weight = best["min_child_weight"] + 1
+            #min_child_weight = best["min_child_weight"] + 1
 
         print('Get XgBoost model parameter...')
-        model = xgb.XGBClassifier(nthread=4,    #进程数
-                                  max_depth=max_depth,  #最大深度
-                                  gamma=gamma,
-                                  n_estimators=n_estimators,   #树的数量
-                                  learning_rate=learning_rate, #学习率
-                                  subsample=subsample,      #采样数
-                                  min_child_weight=min_child_weight,   #孩子数
-                                  max_delta_step = 100,  #10步不降则停止
-                                  tree_method = "gpu_hist",
-                                  predictor = "gpu_predictor",
-                                  objective="multi:softmax")
+        params={
+            "max_depth":max_depth,
+            #"gamma":gamma,
+            #"n_estimators":n_estimators,
+            'learning_rate' : learning_rate,
+            'subsample' : subsample,
+            #'min_child_weight': min_child_weight,
+            'objective': "multi:softmax",
+            'num_class':7,
+            "eval_metric":'merror',
+            'silent':True,
+            'tree_method' : "gpu_hist",
+            'predictor': "gpu_predictor",
+
+        }
+        num_round=10
+        xg_train=xgb.DMatrix(X_train,label=y_train)
+        xg_test=xgb.DMatrix(X_test,label=y_test)
+        watchlist=[(xg_train,"train"),(xg_test,"test")]
+        model = xgb.train(params,xg_train,num_round,watchlist,feval=Xg_iter_precision)
         return model
 
     def save_training_model(self, model, window_len):
@@ -227,15 +254,17 @@ class xgboost_classification(xgboost_model):
         model = self.build_model(window, X_train, y_train, X_test, y_test)
         print("build XgBoost model...")
 
-        model.fit(
-            X_train,
-            y_train,
-            verbose=self.paras.verbose
-        )
-        pred=model.predict(X_train)
-        pred2 = model.predict(X_test)
-        print("Filter train_data_recall is ",recall_score(y_train,pred,average='micro',labels=[4,5,6]))
-        print("Filter test_data_recall is ", recall_score(y_test,pred2,average='micro',labels=[4,5,6]))
+        #model.predict(
+        #    X_train,
+        #    y_train,
+        #    verbose=self.paras.verbose
+        #)
+        xg_train=xgb.DMatrix(X_train)
+        xg_test = xgb.DMatrix(X_test)
+        pred=model.predict(xg_train)
+        pred2 = model.predict(xg_test)
+        print("Filter train_data_precision is ",precision_score(y_train,pred,average='micro',labels=[4,5,6]))
+        print("Filter test_data_precision is ", precision_score(y_test,pred2,average='micro',labels=[4,5,6]))
 
         # save model
         self.save_training_model(model, window)
@@ -257,9 +286,10 @@ class xgboost_classification(xgboost_model):
     ###################################
 
     def predict(self, model, X, y):
-        predictions = model.predict(X)
-        recall_p = S_score(y,predictions)
-        return recall_p, predictions
+        xg_X=xgb.DMatrix(X)
+        predictions = model.predict(xg_X)
+        precision_p = S_score(y,predictions)
+        return precision_p, predictions
 
 
     def predict_data(self, model, data_feature, window, LabelColumnName):

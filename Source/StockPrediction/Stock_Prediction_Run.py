@@ -39,7 +39,7 @@ def run_lstm_classification(root_path, need_training, need_plot_training_diagram
     # A: require window split or not -> 0 for not, 1 for yes
     # B: normalization method -> 0: none 1: standard 2: minmax 3: zscore
     # C: normalization index, same normalization requires different index
-    paras.features = {'1_0_0':['week_day'],
+    paras.features = {#'1_0_0':['week_day'],
                       '1_0_1':['c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol_p'],
                       '1_1_0':['buy_amount', 'sell_amount', 'even_amount'],
                       '1_1_1':['buy_volume', 'sell_volume', 'even_volume'], 
@@ -53,7 +53,7 @@ def run_lstm_classification(root_path, need_training, need_plot_training_diagram
     
     paras.out_class_type = 'classification'
     paras.n_out_class = 7  # ignore for regression
-    paras.epoch = 5
+    paras.epoch = 500
 
     paras.window_len = [3]
     paras.batch_size = 64
@@ -229,7 +229,7 @@ def run_xgboost_classification(root_path, need_training, need_plot_training_diag
     # A: require window split or not -> 0 for not, 1 for yes
     # B: normalization method -> 0: none 1: standard 2: minmax 3: zscore
     # C: normalization index, same normalization requires different index
-    paras.features = {'0_0_0':['week_day'],
+    paras.features = {#'0_0_0':['week_day'],
                       '1_0_1':['c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol_p'],
                       '1_1_0':['buy_amount', 'sell_amount', 'even_amount'],
                       '1_1_1':['buy_volume', 'sell_volume', 'even_volume'], 
@@ -242,17 +242,17 @@ def run_xgboost_classification(root_path, need_training, need_plot_training_diag
     paras.end_date = datetime.datetime.now().strftime("%Y-%m-%d")
     paras.verbose = 1
     paras.batch_size = 64
-    paras.epoch = 5000
+    paras.epoch = 100
     paras.out_class_type = 'classification'
     paras.n_out_class = 7  # ignore for regression
 
     from hyperopt import hp
     paras.hyper_opt = {"max_depth"        :hp.randint("max_depth",       10),
-                       "n_estimators"     :hp.randint("n_estimators",    20),  #[0,1,2,3,4,5] -> [50,]
-                       "gamma"            :hp.randint("gamma",            4),  #0-0.4
+                       #"n_estimators"     :hp.randint("n_estimators",    20),  #[0,1,2,3,4,5] -> [50,]
+                       #"gamma"            :hp.randint("gamma",            4),  #0-0.4
                        "learning_rate"    :hp.randint("learning_rate",    6),  #[0,1,2,3,4,5] -> 0.05,0.06
-                       "subsample"        :hp.randint("subsample",        4),  #[0,1,2,3] -> [0.7,0.8,0.9,1.0]
-                       "min_child_weight" :hp.randint("min_child_weight", 5), 
+                       "subsample"        :hp.randint("subsample",        6),  #[0,1,2,3] -> [0.7,0.8,0.9,1.0]
+                       #"min_child_weight" :hp.randint("min_child_weight", 5), 
     }
 
     # run
