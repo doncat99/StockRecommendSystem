@@ -78,7 +78,7 @@ class xgboost_model(base_model):
         print('cv_precision_4_5_6',cov_rec[0])
         return -cov_rec[0]
 
-    def best_model(self)
+    def best_model(self):
         algo = partial(tpe.suggest, n_startup_jobs=1)
         best = fmin(self.GBM, space=self.paras.hyper_opt, algo=algo, max_evals=20)
         print("best", best)
