@@ -31,10 +31,10 @@ def Xg_iter_precision(y_preds,dtrain):
     return 'precision_4_5_6',score
 
 class xgboost_model(base_model):
-    train_x = None
-    train_y = None
-    test_x  = None
-    test_y  = None
+    train = None
+    test = None
+    watchlist = None 
+    test_y = None
 
     def GBM(self, argsDict):
         max_depth = argsDict["max_depth"] + 10
@@ -66,26 +66,19 @@ class xgboost_model(base_model):
 
         }
         num_round=1
-        xg_train=xgb.DMatrix(self.train_x,label=self.train_y)
-        xg_test=xgb.DMatrix(self.test_x,label=self.test_y)
-        watchlist=[(xg_train,"train"),(xg_test,'test')]
-        model=xgb.train(params,xg_train,num_round,watchlist,feval=Xg_iter_precision)
-        cov_res=xgb.cv(params,xg_train,num_round,nfold=5,feval=Xg_iter_precision)
+        
+        model=xgb.train(params,self.train,num_round,watchlist,feval=Xg_iter_precision)
+        cov_res=xgb.cv(params,self.train,num_round,nfold=5,feval=Xg_iter_precision)
         #print(cov_res.head())
         cov_rec=cov_res.tail(1)['test-precision_4_5_6-mean'].values
-        predicted=model.predict(xg_test)
+        predicted=model.predict(self.test)
 
         scoring=precision_score( self.test_y,predicted,average='micro',labels=[4,5,6])
         print('precision is ',scoring)
         print('cv_precision_4_5_6',cov_rec[0])
         return -cov_rec[0]
 
-    def best_model(self, X_train, y_train, X_test, y_test):
-        self.train_x = X_train
-        self.train_y = y_train
-        self.test_x  = X_test
-        self.test_y  = y_test
-
+    def best_model(self)
         algo = partial(tpe.suggest, n_startup_jobs=1)
         best = fmin(self.GBM, space=self.paras.hyper_opt, algo=algo, max_evals=20)
         print("best", best)
@@ -100,10 +93,15 @@ class xgboost_model(base_model):
         best = {}
         #best {'gamma': 3, 'learning_rate': 5, 'max_depth': 1, 'min_child_weight': 1, 'n_estimators': 17, 'subsample': 0}
         file_name = "hyper_parameter_xgboost_" + str(window) + ".pkl"
+
+        self.train = xgb.DMatrix(X_train, label=y_train)
+        self.test  = xgb.DMatrix(X_test, label=y_test)
+        self.watchlist = [(self.train,"train"), (self.test,'test')]
+        self.test_y = y_test
         
         if self.paras.run_hyperopt == True:
             print('find hyper parameters...')
-            best = self.best_model(X_train, y_train, X_test, y_test)
+            best = self.best_model(y_test)
             pickle.dump(best, open(file_name, "wb"))
         else:
             if os.path.exists(file_name):
@@ -146,10 +144,8 @@ class xgboost_model(base_model):
 
         }
         num_round=10
-        xg_train=xgb.DMatrix(X_train,label=y_train)
-        xg_test=xgb.DMatrix(X_test,label=y_test)
-        watchlist=[(xg_train,"train"),(xg_test,"test")]
-        model = xgb.train(params,xg_train,num_round,watchlist,feval=Xg_iter_precision)
+        
+        model = xgb.train(params,self.train,num_round,watchlist,feval=Xg_iter_precision)
         return model
 
     def save_training_model(self, model, window_len):
