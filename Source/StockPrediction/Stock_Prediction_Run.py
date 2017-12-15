@@ -265,7 +265,6 @@ if __name__ == "__main__":
     pd.set_option('precision', 3)
     pd.set_option('display.width',1000)
     warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
-    tf.logging.set_verbosity(tf.logging.ERROR)
 
     predict_symbols = ['AMD', 'WDC', 'SINA', 'WB', 'CTRP', 'NTES', 'ATVI', 'FB', 'GLUU', 'NVDA', 'NFLX', 
                        'MRVL', 'SMCI', 'JD', 'INTC', 'AMZN', 'BIDU', 'BGNE', 'QIWI', 'MOMO', 'YY']
