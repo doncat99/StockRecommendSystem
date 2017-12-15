@@ -65,10 +65,9 @@ class xgboost_model(base_model):
             # 'predictor' : "gpu_predictor",
 
         }
-        num_round=1
-        
-        model=xgb.train(params,self.train,num_round,watchlist,feval=Xg_iter_precision)
-        cov_res=xgb.cv(params,self.train,num_round,nfold=5,feval=Xg_iter_precision)
+        num_round = 1
+        model=xgb.train(params,self.train, num_round, self.watchlist, feval=Xg_iter_precision)
+        cov_res=xgb.cv(params,self.train, num_round, nfold=5, feval=Xg_iter_precision)
         #print(cov_res.head())
         cov_rec=cov_res.tail(1)['test-precision_4_5_6-mean'].values
         predicted=model.predict(self.test)
@@ -143,9 +142,8 @@ class xgboost_model(base_model):
             # 'predictor': "gpu_predictor",
 
         }
-        num_round=10
-        
-        model = xgb.train(params,self.train,num_round,watchlist,feval=Xg_iter_precision)
+        num_round = 10
+        model = xgb.train(params, self.train, num_round, self.watchlist, feval=Xg_iter_precision)
         return model
 
     def save_training_model(self, model, window_len):
