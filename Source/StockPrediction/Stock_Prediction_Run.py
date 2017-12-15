@@ -1,16 +1,16 @@
 from Stock_Prediction_Base import SP_Paras
-from Stock_Prediction_Model_Stateless_LSTM import rnn_lstm_classification
-from Stock_Prediction_Model_DBN import dbn_classification
-from Stock_Prediction_Model_Random_Forrest import random_forrest_classification
-from Stock_Prediction_Model_Random_Forrest_1 import random_forrest_regression
+# from Stock_Prediction_Model_Stateless_LSTM import rnn_lstm_classification
+# from Stock_Prediction_Model_DBN import dbn_classification
+# from Stock_Prediction_Model_Random_Forrest import random_forrest_classification
+# from Stock_Prediction_Model_Random_Forrest_1 import random_forrest_regression
 from Stock_Prediction_Model_XgBoost import xgboost_classification
-from Stock_Prediction_Recommand_System import recommand_system
+# from Stock_Prediction_Recommand_System import recommand_system
 
 
 import sys, os, time, datetime, warnings, configparser
-import tensorflow as tf
+# import tensorflow as tf
 import pandas as pd
-from keras import backend
+# from keras import backend
 
 cur_path = os.path.dirname(os.path.abspath(__file__))
 for _ in range(2):
@@ -23,194 +23,194 @@ from Fetch_Data_Stock_CHN_StockList import getStocksList_CHN
 
 
 	
-def run_lstm_classification(root_path, need_training, need_plot_training_diagram, need_predict):
-    df = getStocksList_CHN(root_path)
-    df.index = df.index.astype(str).str.zfill(6)
-    df = df.sort_index(ascending = True)
-    predict_symbols = df.index.values.tolist()
+# def run_lstm_classification(root_path, need_training, need_plot_training_diagram, need_predict):
+#     df = getStocksList_CHN(root_path)
+#     df.index = df.index.astype(str).str.zfill(6)
+#     df = df.sort_index(ascending = True)
+#     predict_symbols = df.index.values.tolist()
 
-    paras = SP_Paras('lstm', root_path, predict_symbols, predict_symbols)
-    paras.save = True
-    paras.load = True
-    paras.run_hyperopt = False
-    paras.plot = need_plot_training_diagram
+#     paras = SP_Paras('lstm', root_path, predict_symbols, predict_symbols)
+#     paras.save = True
+#     paras.load = True
+#     paras.run_hyperopt = False
+#     paras.plot = need_plot_training_diagram
 
-    # A_B_C format:
-    # A: require window split or not -> 0 for not, 1 for yes
-    # B: normalization method -> 0: none 1: standard 2: minmax 3: zscore
-    # C: normalization index, same normalization requires different index
-    paras.features = {#'1_0_0':['week_day'],
-                      '1_0_1':['c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol_p'],
-                      '1_1_0':['buy_amount', 'sell_amount', 'even_amount'],
-                      '1_1_1':['buy_volume', 'sell_volume', 'even_volume'], 
-                      '1_1_2':['buy_max', 'buy_min', 'buy_average', 'sell_max', 'sell_min', 'sell_average', 'even_max', 'even_min', 'even_average']} 
+#     # A_B_C format:
+#     # A: require window split or not -> 0 for not, 1 for yes
+#     # B: normalization method -> 0: none 1: standard 2: minmax 3: zscore
+#     # C: normalization index, same normalization requires different index
+#     paras.features = {#'1_0_0':['week_day'],
+#                       '1_0_1':['c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol_p'],
+#                       '1_1_0':['buy_amount', 'sell_amount', 'even_amount'],
+#                       '1_1_1':['buy_volume', 'sell_volume', 'even_volume'], 
+#                       '1_1_2':['buy_max', 'buy_min', 'buy_average', 'sell_max', 'sell_min', 'sell_average', 'even_max', 'even_min', 'even_average']} 
 
-    paras.pred_len = 1
-    paras.valid_len = 20
-    paras.start_date = '2016-11-01'
-    paras.end_date = datetime.datetime.now().strftime("%Y-%m-%d")
-    paras.verbose = 1
+#     paras.pred_len = 1
+#     paras.valid_len = 20
+#     paras.start_date = '2016-11-01'
+#     paras.end_date = datetime.datetime.now().strftime("%Y-%m-%d")
+#     paras.verbose = 1
     
-    paras.out_class_type = 'classification'
-    paras.n_out_class = 7  # ignore for regression
-    paras.epoch = 500
+#     paras.out_class_type = 'classification'
+#     paras.n_out_class = 7  # ignore for regression
+#     paras.epoch = 500
 
-    paras.window_len = [3]
-    paras.batch_size = 64
-    paras.model['hidden_layers'] = [240, 120, 60]
-    paras.model['dropout'] = 0.5
-    paras.model['activation'] = 'relu'
-    paras.model['optimizer'] = 'adam'
-    paras.model['learning_rate'] = 0.01
+#     paras.window_len = [3]
+#     paras.batch_size = 64
+#     paras.model['hidden_layers'] = [240, 120, 60]
+#     paras.model['dropout'] = 0.5
+#     paras.model['activation'] = 'relu'
+#     paras.model['optimizer'] = 'adam'
+#     paras.model['learning_rate'] = 0.01
 
-    paras.model['out_activation'] = 'softmax'
-    paras.model['out_layer'] = paras.n_out_class
-    paras.model['loss'] = 'categorical_crossentropy'
+#     paras.model['out_activation'] = 'softmax'
+#     paras.model['out_layer'] = paras.n_out_class
+#     paras.model['loss'] = 'categorical_crossentropy'
 
-    from hyperopt import hp
-    paras.hyper_opt = {"batch_size_opt"   :[16, 32, 64],
-                       "activation_opt"   :['relu', 'tanh', 'sigmoid'],
-                       "optimizer_opt"    :['sgd', 'rmsprop', 'adagrad', 'adam'],
-    }
+#     from hyperopt import hp
+#     paras.hyper_opt = {"batch_size_opt"   :[16, 32, 64],
+#                        "activation_opt"   :['relu', 'tanh', 'sigmoid'],
+#                        "optimizer_opt"    :['sgd', 'rmsprop', 'adagrad', 'adam'],
+#     }
 
-    paras.hyper_opt.update({
-                       "batch_size"       :hp.choice ("batch_size"   , paras.hyper_opt['batch_size_opt'] ), 
-                       "dropout"          :hp.uniform("dropout"      , 0.3, 0.7     ), 
-                       "learning_rate"    :hp.uniform("learning_rate", 0.005, 0.02  ),  
-                       "activation"       :hp.choice ("activation"   , paras.hyper_opt['activation_opt']), 
-                       "optimizer"        :hp.choice ("optimizer"    , paras.hyper_opt['optimizer_opt']), 
-    })
+#     paras.hyper_opt.update({
+#                        "batch_size"       :hp.choice ("batch_size"   , paras.hyper_opt['batch_size_opt'] ), 
+#                        "dropout"          :hp.uniform("dropout"      , 0.3, 0.7     ), 
+#                        "learning_rate"    :hp.uniform("learning_rate", 0.005, 0.02  ),  
+#                        "activation"       :hp.choice ("activation"   , paras.hyper_opt['activation_opt']), 
+#                        "optimizer"        :hp.choice ("optimizer"    , paras.hyper_opt['optimizer_opt']), 
+#     })
 
-    #symbols = ['000001', '000002', '000004', '000005', '000006', '000007']
+#     #symbols = ['000001', '000002', '000004', '000005', '000006', '000007']
     
-    # run
-    lstm_cla = rnn_lstm_classification(paras)
-    lstm_cla.run(need_training, need_predict)
-    return paras
+#     # run
+#     lstm_cla = rnn_lstm_classification(paras)
+#     lstm_cla.run(need_training, need_predict)
+#     return paras
 
 
-def run_dbn_classification(root_path, train_symbols, predict_symbols, need_training, need_plot_training_diagram, need_predict):
-    paras = SP_Paras('dbn', root_path, train_symbols, predict_symbols)
-    paras.save = True
-    paras.load = False
-    paras.plot = need_plot_training_diagram
-    # 0_index: no norm   1_index: standard norm   2_index: minmax norm   3_index: zscore norm
-    paras.features = {'0_0':['frac_change', 'frac_high', 'frac_low'], 
-                      '3_0':['volume']} 
+# def run_dbn_classification(root_path, train_symbols, predict_symbols, need_training, need_plot_training_diagram, need_predict):
+#     paras = SP_Paras('dbn', root_path, train_symbols, predict_symbols)
+#     paras.save = True
+#     paras.load = False
+#     paras.plot = need_plot_training_diagram
+#     # 0_index: no norm   1_index: standard norm   2_index: minmax norm   3_index: zscore norm
+#     paras.features = {'0_0':['frac_change', 'frac_high', 'frac_low'], 
+#                       '3_0':['volume']} 
 
-    paras.window_len = 2
-    paras.pred_len = 1
-    paras.valid_len = 20
-    paras.start_date = '2016-01-03'
-    paras.end_date = datetime.datetime.now().strftime("%Y-%m-%d")
-    paras.verbose = 1
+#     paras.window_len = 2
+#     paras.pred_len = 1
+#     paras.valid_len = 20
+#     paras.start_date = '2016-01-03'
+#     paras.end_date = datetime.datetime.now().strftime("%Y-%m-%d")
+#     paras.verbose = 1
 
-    paras.batch_size = 64
-    paras.epoch = 100
+#     paras.batch_size = 64
+#     paras.epoch = 100
 
-    paras.model['hidden_layers'] = [256, 128, 64]
-    paras.model['dropout'] = 0.2
-    paras.model['activation'] = 'relu'
-    paras.model['optimizer'] = 'adam'
+#     paras.model['hidden_layers'] = [256, 128, 64]
+#     paras.model['dropout'] = 0.2
+#     paras.model['activation'] = 'relu'
+#     paras.model['optimizer'] = 'adam'
 
-    paras.out_class_type = 'classification'
-    paras.n_out_class = 7  # ignore for regression
-    paras.model['out_layer'] = paras.n_out_class
-    paras.model['loss'] = 'categorical_crossentropy'
-    paras.model['out_activation'] = 'softmax'
+#     paras.out_class_type = 'classification'
+#     paras.n_out_class = 7  # ignore for regression
+#     paras.model['out_layer'] = paras.n_out_class
+#     paras.model['loss'] = 'categorical_crossentropy'
+#     paras.model['out_activation'] = 'softmax'
 
-    # run
-    dbn_cla = dbn_classification(paras)
-    dbn_cla.run(need_training, need_predict)
-    return paras
+#     # run
+#     dbn_cla = dbn_classification(paras)
+#     dbn_cla.run(need_training, need_predict)
+#     return paras
 
-def run_rf_classification(root_path, train_symbols, predict_symbols, need_training, need_plot_training_diagram, need_predict):
-    paras = SP_Paras('randomForrest', root_path, train_symbols, predict_symbols)
-    paras.save = True
-    paras.load = False
-    paras.plot = need_plot_training_diagram
-    # 0_index: no norm   1_index: standard norm   2_index: minmax norm   3_index: zscore norm
-    paras.features = {#'0_0':['frac_change', 'frac_high', 'frac_low'], 
-                      #'0_0':['rsi_7', 'rsi_14', 'rsi_21', 'kdjk_9', 'kdjk_14', 'wr_9', 
-                      #       'wr_14', 'close_-5_r', 'close_-10_r', 'close_-20_r']
-                      '0_0':['c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol_p']
-                      #'3_0':['volume']
-                     } 
+# def run_rf_classification(root_path, train_symbols, predict_symbols, need_training, need_plot_training_diagram, need_predict):
+#     paras = SP_Paras('randomForrest', root_path, train_symbols, predict_symbols)
+#     paras.save = True
+#     paras.load = False
+#     paras.plot = need_plot_training_diagram
+#     # 0_index: no norm   1_index: standard norm   2_index: minmax norm   3_index: zscore norm
+#     paras.features = {#'0_0':['frac_change', 'frac_high', 'frac_low'], 
+#                       #'0_0':['rsi_7', 'rsi_14', 'rsi_21', 'kdjk_9', 'kdjk_14', 'wr_9', 
+#                       #       'wr_14', 'close_-5_r', 'close_-10_r', 'close_-20_r']
+#                       '0_0':['c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol_p']
+#                       #'3_0':['volume']
+#                      } 
                       
-    paras.window_len = 0
-    paras.pred_len = 1
-    paras.valid_len = 20
-    paras.start_date = '2016-01-03'
-    paras.end_date = datetime.datetime.now().strftime("%Y-%m-%d")
-    paras.verbose = 0
+#     paras.window_len = 0
+#     paras.pred_len = 1
+#     paras.valid_len = 20
+#     paras.start_date = '2016-01-03'
+#     paras.end_date = datetime.datetime.now().strftime("%Y-%m-%d")
+#     paras.verbose = 0
 
-    paras.out_class_type = 'classification'
-    paras.n_out_class = 7  # ignore for regression
+#     paras.out_class_type = 'classification'
+#     paras.n_out_class = 7  # ignore for regression
 
-    # run
-    rf_cla = random_forrest_classification(paras)
-    rf_cla.run(need_training, need_predict)
-    return paras
+#     # run
+#     rf_cla = random_forrest_classification(paras)
+#     rf_cla.run(need_training, need_predict)
+#     return paras
 
-def run_rf_regression(root_path, train_symbols, predict_symbols, need_training, need_plot_training_diagram, need_predict):
-    paras = SP_Paras('randomForrest', root_path, train_symbols, predict_symbols)
-    paras.save = True
-    paras.load = False
-    paras.plot = need_plot_training_diagram
-    # 0_index: no norm   1_index: standard norm   2_index: minmax norm   3_index: zscore norm
-    paras.features = {#'0_0':['frac_change', 'frac_high', 'frac_low'], 
-                      #'0_0':['rsi_7', 'rsi_14', 'rsi_21', 'kdjk_9', 'kdjk_14', 'wr_9', 
-                      #       'wr_14', 'close_-5_r', 'close_-10_r', 'close_-20_r']
-                      '0_0':['c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol_p']
-                      #'3_0':['volume']
-                     } 
+# def run_rf_regression(root_path, train_symbols, predict_symbols, need_training, need_plot_training_diagram, need_predict):
+#     paras = SP_Paras('randomForrest', root_path, train_symbols, predict_symbols)
+#     paras.save = True
+#     paras.load = False
+#     paras.plot = need_plot_training_diagram
+#     # 0_index: no norm   1_index: standard norm   2_index: minmax norm   3_index: zscore norm
+#     paras.features = {#'0_0':['frac_change', 'frac_high', 'frac_low'], 
+#                       #'0_0':['rsi_7', 'rsi_14', 'rsi_21', 'kdjk_9', 'kdjk_14', 'wr_9', 
+#                       #       'wr_14', 'close_-5_r', 'close_-10_r', 'close_-20_r']
+#                       '0_0':['c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol_p']
+#                       #'3_0':['volume']
+#                      } 
                       
-    paras.window_len = 0
-    paras.pred_len = 1
-    paras.valid_len = 20
-    paras.start_date = '2016-01-03'
-    paras.end_date = datetime.datetime.now().strftime("%Y-%m-%d")
-    paras.verbose = 0
+#     paras.window_len = 0
+#     paras.pred_len = 1
+#     paras.valid_len = 20
+#     paras.start_date = '2016-01-03'
+#     paras.end_date = datetime.datetime.now().strftime("%Y-%m-%d")
+#     paras.verbose = 0
 
-    paras.out_class_type = 'regression'
-    paras.n_out_class = 7  # ignore for regression
+#     paras.out_class_type = 'regression'
+#     paras.n_out_class = 7  # ignore for regression
 
-    # run
-    rf_cla = random_forrest_regression(paras)
-    rf_cla.run(need_training, need_predict)
-    return paras
+#     # run
+#     rf_cla = random_forrest_regression(paras)
+#     rf_cla.run(need_training, need_predict)
+#     return paras
 
-def run_recommand_system(root_path, train_symbols, predict_symbols, need_training, need_plot_training_diagram, need_predict):
-    paras = SP_Paras('recommandSystem', root_path, train_symbols, predict_symbols)
-    paras.save = True
-    paras.load = False
-    paras.run_hyperopt = True
-    paras.plot = need_plot_training_diagram
+# def run_recommand_system(root_path, train_symbols, predict_symbols, need_training, need_plot_training_diagram, need_predict):
+#     paras = SP_Paras('recommandSystem', root_path, train_symbols, predict_symbols)
+#     paras.save = True
+#     paras.load = False
+#     paras.run_hyperopt = True
+#     paras.plot = need_plot_training_diagram
 
-    # A_B_C format:
-    # A: require window split or not -> 0 for not, 1 for yes
-    # B: normalization method -> 0: none 1: standard 2: minmax 3: zscore
-    # C: normalization index, same normalization requires different index
-    paras.features = {'1_0_0':['week_day'],
-                      '1_0_1':['c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol_p'],
-                      '1_1_0':['buy_amount', 'sell_amount', 'even_amount'],
-                      '1_1_1':['buy_volume', 'sell_volume', 'even_volume'], 
-                      '1_1_2':['buy_max', 'buy_min', 'buy_average', 'sell_max', 'sell_min', 'sell_average', 'even_max', 'even_min', 'even_average']} 
+#     # A_B_C format:
+#     # A: require window split or not -> 0 for not, 1 for yes
+#     # B: normalization method -> 0: none 1: standard 2: minmax 3: zscore
+#     # C: normalization index, same normalization requires different index
+#     paras.features = {'1_0_0':['week_day'],
+#                       '1_0_1':['c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol_p'],
+#                       '1_1_0':['buy_amount', 'sell_amount', 'even_amount'],
+#                       '1_1_1':['buy_volume', 'sell_volume', 'even_volume'], 
+#                       '1_1_2':['buy_max', 'buy_min', 'buy_average', 'sell_max', 'sell_min', 'sell_average', 'even_max', 'even_min', 'even_average']} 
     
-    paras.window_len = [3]
-    paras.pred_len = 1
-    paras.valid_len = 20
-    paras.start_date = '2016-11-01'
-    paras.end_date = datetime.datetime.now().strftime("%Y-%m-%d")
-    paras.verbose = 0
-    paras.batch_size = 64
-    paras.epoch = 200
-    paras.out_class_type = 'classification'
-    paras.n_out_class = 7  # ignore for regression
+#     paras.window_len = [3]
+#     paras.pred_len = 1
+#     paras.valid_len = 20
+#     paras.start_date = '2016-11-01'
+#     paras.end_date = datetime.datetime.now().strftime("%Y-%m-%d")
+#     paras.verbose = 0
+#     paras.batch_size = 64
+#     paras.epoch = 200
+#     paras.out_class_type = 'classification'
+#     paras.n_out_class = 7  # ignore for regression
 
-    # run
-    rs = recommand_system(paras)
-    rs.run(need_training, need_predict)
+#     # run
+#     rs = recommand_system(paras)
+#     rs.run(need_training, need_predict)
 
 
 def run_xgboost_classification(root_path, need_training, need_plot_training_diagram, need_predict):
@@ -289,4 +289,4 @@ if __name__ == "__main__":
     paras = run_xgboost_classification(root_path, True, False, True)
     # paras = run_lstm_classification(root_path, True, False, True)
 
-    backend.clear_session()
+    # backend.clear_session()
