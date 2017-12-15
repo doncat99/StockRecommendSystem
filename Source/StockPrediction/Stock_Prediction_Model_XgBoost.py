@@ -44,8 +44,7 @@ class xgboost_model(base_model):
         #gamma = argsDict["gamma"] * 0.1
         #min_child_weight = argsDict["min_child_weight"] + 1
         
-        print("max_depth:" + str(max_depth), "n_estimator:" + str(n_estimators), "learning_rate:" + str(learning_rate), \
-              "gamma:" + str(gamma), "subsample:" + str(subsample), "min_child_weight:" + str(min_child_weight))
+        print("max_depth:" + str(max_depth), "learning_rate:" + str(learning_rate), "subsample:" + str(subsample))
         params={
             "max_depth":max_depth,
             #"gamma":gamma,
