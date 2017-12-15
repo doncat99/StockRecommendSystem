@@ -56,7 +56,8 @@ class xgboost_model(base_model):
             'num_class': 7 ,
             "eval_metric":'merror',
             'silent':True,
-            'tree_method': "gpu_hist",
+            #'tree_method': "gpu_hist",
+            'updater':'grow_gpu_hist',
             'predictor' : "gpu_predictor",
 
         }
@@ -131,7 +132,8 @@ class xgboost_model(base_model):
             'num_class':7,
             "eval_metric":'merror',
             'silent':True,
-            'tree_method' : "gpu_hist",
+            # 'tree_method' : "gpu_hist",
+            'updater':'grow_gpu_hist',
             'predictor': "gpu_predictor",
 
         }
