@@ -58,10 +58,11 @@ class xgboost_model(base_model):
             'silent':True,
 
             'gpu_id':1,
+            'max_bin':16,
             'tree_method': "gpu_hist",
             # 'updater':'grow_gpu_hist',
             # 'n_gpus':-1,
-            'predictor' : "gpu_predictor",
+            # 'predictor' : "gpu_predictor",
 
         }
         num_round=1
@@ -135,11 +136,13 @@ class xgboost_model(base_model):
             'num_class':7,
             "eval_metric":'merror',
             'silent':True,
+
             'gpu_id':1,
+            'max_bin':16,
             'tree_method' : "gpu_hist",
             # 'updater':'grow_gpu_hist',
             # 'n_gpus':-1,
-            'predictor': "gpu_predictor",
+            # 'predictor': "gpu_predictor",
 
         }
         num_round=10
