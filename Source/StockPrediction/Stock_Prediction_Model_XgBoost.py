@@ -101,7 +101,7 @@ class xgboost_model(base_model):
         
         if self.paras.run_hyperopt == True:
             print('find hyper parameters...')
-            best = self.best_model(y_test)
+            best = self.best_model()
             pickle.dump(best, open(file_name, "wb"))
         else:
             if os.path.exists(file_name):
