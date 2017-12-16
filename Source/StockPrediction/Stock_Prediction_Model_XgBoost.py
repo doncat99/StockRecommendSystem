@@ -59,8 +59,8 @@ class xgboost_model(base_model):
 
             # 'gpu_id':1,
             # 'max_bin':16,
-            'tree_method': "gpu_hist",
-            'updater':'grow_gpu_hist',
+            'tree_method': "gpu_exact",
+            'updater':'grow_gpu_exact',
             'n_gpus':-1,
             'predictor' : "gpu_predictor",
 
@@ -135,8 +135,8 @@ class xgboost_model(base_model):
 
             # 'gpu_id':1,
             # 'max_bin':16,
-            'tree_method' : "gpu_hist",
-            'updater':'grow_gpu_hist',
+            'tree_method': "gpu_exact",
+            'updater':'grow_gpu_exact',
             'n_gpus':-1,
             'predictor': "gpu_predictor",
 
