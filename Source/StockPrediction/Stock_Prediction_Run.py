@@ -222,7 +222,7 @@ def run_xgboost_classification(root_path, need_training, need_plot_training_diag
     paras = SP_Paras('xgboost', root_path, predict_symbols, predict_symbols)
     paras.save = True
     paras.load = False
-    paras.run_hyperopt = True
+    paras.run_hyperopt = False
     paras.plot = need_plot_training_diagram
     
     # A_B_C format:
