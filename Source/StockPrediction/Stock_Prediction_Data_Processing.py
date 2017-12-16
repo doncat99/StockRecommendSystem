@@ -459,9 +459,9 @@ def get_all_stocks_feature_data(paras, window_len, LabelColumnName):
         input.close()
     else:
         data_original = get_all_stocks_data(paras.root_path, paras.train_tickers)
-        #output = open(ori_file, 'wb')
-        #pickle.dump(data_original, output)
-        #output.close()
+        output = open(ori_file, 'wb')
+        pickle.dump(data_original, output)
+        output.close()
 
     #data_original = get_all_stocks_data(paras.root_path, paras.train_tickers)
     data_feature = {}
