@@ -55,7 +55,7 @@ class xgboost_model(base_model):
             'objective': "multi:softmax",
             'num_class': 7 ,
             "eval_metric":'merror',
-            'silent':True,
+            'silent':False,
 
             # 'gpu_id':1,
             # 'max_bin':16,
@@ -132,7 +132,7 @@ class xgboost_model(base_model):
             'objective': "multi:softmax",
             'num_class':7,
             "eval_metric":'merror',
-            'silent':True,
+            'silent':False,
 
             # 'gpu_id':1,
             # 'max_bin':16,
