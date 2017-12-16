@@ -229,7 +229,7 @@ def run_xgboost_classification(root_path, need_training, need_plot_training_diag
     # A: require window split or not -> 0 for not, 1 for yes
     # B: normalization method -> 0: none 1: standard 2: minmax 3: zscore
     # C: normalization index, same normalization requires different index
-    paras.features = {'0_0_0':['week_day'],
+    paras.features = {#'0_0_0':['week_day'],
                       '1_0_1':['c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol_p'],
                       '1_1_0':['buy_amount', 'sell_amount', 'even_amount'],
                       '1_1_1':['buy_volume', 'sell_volume', 'even_volume'], 
@@ -242,7 +242,7 @@ def run_xgboost_classification(root_path, need_training, need_plot_training_diag
     paras.end_date = datetime.datetime.now().strftime("%Y-%m-%d")
     paras.verbose = 1
     paras.batch_size = 64
-    paras.epoch = 5000
+    paras.epoch = 10
     paras.out_class_type = 'classification'
     paras.n_out_class = 7  # ignore for regression
 

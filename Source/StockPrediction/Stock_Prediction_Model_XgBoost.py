@@ -60,9 +60,9 @@ class xgboost_model(base_model):
             # 'gpu_id':1,
             # 'max_bin':16,
             # 'tree_method': "gpu_hist",
-            'updater':'grow_gpu_hist',
-            'n_gpus':-1,
-            'predictor' : "gpu_predictor",
+            # 'updater':'grow_gpu_hist',
+            # 'n_gpus':-1,
+            # 'predictor' : "gpu_predictor",
 
         }
         num_round = 1
@@ -71,7 +71,6 @@ class xgboost_model(base_model):
         #print(cov_res.head())
         cov_rec=cov_res.tail(1)['test-precision_4_5_6-mean'].values
         predicted=model.predict(self.test)
-
         scoring=precision_score( self.test_y,predicted,average='micro',labels=[4,5,6])
         print('precision is ',scoring)
         print('cv_precision_4_5_6',cov_rec[0])
@@ -137,13 +136,12 @@ class xgboost_model(base_model):
             # 'gpu_id':1,
             # 'max_bin':16,
             # 'tree_method' : "gpu_hist",
-            'updater':'grow_gpu_hist',
-            'n_gpus':-1,
-            'predictor': "gpu_predictor",
+            # 'updater':'grow_gpu_hist',
+            # 'n_gpus':-1,
+            # 'predictor': "gpu_predictor",
 
         }
-        num_round = 10
-        model = xgb.train(params, self.train, num_round, self.watchlist, feval=Xg_iter_precision)
+        model = xgb.train(params, self.train, self.paras.epoch, self.watchlist, feval=Xg_iter_precision)
         return model
 
     def save_training_model(self, model, window_len):
@@ -230,7 +228,6 @@ class xgboost_classification(xgboost_model):
             X_train_temp, X_test_temp, y_train_temp, y_test_temp = train_test_split(X, y, test_size=0.2)
             # print('Train shape X:', X_train_temp.shape, ',y:', y_train_temp.shape)
             # print('Test shape X:', X_test_temp.shape, ',y:', y_test_temp.shape)
-
 
             if firstloop == 1:
                 firstloop = 0
