@@ -327,7 +327,7 @@ class xgboost_classification(xgboost_model):
 
             # possibility_columns = [str(self.paras.window_len) + '_' + str(idx) for idx in range(self.paras.n_out_class)]
 
-            # print('\n ---------- ', ticker, ' ---------- \n')
+            print('\n ---------- ', ticker, ' ---------- \n')
             # print('############## validation on train data ##############')
             rec_known_train, predictions_train = self.predict(model, X_train, y_train)
             rec_known_valid, _ = self.predict(model, X_valid, y_valid)
