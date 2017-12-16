@@ -59,10 +59,10 @@ class xgboost_model(base_model):
 
             # 'gpu_id':1,
             # 'max_bin':16,
-            # 'tree_method': "gpu_hist",
-            # 'updater':'grow_gpu_hist',
-            # 'n_gpus':-1,
-            # 'predictor' : "gpu_predictor",
+            'tree_method': "gpu_hist",
+            'updater':'grow_gpu_hist',
+            'n_gpus':-1,
+            'predictor' : "gpu_predictor",
 
         }
         num_round = 1
@@ -135,10 +135,10 @@ class xgboost_model(base_model):
 
             # 'gpu_id':1,
             # 'max_bin':16,
-            # 'tree_method' : "gpu_hist",
-            # 'updater':'grow_gpu_hist',
-            # 'n_gpus':-1,
-            # 'predictor': "gpu_predictor",
+            'tree_method' : "gpu_hist",
+            'updater':'grow_gpu_hist',
+            'n_gpus':-1,
+            'predictor': "gpu_predictor",
 
         }
         model = xgb.train(params, self.train, self.paras.epoch, self.watchlist, feval=Xg_iter_precision)
