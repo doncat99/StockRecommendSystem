@@ -31,8 +31,8 @@ def run_lstm_classification(root_path, need_training, need_plot_training_diagram
 
     paras = SP_Paras('lstm', root_path, predict_symbols, predict_symbols)
     paras.save = True
-    paras.load = True
-    paras.run_hyperopt = False
+    paras.load = False
+    paras.run_hyperopt = True
     paras.plot = need_plot_training_diagram
 
     # A_B_C format:
@@ -53,7 +53,7 @@ def run_lstm_classification(root_path, need_training, need_plot_training_diagram
     
     paras.out_class_type = 'classification'
     paras.n_out_class = 7  # ignore for regression
-    paras.epoch = 5
+    paras.epoch = 50000
 
     paras.window_len = [3]
     paras.batch_size = 64
@@ -68,7 +68,7 @@ def run_lstm_classification(root_path, need_training, need_plot_training_diagram
     paras.model['loss'] = 'categorical_crossentropy'
 
     from hyperopt import hp
-    paras.hyper_opt = {"batch_size_opt"   :[16, 32, 64],
+    paras.hyper_opt = {"batch_size_opt"   :[32, 64, 128],
                        "activation_opt"   :['relu', 'tanh', 'sigmoid'],
                        "optimizer_opt"    :['sgd', 'rmsprop', 'adagrad', 'adam'],
     }
@@ -286,7 +286,7 @@ if __name__ == "__main__":
     #paras = run_rf_regression(root_path, predict_symbols, predict_symbols, True, False, True)
     
     #need_training, need_plot_training_diagram, need_predict
-    paras = run_xgboost_classification(root_path, True, False, True)
-    # paras = run_lstm_classification(root_path, True, False, True)
+    # paras = run_xgboost_classification(root_path, True, False, True)
+    paras = run_lstm_classification(root_path, True, False, True)
 
     backend.clear_session()
