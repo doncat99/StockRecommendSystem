@@ -7,15 +7,34 @@ from keras.callbacks import EarlyStopping, History
 from keras import optimizers
 import matplotlib.pyplot as plt  # http://matplotlib.org/examples/pylab_examples/subplots_demo.html
 import pandas as pd
-import numpy as np
+import numpy as np
 import pickle
-
+from sklearn.metrics import recall_score
 from hyperopt import fmin, tpe, partial
 
 from Stock_Prediction_Base import base_model
 from Stock_Prediction_Data_Processing import reshape_input, get_all_stocks_feature_data, preprocessing_data, kmeans_claasification, get_all_target_dict, preprocessing_train_data, kmeans_claasification
 
+def Recall_s(y_ture,y_pred):
 
+    y_pred=np.argmax(y_pred,axis=1)
+    #temp=pd.DataFrame(y_pred)
+    #print(temp.head())
+    y_ture = np.argmax(y_ture, axis=1)
+    #print('y_ture',y_ture.shape)
+    #print('y_pred',y_pred.shape)
+    #print(type(y_ture),type(y_pred))
+
+    scoring = recall_score(y_ture, y_pred, average='micro', labels=[4, 5, 6])
+    #print(scoring)
+    return scoring
+def S_score(y_true,y_pred):
+    TP1=((y_true==y_pred)&(y_pred>3)).astype(int).sum()
+    TP2=(y_true>y_pred).astype(int).sum()
+    FP=((y_pred>y_true)&(y_true<4)).astype(int).sum()
+    TP=TP1+TP2
+    score=float(TP)/(TP+FP)
+    return score
 class lstm_model(base_model):
     train_x = None
     train_y = None
@@ -87,7 +106,9 @@ class lstm_model(base_model):
               callbacks=[EarlyStopping(monitor='loss', patience=5)])
 
         score, mse = model.evaluate(self.test_x, self.test_y, verbose=0)
-        return -mse
+        y_pred=model.predict(self.test_x)
+        reca=Recall_s(self.test_y,y_pred)
+        return -reca
 
     def best_model(self, X_train, y_train, X_test, y_test):
         self.train_x = X_train
@@ -267,9 +288,11 @@ class rnn_lstm_classification(lstm_model):
         )
         # save model
         self.save_training_model(model, window)
-
+        recall_train, tmp = self.predict(model, X_train, y_train)
+        # print('train recall is', recall_train)
         # print(' ############## validation on test data ############## ')
-        mse_test, tmp = self.predict(model, X_test, y_test)
+        recall_test, tmp = self.predict(model, X_test, y_test)
+        # print('test recall is',recall_test)
 
         # plot training loss/ validation loss
         if self.paras.plot:
@@ -287,8 +310,9 @@ class rnn_lstm_classification(lstm_model):
     def predict(self, model, X, y):
         predictions = model.predict(X)
         mse_scaled = np.mean((y - predictions) ** 2)
+        reca_s=S_score(y,predictions)
         # print('scaled data mse: ', mse_scaled)
-        return mse_scaled, predictions
+        return reca_s, predictions
 
 
     def predict_data(self, model, data_feature, window, LabelColumnName):

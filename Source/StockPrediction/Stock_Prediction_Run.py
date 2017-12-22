@@ -38,11 +38,11 @@ def run_lstm_classification(root_path, need_training, need_plot_training_diagram
     # A: require window split or not -> 0 for not, 1 for yes
     # B: normalization method -> 0: none 1: standard 2: minmax 3: zscore
     # C: normalization index, same normalization requires different index
-    paras.features = {'1_0_0':['week_day'],
-                      '1_0_1':['c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol_p'],
-                      '1_1_0':['buy_amount', 'sell_amount', 'even_amount'],
-                      '1_1_1':['buy_volume', 'sell_volume', 'even_volume'], 
-                      '1_1_2':['buy_max', 'buy_min', 'buy_average', 'sell_max', 'sell_min', 'sell_average', 'even_max', 'even_min', 'even_average']} 
+    paras.features = {'1_0_0':['week_day'], # 1
+                      '1_0_1':['c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol_p'],  # 5
+                      '1_1_0':['buy_amount', 'sell_amount', 'even_amount'], # 3
+                      '1_1_1':['buy_volume', 'sell_volume', 'even_volume'], # 3
+                      '1_1_2':['buy_max', 'buy_min', 'buy_average', 'sell_max', 'sell_min', 'sell_average', 'even_max', 'even_min', 'even_average']} # 9
 
     paras.pred_len = 1
     paras.valid_len = 20
@@ -52,11 +52,11 @@ def run_lstm_classification(root_path, need_training, need_plot_training_diagram
     
     paras.out_class_type = 'classification'
     paras.n_out_class = 7  # ignore for regression
-    paras.epoch = 50000
+    paras.epoch = 1000
 
-    paras.window_len = [3]
+    paras.window_len = [5]
     paras.batch_size = 64
-    paras.model['hidden_layers'] = [240, 120, 60]
+    paras.model['hidden_layers'] = [210, 140, 210, 140, 210, 140, 70]
     paras.model['dropout'] = 0.5
     paras.model['activation'] = 'relu'
     paras.model['optimizer'] = 'adam'
