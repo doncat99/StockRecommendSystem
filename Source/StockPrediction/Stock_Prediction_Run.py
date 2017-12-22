@@ -286,6 +286,8 @@ if __name__ == "__main__":
     
     #need_training, need_plot_training_diagram, need_predict
     # paras = run_xgboost_classification(root_path, True, False, True)
+    backend.clear_session()
+    
     paras = run_lstm_classification(root_path, True, False, True)
 
     backend.clear_session()

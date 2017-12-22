@@ -103,7 +103,7 @@ class lstm_model(base_model):
               batch_size=self.paras.batch_size,
               epochs=self.paras.epoch,
               verbose=0,
-            #   callbacks=[EarlyStopping(monitor='loss', patience=5)]
+              callbacks=[EarlyStopping(monitor='loss', patience=5)]
               )
 
         score, mse = model.evaluate(self.test_x, self.test_y, verbose=0)
