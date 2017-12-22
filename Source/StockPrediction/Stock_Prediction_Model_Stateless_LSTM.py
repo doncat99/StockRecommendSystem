@@ -103,7 +103,8 @@ class lstm_model(base_model):
               batch_size=self.paras.batch_size,
               epochs=self.paras.epoch,
               verbose=0,
-              callbacks=[EarlyStopping(monitor='loss', patience=5)])
+            #   callbacks=[EarlyStopping(monitor='loss', patience=5)]
+              )
 
         score, mse = model.evaluate(self.test_x, self.test_y, verbose=0)
         y_pred=model.predict(self.test_x)
@@ -269,7 +270,7 @@ class rnn_lstm_classification(lstm_model):
         return X_train, y_train, X_test, y_test
 
     def train_data(self, data_feature, window, LabelColumnName):
-        history = History()
+        # history = History()
         
         #X_train, y_train, X_test, y_test = self.prepare_train_test_data(data_feature, LabelColumnName)
         X_train, y_train, X_test, y_test = self.prepare_train_data(data_feature, LabelColumnName)
@@ -282,7 +283,7 @@ class rnn_lstm_classification(lstm_model):
             epochs=self.paras.epoch,
             # validation_split=self.paras.validation_split,
             # validation_data = (X_known_lately, y_known_lately),
-            callbacks=[history],
+            # callbacks=[history],
             # shuffle=True,
             verbose=self.paras.verbose
         )
