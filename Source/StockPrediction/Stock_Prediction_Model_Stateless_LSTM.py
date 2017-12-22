@@ -117,7 +117,7 @@ class lstm_model(base_model):
         self.test_y  = y_test
 
         algo = partial(tpe.suggest, n_startup_jobs=1)
-        best = fmin(self.LSTM, space=self.paras.hyper_opt, algo=algo, max_evals=100)
+        best = fmin(self.LSTM, space=self.paras.hyper_opt, algo=algo, max_evals=20)
         print("best", best)
         return best
         
