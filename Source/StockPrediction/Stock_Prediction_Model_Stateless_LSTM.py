@@ -7,7 +7,7 @@ from keras.callbacks import EarlyStopping, History
 from keras import optimizers
 import matplotlib.pyplot as plt  # http://matplotlib.org/examples/pylab_examples/subplots_demo.html
 import pandas as pd
-import numpy as np
+import numpy as np
 import pickle
 from sklearn.metrics import recall_score
 from hyperopt import fmin, tpe, partial
