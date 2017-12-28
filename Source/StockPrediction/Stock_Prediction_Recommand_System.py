@@ -4,7 +4,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.metrics.classification import accuracy_score
 from Stock_Prediction_Base import base_model
-from Stock_Prediction_Data_Processing import get_all_stocks_label_possibility_data, preprocessing_data
+# from Stock_Prediction_Data_Processing import get_all_stocks_label_possibility_data, preprocessing_data
 
 
 class recommand_system_model(base_model):

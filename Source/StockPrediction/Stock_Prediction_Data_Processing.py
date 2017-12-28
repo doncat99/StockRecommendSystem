@@ -474,74 +474,59 @@ def get_all_stocks_feature_data(paras, window_len, LabelColumnName):
     return data_feature
 
 
-def get_train_stocks_feature_data(para, data_feature):
-    date_files = os.listdir(root_path + "/Data/CSV/target/")
-
-    train_feature = {}
-
-    for date_file in date_files:
-        date = date_file.split('.')[0]
-        df = pd.read_csv(date_file)
-        stocks = df['symbol'].values.tolist()
-
-        
-            
-
-    # for ticker, data in data_feature.items():
-
 ###################################
 ###                             ###
 ### Get Label Possibility Data  ###
 ###                             ###
 ###################################
 
-def get_single_stock_label_possibility_data(paras, ticker):
-    first = True
-    df_data = pd.DataFrame()
+# def get_single_stock_label_possibility_data(paras, ticker):
+#     first = True
+#     df_data = pd.DataFrame()
         
-    #df_read_col = ['Date', 'label']
-    df_possbibilty_col = [str(paras.window_len) + '_' + str(i) for i in range(paras.n_out_class)]
-    #df_read_col.extend(df_possbibilty_col)
+#     #df_read_col = ['Date', 'label']
+#     df_possbibilty_col = [str(paras.window_len) + '_' + str(i) for i in range(paras.n_out_class)]
+#     #df_read_col.extend(df_possbibilty_col)
 
-    df = get_single_stock_data(paras.root_path, ticker)
+#     df = get_single_stock_data(paras.root_path, ticker)
 
-    if first:
-        df_data = df.rename(columns={'label': 'label'})
-        first = False
-    else:
-        for col in df_possbibilty_col: df_data.loc[df.index, col] = df[col]
+#     if first:
+#         df_data = df.rename(columns={'label': 'label'})
+#         first = False
+#     else:
+#         for col in df_possbibilty_col: df_data.loc[df.index, col] = df[col]
 
-    return df_data
+#     return df_data
 
-def get_all_stocks_label_possibility_data(paras, DropColumnName):
-    data_original = {}
-    # get data
-    for ticker in paras.train_tickers:
-        data = get_single_stock_label_possibility_data(paras, ticker)
-        if data.empty: continue
+# def get_all_stocks_label_possibility_data(paras, DropColumnName):
+#     data_original = {}
+#     # get data
+#     for ticker in paras.train_tickers:
+#         data = get_single_stock_label_possibility_data(paras, ticker)
+#         if data.empty: continue
 
-        data.dropna(inplace=True)
-        data.loc[data.index, 'WeekDay'] = [str(pd.Timestamp(day).weekday()) for day in data.index.values]
+#         data.dropna(inplace=True)
+#         data.loc[data.index, 'WeekDay'] = [str(pd.Timestamp(day).weekday()) for day in data.index.values]
 
-        for dropColumn in DropColumnName:
-            data = data.drop(dropColumn, 1)
+#         for dropColumn in DropColumnName:
+#             data = data.drop(dropColumn, 1)
 
-        # first = True
-        # for window in paras.window_len:
-        #     df_possbibilty_col = [str(window) + '_' + str(i) for i in range(paras.n_out_class)]
+#         # first = True
+#         # for window in paras.window_len:
+#         #     df_possbibilty_col = [str(window) + '_' + str(i) for i in range(paras.n_out_class)]
 
-        #     if first: 
-        #         data_count = data[df_possbibilty_col].values
-        #         first = False
-        #     else: data_count = data_count + data[df_possbibilty_col].values
+#         #     if first: 
+#         #         data_count = data[df_possbibilty_col].values
+#         #         first = False
+#         #     else: data_count = data_count + data[df_possbibilty_col].values
 
-        # data_count = data_count / 3
-        # new_df = data[['pred_profit', 'label']]
-        # new_df.loc[new_df.index, 'pred'] = np.argmax(data_count, axis=1)
-        # for col in range(paras.n_out_class): new_df.loc[new_df.index, str(col)] = data_count[:,col]
+#         # data_count = data_count / 3
+#         # new_df = data[['pred_profit', 'label']]
+#         # new_df.loc[new_df.index, 'pred'] = np.argmax(data_count, axis=1)
+#         # for col in range(paras.n_out_class): new_df.loc[new_df.index, str(col)] = data_count[:,col]
 
-        # print(new_df[len(new_df) - paras.valid_len: len(new_df)])
+#         # print(new_df[len(new_df) - paras.valid_len: len(new_df)])
 
-        data_original[ticker] = generate_time_series_data(paras, data, 0)
-    return data_original
+#         data_original[ticker] = generate_time_series_data(paras, data, 0)
+#     return data_original
  

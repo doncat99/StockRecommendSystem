@@ -5,7 +5,6 @@ from Stock_Prediction_Model_Random_Forrest import random_forrest_classification
 from Stock_Prediction_Model_XgBoost import xgboost_classification
 from Stock_Prediction_Recommand_System import recommand_system
 
-
 import sys, os, time, datetime, warnings, configparser
 import tensorflow as tf
 import pandas as pd
@@ -221,7 +220,7 @@ def run_xgboost_classification(root_path, need_training, need_plot_training_diag
     paras = SP_Paras('xgboost', root_path, predict_symbols, predict_symbols)
     paras.save = True
     paras.load = False
-    paras.run_hyperopt = False
+    paras.run_hyperopt = True
     paras.plot = need_plot_training_diagram
     
     # A_B_C format:
@@ -229,7 +228,7 @@ def run_xgboost_classification(root_path, need_training, need_plot_training_diag
     # B: normalization method -> 0: none 1: standard 2: minmax 3: zscore
     # C: normalization index, same normalization requires different index
     paras.features = {#'0_0_0':['week_day'],
-                      '1_0_1':['c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol_p'],
+                      #'1_0_1':['c_2_o', 'h_2_o', 'l_2_o', 'c_2_h', 'h_2_l', 'vol_p'],
                       '1_1_0':['buy_amount', 'sell_amount', 'even_amount'],
                       '1_1_1':['buy_volume', 'sell_volume', 'even_volume'], 
                       '1_1_2':['buy_max', 'buy_min', 'buy_average', 'sell_max', 'sell_min', 'sell_average', 'even_max', 'even_min', 'even_average']} 
